@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -9,13 +10,28 @@ class AuthViewModel extends ChangeNotifier {
 
   User? get currentUser => _auth.currentUser;
 
-  Future<String?> signUp(String email, String password) async {
+  Future<String?> signUp(
+    String email,
+    String password, {
+    String displayName = '',
+  }) async {
     _setLoading(true);
     try {
-      await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      // حفظ الاسم في Firebase Auth
+      await credential.user?.updateDisplayName(displayName);
+      // حفظ الاسم في Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(credential.user?.uid)
+          .set({
+            'displayName': displayName,
+            'email': email,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
       _setLoading(false);
       return null;
     } on FirebaseAuthException catch (e) {
@@ -27,10 +43,7 @@ class AuthViewModel extends ChangeNotifier {
   Future<String?> login(String email, String password) async {
     _setLoading(true);
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       _setLoading(false);
       return null;
     } on FirebaseAuthException catch (e) {

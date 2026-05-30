@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
 
-// المسار النسبي الذكي للوصول إلى الملاحة الحية 🎯
-
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -16,12 +14,15 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   bool _isLoginMode = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -40,6 +41,7 @@ class _AuthScreenState extends State<AuthScreen> {
       errorMessage = await authViewModel.signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
+        displayName: _nameController.text.trim(),
       );
     }
 
@@ -53,16 +55,13 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     }
-    // لا نحتاج Navigator هنا — AuthWrapper يتولى الانتقال تلقائياً
   }
 
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final theme = Theme.of(context);
-
-    // تجهيز ستايل موحد لخط Cairo
-    final TextStyle cairoStyle = GoogleFonts.cairo();
+    final cairoStyle = GoogleFonts.cairo();
 
     return Scaffold(
       body: Center(
@@ -87,13 +86,41 @@ class _AuthScreenState extends State<AuthScreen> {
                 Text(
                   _isLoginMode
                       ? 'سجل دخولك لتستمتع بأجمل الروايات'
-                      : 'أنشئ حسابك وابدأ رحلتك في عالم الكتابة والقراءة',
+                      : 'أنشئ حسابك وابدأ رحلتك في عالم الكتابة',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.cairo(color: Colors.grey, fontSize: 14),
+                  style:
+                      GoogleFonts.cairo(color: Colors.grey, fontSize: 14),
                 ),
                 const SizedBox(height: 40),
 
-                // حقل البريد الإلكتروني مع تطبيق الخط على التلميحات والنصوص المكتوبة
+                // حقل الاسم — يظهر فقط عند التسجيل
+                if (!_isLoginMode) ...[
+                  TextFormField(
+                    controller: _nameController,
+                    style: cairoStyle,
+                    decoration: InputDecoration(
+                      labelText: 'اسم العرض',
+                      labelStyle: cairoStyle,
+                      hintText: 'الاسم الذي سيراه القراء',
+                      hintStyle:
+                          cairoStyle.copyWith(color: Colors.grey, fontSize: 13),
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (!_isLoginMode &&
+                          (value == null || value.trim().isEmpty)) {
+                        return 'يرجى إدخال اسم العرض';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // البريد الإلكتروني
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -102,7 +129,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     labelText: 'البريد الإلكتروني',
                     labelStyle: cairoStyle,
                     hintStyle: cairoStyle,
-                    errorStyle: cairoStyle,
                     prefixIcon: const Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -119,17 +145,22 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // حقل كلمة المرور مع تطبيق الخط بالكامل
+                // كلمة المرور
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   style: cairoStyle,
                   decoration: InputDecoration(
                     labelText: 'كلمة المرور',
                     labelStyle: cairoStyle,
-                    hintStyle: cairoStyle,
-                    errorStyle: cairoStyle,
                     prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined),
+                      onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -144,7 +175,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 24),
 
                 ElevatedButton(
-                  onPressed: authViewModel.isLoading ? null : _submitAuthForm,
+                  onPressed:
+                      authViewModel.isLoading ? null : _submitAuthForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.black,
@@ -163,7 +195,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         )
                       : Text(
-                          _isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب جديد',
+                          _isLoginMode ? 'تسجيل الدخول' : 'إنشاء حساب',
                           style: GoogleFonts.cairo(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -176,6 +208,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   onPressed: () {
                     setState(() {
                       _isLoginMode = !_isLoginMode;
+                      _formKey.currentState?.reset();
                     });
                   },
                   child: Text(

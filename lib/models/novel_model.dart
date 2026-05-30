@@ -11,7 +11,9 @@ class Novel {
   final double rating;
   final int likes;
   final int readers;
-  final String status;
+  final int chaptersCount;
+  final bool titleChanged;
+  final String status; // 'active' | 'completed'
 
   Novel({
     required this.id,
@@ -24,23 +26,70 @@ class Novel {
     this.rating = 0.0,
     this.likes = 0,
     this.readers = 0,
-    this.status = 'منشورة',
+    this.chaptersCount = 0,
+    this.titleChanged = false,
+    this.status = 'active',
   });
 
-  // تحويل من Firestore إلى Novel
   factory Novel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Novel(
       id: doc.id,
       title: data['title'] ?? '',
-      author: data['authorEmail'] ?? 'كاتب مجهول',
+      author: data['authorName'] ?? data['authorEmail'] ?? 'كاتب مجهول',
       authorId: data['authorId'] ?? '',
       category: data['category'] ?? 'عام',
       description: data['description'] ?? '',
       content: data['content'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),
-      likes: data['likes'] ?? 0,
-      readers: data['readers'] ?? 0,
+      likes: (data['likes'] ?? 0) as int,
+      readers: (data['readers'] ?? 0) as int,
+      chaptersCount: (data['chaptersCount'] ?? 0) as int,
+      titleChanged: data['titleChanged'] ?? false,
+      status: data['status'] ?? 'active',
+    );
+  }
+}
+
+// ─── موديل الفصل ─────────────────────────────────────────────────────────────
+class Chapter {
+  final String id;
+  final String novelId;
+  final String title;
+  final String content;
+  final int wordCount;
+  final int chapterNumber;
+  final double rating;
+  final int ratingsCount;
+  final bool isDraft;
+  final DateTime? createdAt;
+
+  Chapter({
+    required this.id,
+    required this.novelId,
+    required this.title,
+    required this.content,
+    required this.wordCount,
+    required this.chapterNumber,
+    this.rating = 0.0,
+    this.ratingsCount = 0,
+    this.isDraft = false,
+    this.createdAt,
+  });
+
+  factory Chapter.fromFirestore(DocumentSnapshot doc, String novelId) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Chapter(
+      id: doc.id,
+      novelId: novelId,
+      title: data['title'] ?? '',
+      content: data['content'] ?? '',
+      wordCount: (data['wordCount'] ?? 0) as int,
+      chapterNumber: (data['chapterNumber'] ?? 0) as int,
+      rating: (data['rating'] ?? 0.0).toDouble(),
+      ratingsCount: (data['ratingsCount'] ?? 0) as int,
+      isDraft: data['isDraft'] ?? false,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }
 }
