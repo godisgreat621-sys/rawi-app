@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_first_app/repositories/user_repository.dart';
 import 'package:my_first_app/repositories/novel_repository.dart';
 import '../../providers/novels_provider.dart';
 
@@ -29,6 +30,8 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   final _descriptionController = TextEditingController();
   final _chapterTitleController = TextEditingController();
   final _contentController = TextEditingController();
+  String? _coverUrl;
+  bool _isUploadingCover = false;
 
   String _selectedCategory = 'عام';
   bool _isPublishing = false;
@@ -127,36 +130,33 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
 
     final data = userDoc.data()!;
 
-    // 1. شرط الـ 24 ساعة
+    int points = 0;
     final lastPublished = data['lastPublished'] as Timestamp?;
+    bool timeOk = true;
+    
     if (lastPublished != null) {
       final diff = DateTime.now().difference(lastPublished.toDate());
-      if (diff.inHours < 24) {
-        final remaining = 24 - diff.inHours;
-        return {
-          'canPublish': false,
-          'reason': 'يجب الانتظار $remaining ساعة قبل نشر فصل جديد ⏳',
-        };
-      }
+      if (diff.inHours >= 24) points += 3;
+      else timeOk = false;
+    } else {
+      points += 3; // النشر لأول مرة مسموح
     }
 
-    // 2. شرط تقييم 3 فصول لكتّاب آخرين
     final ratingsGiven = data['ratingsGiven'] ?? 0;
-    if (ratingsGiven < 3) {
-      final remaining = 3 - ratingsGiven;
-      return {
-        'canPublish': false,
-        'reason': 'يجب تقييم $remaining فصل لكتّاب آخرين أولاً مع تعليق 📖',
-      };
-    }
+    if (ratingsGiven >= 3) points += 3;
 
-    // 3. شرط الحصول على 3 تقييمات على الفصل السابق
     final lastChapterRatings = data['lastChapterRatingsReceived'] ?? 0;
-    if (lastChapterRatings < 3) {
-      final remaining = 3 - lastChapterRatings;
+    if (lastChapterRatings >= 3) points += 4;
+
+    if (points < 10) {
+      String reason = 'تحتاج 10 نقاط لنشر فصل جديد (لديك حالياً $points).\nكسب النقاط:\n';
+      if (!timeOk) reason += '• انتظار 24 ساعة (3 نقاط)\n';
+      if (ratingsGiven < 3) reason += '• تقييم ${3 - ratingsGiven} فصول لكتّاب آخرين (3 نقاط)\n';
+      if (lastChapterRatings < 3) reason += '• فصلك السابق يحتاج ${3 - lastChapterRatings} تقييمات (4 نقاط)';
+      
       return {
         'canPublish': false,
-        'reason': 'فصلك السابق يحتاج $remaining تقييم إضافي قبل نشر فصل جديد',
+        'reason': reason,
       };
     }
 
@@ -189,6 +189,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         category: _selectedCategory,
         chapterTitle: _chapterTitleController.text.trim(),
         chapterContent: _contentController.text.trim(),
+        coverUrl: _coverUrl,
         wordCount: _wordCount,
       );
 
@@ -290,6 +291,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         chapterTitle: _chapterTitleController.text.trim(),
         chapterContent: _contentController.text.trim(),
         wordCount: _wordCount,
+        coverUrl: _coverUrl,
       );
     } else {
       error = await provider.addChapter(
@@ -462,6 +464,46 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 fontSize: 22,
                 bold: true,
               ),
+              const SizedBox(height: 12),
+              // اختيار غلاف الرواية
+              GestureDetector(
+                onTap: _isUploadingCover ? null : () async {
+                  setState(() => _isUploadingCover = true);
+                  final url = await UserRepository.pickAndUploadImage('novel_covers');
+                  setState(() {
+                    _coverUrl = url;
+                    _isUploadingCover = false;
+                  });
+                },
+                child: Container(
+                  height: 150,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    image: _coverUrl != null 
+                      ? DecorationImage(image: NetworkImage(_coverUrl!), fit: BoxFit.cover)
+                      : null,
+                  ),
+                  child: _isUploadingCover 
+                    ? const Center(child: CircularProgressIndicator())
+                    : _coverUrl == null 
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_photo_alternate_outlined),
+                            Text('غلاف', style: GoogleFonts.cairo(fontSize: 10)),
+                          ],
+                        )
+                      : null,
+                ),
+              ),
+              if (_coverUrl != null) 
+                TextButton(
+                  onPressed: () => setState(() => _coverUrl = null),
+                  child: Text('حذف الغلاف', style: GoogleFonts.cairo(color: Colors.red, fontSize: 12)),
+                ),
+
               const Divider(height: 28),
 
               // التصنيفات الأفقية المميزة
@@ -584,9 +626,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _conditionsCard(ThemeData theme, bool isDark) {
     final items = [
-      (Icons.hourglass_top, 'مرت 24 ساعة من آخر نشر'),
-      (Icons.auto_stories, 'قيّمت 3 فصول لكتّاب آخرين مع تعليق (50 حرف+)'),
-      (Icons.star, 'فصلك السابق حصل على 3 تقييمات'),
+      (Icons.hourglass_top, 'انتظار 24 ساعة (3 نقاط)'),
+      (Icons.auto_stories, 'تقييم 3 فصول لكتّاب آخرين (3 نقاط)'),
+      (Icons.star, 'الحصول على 3 تقييمات لفصلك السابق (4 نقاط)'),
       (Icons.edit, 'الفصل بين 500 و5000 كلمة'),
     ];
     return Container(

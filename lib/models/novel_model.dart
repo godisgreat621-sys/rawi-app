@@ -8,6 +8,7 @@ class Novel {
   final String category;
   final String description;
   final String content;
+  final String? coverUrl;
   final double rating;
   final int likes;
   final int readers;
@@ -22,6 +23,7 @@ class Novel {
     required this.authorId,
     required this.category,
     this.description = '',
+    this.coverUrl,
     this.content = '',
     this.rating = 0.0,
     this.likes = 0,
@@ -40,6 +42,7 @@ class Novel {
       authorId: data['authorId'] ?? '',
       category: data['category'] ?? 'عام',
       description: data['description'] ?? '',
+      coverUrl: data['coverUrl'],
       content: data['content'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),
       likes: (data['likes'] ?? 0).toInt(),

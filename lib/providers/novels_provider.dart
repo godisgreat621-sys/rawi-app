@@ -13,6 +13,7 @@ class NovelsProvider with ChangeNotifier {
     required String category,
     required String chapterTitle,
     required String chapterContent,
+    String? coverUrl,
     required int wordCount,
   }) async {
     try {
@@ -23,6 +24,7 @@ class NovelsProvider with ChangeNotifier {
         'title': title,
         'description': description,
         'category': category,
+        'coverUrl': coverUrl,
         'authorId': user.uid,
         'authorEmail': user.email ?? '',
         'rating': 0.0,
@@ -116,6 +118,7 @@ class NovelsProvider with ChangeNotifier {
           chapterTitle: data['chapterTitle'] ?? '',
           chapterContent: data['chapterContent'] ?? '',
           wordCount: data['wordCount'] ?? 0,
+          coverUrl: data['coverUrl'],
         );
       } else {
         error = await addChapter(
@@ -155,6 +158,17 @@ class NovelsProvider with ChangeNotifier {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map((d) => Novel.fromFirestore(d)).toList());
+  }
+
+  // ── جلب مسودات المستخدم الحالي ──────────────────────────────────────────────
+  Stream<List<Map<String, dynamic>>> getMyDraftsStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value([]);
+    return _db
+        .collection('drafts')
+        .where('authorId', isEqualTo: user.uid)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   // ── حذف رواية ──────────────────────────────────────────────────────────────

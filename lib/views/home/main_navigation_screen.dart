@@ -16,6 +16,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
+  // تم تصحيح القائمة وإزالة const لأن المنشئات قد تتغير حالاتها
   final List<Widget> _screens = [
     const HomeScreen(),
     const WriterScreen(),

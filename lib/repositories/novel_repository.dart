@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class NovelRepository {
-  /// Save reader progress for the current user and novel.
-  /// Creates/updates doc: users/{uid}/readingProgress/{novelId}
   static Future<void> saveReadingProgress({
     required String novelId,
     required String chapterId,
@@ -28,12 +26,9 @@ class NovelRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
-    // Use merge to avoid clobbering other fields
     await ref.set(data, SetOptions(merge: true));
   }
 
-  /// Save a draft for the current user under `drafts` collection
-  /// If `draftId` provided it updates, otherwise it creates and returns the id.
   static Future<String?> saveDraft({
     String? draftId,
     required bool isNewNovel,
@@ -44,6 +39,7 @@ class NovelRepository {
     required String chapterContent,
     required int wordCount,
     required String category,
+    String? coverUrl,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -58,6 +54,7 @@ class NovelRepository {
       'chapterContent': chapterContent,
       'wordCount': wordCount,
       'category': category,
+      'coverUrl': coverUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 

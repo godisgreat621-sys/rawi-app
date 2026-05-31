@@ -477,10 +477,10 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     }
 
     // تحديث نقاط المُقيِّم + عداد التقييمات المُعطاة
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
       'points': FieldValue.increment(10),
       'ratingsGiven': FieldValue.increment(1),
-    }, SetOptions(merge: true));
+    });
 
     // حساب متوسط تقييم الرواية من كل الفصول
     final allChapters = await _novelRef.collection('chapters').get();

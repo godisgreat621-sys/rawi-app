@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/novel_model.dart';
 import 'novel_detail_screen.dart';
+import '../writer/drafts_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'likes': novel.likes.toString(),
             'readers': novel.readers.toString(),
             'authorId': novel.authorId,
+            'coverUrl': novel.coverUrl,
           },
         ),
       ),
@@ -90,25 +92,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
             actions: [
-              _isSearching
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      color: theme.colorScheme.primary,
-                      onPressed: () {
-                        setState(() {
-                          _isSearching = false;
-                          _searchQuery = '';
-                          _searchController.clear();
-                        });
-                      },
-                    )
-                  : IconButton(
-                      icon: Icon(
-                        Icons.search,
-                        color: theme.colorScheme.primary,
-                      ),
-                      onPressed: () => setState(() => _isSearching = true),
-                    ),
+              if (_isSearching)
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  color: theme.colorScheme.primary,
+                  onPressed: () {
+                    setState(() {
+                      _isSearching = false;
+                      _searchQuery = '';
+                      _searchController.clear();
+                    });
+                  },
+                )
+              else ...[
+                IconButton(
+                  icon: const Icon(Icons.edit_note_rounded),
+                  tooltip: 'المسودات',
+                  color: theme.colorScheme.primary,
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DraftsListScreen())),
+                ),
+                IconButton(
+                  icon: Icon(Icons.search, color: theme.colorScheme.primary),
+                  onPressed: () => setState(() => _isSearching = true),
+                ),
+              ],
             ],
           ),
 
@@ -351,12 +358,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           color: theme.colorScheme.surface,
                                           borderRadius:
                                               BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: theme.colorScheme.primary
-                                                .withOpacity(0.15),
-                                          ),
+                                          image: novel.coverUrl != null 
+                                            ? DecorationImage(
+                                                image: NetworkImage(novel.coverUrl!),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null,
                                         ),
-                                        child: Center(
+                                        child: novel.coverUrl == null ? Center(
                                           child: Column(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
@@ -396,7 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                             ],
                                           ),
-                                        ),
+                                        ) : null,
                                       ),
                                     ),
                                     const SizedBox(height: 6),

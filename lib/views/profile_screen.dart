@@ -7,6 +7,8 @@ import 'package:my_first_app/view_models/auth_view_model.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/repositories/user_repository.dart';
 import 'admin_screen.dart';
+import 'package:my_first_app/providers/novels_provider.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -45,6 +47,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // نافذة تعديل الاسم
+  void _showEditNameDialog(String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('تعديل الاسم', style: GoogleFonts.cairo()),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: "أدخل اسمك الجديد", hintStyle: GoogleFonts.cairo()),
+          style: GoogleFonts.cairo(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo())),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) {
+                await UserRepository.updateDisplayName(controller.text.trim());
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            child: Text('حفظ', style: GoogleFonts.cairo()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // نافذة الدعم الفني
+  void _showSupportDialog() {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    String selectedType = 'مشكلة تقنية';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('الدعم الفني 🎧', style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            DropdownButtonFormField<String>(
+              value: selectedType,
+              items: ['مشكلة تقنية', 'اقتراح', 'استفسار عن النقاط', 'أخرى']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.cairo())))
+                  .toList(),
+              onChanged: (v) => selectedType = v!,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(hintText: "عنوان المشكلة", hintStyle: GoogleFonts.cairo(), border: const OutlineInputBorder()),
+              style: GoogleFonts.cairo(),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: descController,
+              maxLines: 3,
+              decoration: InputDecoration(hintText: "اشرح لنا بالتفصيل...", hintStyle: GoogleFonts.cairo(), border: const OutlineInputBorder()),
+              style: GoogleFonts.cairo(),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await context.read<NovelsProvider>().sendSupportRequest(
+                    title: titleController.text,
+                    type: selectedType,
+                    description: descController.text,
+                  );
+                  if (mounted) Navigator.pop(ctx);
+                },
+                child: Text('إرسال الطلب', style: GoogleFonts.cairo()),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -75,6 +165,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final name = userData?['displayName'] ?? 'مستخدم';
           final email = userData?['email'] ?? '';
           final profilePic = userData?['profilePicture'];
+          final points = userData?['points'] ?? 0;
           final role = userData?['role'] ?? 'user';
 
           return SingleChildScrollView(
@@ -127,14 +218,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 20),
                 Text(name, style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.bold)),
                 Text(email, style: GoogleFonts.cairo(color: Colors.grey)),
-                const SizedBox(height: 40),
+                const SizedBox(height: 15),
+                
+                // --- نظام النقاط المستعاد ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.stars_rounded, color: theme.colorScheme.primary, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$points نقطة',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 25),
 
-                _buildMenuTile(Icons.person_outline, 'تعديل البيانات', () {}),
+                _buildMenuTile(Icons.person_outline, 'تعديل البيانات', () => _showEditNameDialog(name)),
                 if (role == 'admin')
                   _buildMenuTile(Icons.admin_panel_settings_outlined, 'لوحة الإدارة', () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminScreen()));
                   }),
-                _buildMenuTile(Icons.help_outline, 'الدعم الفني', () {}),
+                _buildMenuTile(Icons.help_outline, 'الدعم الفني', _showSupportDialog),
+                _buildMenuTile(Icons.info_outline, 'عن المنصة', () {
+                  showAboutDialog(context: context, applicationName: "منصة راوي", applicationVersion: "1.0.0");
+                }),
                 
                 const SizedBox(height: 40),
                 SizedBox(
