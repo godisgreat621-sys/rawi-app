@@ -102,9 +102,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     if (!_scrollController.hasClients) return;
     final max = _scrollController.position.maxScrollExtent;
     if (max <= 0) return;
-    setState(() {
-      _savedPagePercent = (_scrollController.offset / max).clamp(0.0, 1.0);
-    });
+    // تحديث القيمة داخلياً بدون إعادة بناء الواجهة (setState) في كل لحظة تمرير
+    _savedPagePercent = (_scrollController.offset / max).clamp(0.0, 1.0);
   }
 
   Future<void> _loadReadingProgress() async {
