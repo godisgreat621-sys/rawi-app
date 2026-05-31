@@ -939,15 +939,21 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: theme.colorScheme.primary
-                                  .withAlpha(51),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                                style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
+                              backgroundColor:
+                                  theme.colorScheme.primary.withAlpha(51),
+                              backgroundImage: d['profilePicture'] != null
+                                  ? NetworkImage(d['profilePicture'])
+                                  : null,
+                              child: d['profilePicture'] == null
+                                  ? Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : '؟',
+                                      style: GoogleFonts.cairo(
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.primary),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
