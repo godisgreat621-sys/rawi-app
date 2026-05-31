@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_first_app/repositories/novel_repository.dart';
 import '../../providers/novels_provider.dart';
 
 class AddNovelScreen extends StatefulWidget {
@@ -11,22 +13,30 @@ class AddNovelScreen extends StatefulWidget {
   final String? novelTitle;
   final String? draftId;
 
-  const AddNovelScreen({super.key, this.novelId, this.novelTitle, this.draftId});
+  const AddNovelScreen({
+    super.key,
+    this.novelId,
+    this.novelTitle,
+    this.draftId,
+  });
 
   @override
   State<AddNovelScreen> createState() => _AddNovelScreenState();
 }
 
 class _AddNovelScreenState extends State<AddNovelScreen> {
-  final _novelTitleController    = TextEditingController();
-  final _descriptionController   = TextEditingController();
-  final _chapterTitleController  = TextEditingController();
-  final _contentController       = TextEditingController();
+  final _novelTitleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _chapterTitleController = TextEditingController();
+  final _contentController = TextEditingController();
 
   String _selectedCategory = 'عام';
   bool _isPublishing = false;
   bool _isSavingDraft = false;
-  int  _wordCount = 0;
+  int _wordCount = 0;
+  String? _currentDraftId;
+
+  Timer? _autosaveTimer;
 
   static const int _minWords = 500;
   static const int _maxWords = 5000;
@@ -35,17 +45,24 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   bool get _isDraftMode => widget.draftId != null;
 
   final List<String> _categories = [
-    'عام', 'فانتازيا', 'رعب', 'رومانسية',
-    'غموض', 'تاريخية', 'خيال علمي',
+    'عام',
+    'فانتازيا',
+    'رعب',
+    'رومانسية',
+    'غموض',
+    'تاريخية',
+    'خيال علمي',
   ];
 
   @override
   void initState() {
     super.initState();
+    _currentDraftId = widget.draftId;
     _contentController.addListener(_updateWordCount);
-    if (widget.draftId != null) {
+    if (_currentDraftId != null) {
       _loadDraft();
     }
+    _startAutosave();
   }
 
   void _updateWordCount() {
@@ -57,6 +74,11 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
+    if (_wordCount >= 30) {
+      _saveDraft(silent: true);
+    }
+
     _novelTitleController.dispose();
     _descriptionController.dispose();
     _chapterTitleController.dispose();
@@ -90,7 +112,8 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> _checkPublishingRequirements() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return {'canPublish': false, 'reason': 'يجب تسجيل الدخول أولاً'};
+    if (user == null)
+      return {'canPublish': false, 'reason': 'يجب تسجيل الدخول أولاً'};
 
     // الرواية الجديدة مع فصلها الأول معفية من شروط الانتظار والتقييم المسبق
     if (_isNewNovel) return {'canPublish': true};
@@ -112,7 +135,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         final remaining = 24 - diff.inHours;
         return {
           'canPublish': false,
-          'reason': 'يجب الانتظار $remaining ساعة قبل نشر فصل جديد ⏳'
+          'reason': 'يجب الانتظار $remaining ساعة قبل نشر فصل جديد ⏳',
         };
       }
     }
@@ -123,7 +146,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       final remaining = 3 - ratingsGiven;
       return {
         'canPublish': false,
-        'reason': 'يجب تقييم $remaining فصل لكتّاب آخرين أولاً مع تعليق 📖'
+        'reason': 'يجب تقييم $remaining فصل لكتّاب آخرين أولاً مع تعليق 📖',
       };
     }
 
@@ -133,7 +156,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       final remaining = 3 - lastChapterRatings;
       return {
         'canPublish': false,
-        'reason': 'فصلك السابق يحتاج $remaining تقييم إضافي قبل نشر فصل جديد ⭐'
+        'reason': 'فصلك السابق يحتاج $remaining تقييم إضافي قبل نشر فصل جديد',
       };
     }
 
@@ -143,37 +166,50 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   // نشر
   // ─────────────────────────────────────────────────────────────────────────────
-  Future<void> _saveDraft() async {
-    final draftError = _validateDraft();
-    if (draftError != null) {
-      _showError(draftError);
+  Future<void> _saveDraft({bool silent = false}) async {
+    if (_wordCount < 30) {
+      if (!silent)
+        _showError('يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة');
       return;
     }
-    setState(() => _isSavingDraft = true);
+    final draftError = _validateDraft();
+    if (draftError != null) {
+      if (!silent) _showError(draftError);
+      return;
+    }
+    if (!silent) setState(() => _isSavingDraft = true);
 
-    final provider = context.read<NovelsProvider>();
-    final error = await provider.saveDraft(
-      draftId:        widget.draftId,
-      isNewNovel:     _isNewNovel,
-      novelId:        widget.novelId,
-      novelTitle:     _novelTitleController.text.trim(),
-      description:    _descriptionController.text.trim(),
-      category:       _selectedCategory,
-      chapterTitle:   _chapterTitleController.text.trim(),
-      chapterContent: _contentController.text.trim(),
-      wordCount:      _wordCount,
-    );
+    try {
+      final id = await NovelRepository.saveDraft(
+        draftId: _currentDraftId,
+        isNewNovel: _isNewNovel,
+        novelId: widget.novelId,
+        novelTitle: _novelTitleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory,
+        chapterTitle: _chapterTitleController.text.trim(),
+        chapterContent: _contentController.text.trim(),
+        wordCount: _wordCount,
+      );
 
-    if (!mounted) return;
-    setState(() => _isSavingDraft = false);
+      if (id != null) {
+        _currentDraftId = id;
+      }
 
-    if (error != null) {
-      _showError(error);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('تم حفظ المسودة بنجاح.', style: GoogleFonts.cairo()),
-        backgroundColor: Colors.green,
-      ));
+      if (!mounted) return;
+      if (!silent) setState(() => _isSavingDraft = false);
+
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم حفظ المسودة بنجاح.', style: GoogleFonts.cairo()),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted && !silent) setState(() => _isSavingDraft = false);
+      if (!silent) _showError('خطأ أثناء حفظ المسودة. حاول لاحقاً.');
     }
   }
 
@@ -191,7 +227,10 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   }
 
   Future<void> _loadDraft() async {
-    final draftDoc = await FirebaseFirestore.instance.collection('drafts').doc(widget.draftId).get();
+    final draftDoc = await FirebaseFirestore.instance
+        .collection('drafts')
+        .doc(widget.draftId)
+        .get();
     if (!draftDoc.exists) return;
     final data = draftDoc.data()!;
 
@@ -205,9 +244,22 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     });
   }
 
+  void _startAutosave() {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+      if (!mounted) return;
+      if (_wordCount >= 30) {
+        await _saveDraft(silent: true);
+      }
+    });
+  }
+
   Future<void> _publish() async {
     final localError = _validateLocal();
-    if (localError != null) { _showError(localError); return; }
+    if (localError != null) {
+      _showError(localError);
+      return;
+    }
 
     setState(() => _isPublishing = true);
     final reqCheck = await _checkPublishingRequirements();
@@ -220,29 +272,31 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     final provider = context.read<NovelsProvider>();
     String? error;
 
-    if (widget.draftId != null) {
-      error = await provider.publishDraft(widget.draftId!);
+    if (_currentDraftId != null) {
+      error = await provider.publishDraft(_currentDraftId!);
     } else if (_isNewNovel) {
-      final isDup = await provider.isContentDuplicate(_contentController.text.trim());
+      final isDup = await provider.isContentDuplicate(
+        _contentController.text.trim(),
+      );
       if (isDup) {
         setState(() => _isPublishing = false);
         _showError('محتوى الفصل مشابه جداً لفصل موجود على المنصة ❌');
         return;
       }
       error = await provider.addNovel(
-        title:          _novelTitleController.text.trim(),
-        description:    _descriptionController.text.trim(),
-        category:       _selectedCategory,
-        chapterTitle:   _chapterTitleController.text.trim(),
+        title: _novelTitleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory,
+        chapterTitle: _chapterTitleController.text.trim(),
         chapterContent: _contentController.text.trim(),
-        wordCount:      _wordCount,
+        wordCount: _wordCount,
       );
     } else {
       error = await provider.addChapter(
-        novelId:        widget.novelId!,
-        chapterTitle:   _chapterTitleController.text.trim(),
+        novelId: widget.novelId!,
+        chapterTitle: _chapterTitleController.text.trim(),
         chapterContent: _contentController.text.trim(),
-        wordCount:      _wordCount,
+        wordCount: _wordCount,
       );
     }
 
@@ -253,21 +307,27 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       _showError(error);
     } else {
       if (mounted) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          _isNewNovel ? 'تم نشر روايتك والفصل الأول! 🚀' : 'تم نشر الفصل الجديد! 🚀',
-          style: GoogleFonts.cairo(),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isNewNovel
+                ? 'تم نشر روايتك والفصل الأول! 🚀'
+                : 'تم نشر الفصل الجديد! 🚀',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.green,
         ),
-        backgroundColor: Colors.green,
-      ));
+      );
     }
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.cairo()),
-      backgroundColor: Colors.redAccent,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.cairo()),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -295,11 +355,15 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label,
-                style: GoogleFonts.cairo(fontSize: 12, color: color)),
-            Text('$_wordCount / $_maxWords',
-                style: GoogleFonts.cairo(fontSize: 12, color: color,
-                    fontWeight: FontWeight.bold)),
+            Text(label, style: GoogleFonts.cairo(fontSize: 12, color: color)),
+            Text(
+              '$_wordCount / $_maxWords',
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -327,9 +391,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _isNewNovel
-              ? 'رواية جديدة 🖋️'
-              : 'فصل جديد — "${widget.novelTitle}"',
+          _isNewNovel ? 'رواية جديدة 🖋️' : 'فصل جديد — "${widget.novelTitle}"',
           style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15),
         ),
         actions: [
@@ -337,27 +399,35 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
             onPressed: _isSavingDraft ? null : _saveDraft,
             child: _isSavingDraft
                 ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('حفظ مسودة',
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'حفظ مسودة',
                     style: GoogleFonts.cairo(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                    )),
+                    ),
+                  ),
           ),
           TextButton(
             onPressed: _isPublishing ? null : _publish,
             child: _isPublishing
                 ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('نشر 🚀',
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'نشر 🚀',
                     style: GoogleFonts.cairo(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                    )),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -378,8 +448,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 child: Text(
                   'تحرير مسودة محفوظة',
                   style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary),
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
 
@@ -407,25 +478,30 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                       child: Container(
                         margin: const EdgeInsets.only(left: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: sel
                               ? theme.colorScheme.primary
                               : (isDark
-                                  ? theme.colorScheme.surface
-                                  : Colors.grey.shade100),
+                                    ? theme.colorScheme.surface
+                                    : Colors.grey.shade100),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: theme.colorScheme.primary.withOpacity(0.3)),
+                            color: theme.colorScheme.primary.withOpacity(0.3),
+                          ),
                         ),
-                        child: Text(cat,
-                            style: GoogleFonts.cairo(
-                              fontSize: 12,
-                              color: sel ? Colors.black : Colors.grey,
-                              fontWeight: sel
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            )),
+                        child: Text(
+                          cat,
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: sel ? Colors.black : Colors.grey,
+                            fontWeight: sel
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -464,8 +540,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
             const SizedBox(height: 20),
 
             // ── بطاقة شروط النشر الإرشادية (تظهر للفصول فقط) ──
-            if (!_isNewNovel)
-              _conditionsCard(theme, isDark),
+            if (!_isNewNovel) _conditionsCard(theme, isDark),
 
             const SizedBox(height: 80),
           ],
@@ -509,41 +584,56 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _conditionsCard(ThemeData theme, bool isDark) {
     final items = [
-      ('⏳', 'مرت 24 ساعة من آخر نشر'),
-      ('📖', 'قيّمت 3 فصول لكتّاب آخرين مع تعليق (50 حرف+)'),
-      ('⭐', 'فصلك السابق حصل على 3 تقييمات'),
-      ('✏️', 'الفصل بين 500 و5000 كلمة'),
+      (Icons.hourglass_top, 'مرت 24 ساعة من آخر نشر'),
+      (Icons.auto_stories, 'قيّمت 3 فصول لكتّاب آخرين مع تعليق (50 حرف+)'),
+      (Icons.star, 'فصلك السابق حصل على 3 تقييمات'),
+      (Icons.edit, 'الفصل بين 500 و5000 كلمة'),
     ];
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withOpacity(0.07),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('شروط نشر الفصل:',
-              style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(
+            'شروط نشر الفصل:',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
           const SizedBox(height: 8),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Row(
-                  children: [
-                    Text(item.$1,
-                        style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(item.$2,
-                          style: GoogleFonts.cairo(
-                              fontSize: 12, color: Colors.grey[600])),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: Row(
+                children: [
+                  if (item.$1 is IconData)
+                    Icon(
+                      item.$1 as IconData,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    )
+                  else
+                    Text(
+                      item.$1.toString(),
+                      style: const TextStyle(fontSize: 14),
                     ),
-                  ],
-                ),
-              )),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.$2,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

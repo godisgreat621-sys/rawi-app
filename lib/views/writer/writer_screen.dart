@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:my_first_app/providers/novels_provider.dart';
 import '../../models/novel_model.dart';
 import 'add_novel_screen.dart';
+import '../home/novel_detail_screen.dart';
 
 class WriterScreen extends StatelessWidget {
   const WriterScreen({super.key});
@@ -64,7 +66,6 @@ class WriterScreen extends StatelessWidget {
                   stream: FirebaseFirestore.instance
                       .collection('novels')
                       .where('authorId', isEqualTo: currentUser?.uid)
-                      .orderBy('createdAt', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -120,8 +121,8 @@ class WriterScreen extends StatelessWidget {
                           ),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor:
-                                  theme.colorScheme.primary.withOpacity(0.1),
+                              backgroundColor: theme.colorScheme.primary
+                                  .withOpacity(0.1),
                               child: Icon(
                                 Icons.auto_stories,
                                 color: theme.colorScheme.primary,
@@ -140,23 +141,132 @@ class WriterScreen extends StatelessWidget {
                                 color: Colors.grey,
                               ),
                             ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'منشورة',
-                                style: cairoStyle.copyWith(
-                                  fontSize: 11,
-                                  color: Colors.greenAccent,
-                                  fontWeight: FontWeight.bold,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'منشورة',
+                                    style: cairoStyle.copyWith(
+                                      fontSize: 11,
+                                      color: Colors.greenAccent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  onSelected: (value) async {
+                                    if (value == 'view') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              NovelDetailScreen(
+                                                novel: {
+                                                  'id': novel.id,
+                                                  'title': novel.title,
+                                                  'description':
+                                                      novel.description,
+                                                  'category': novel.category,
+                                                  'author': novel.author,
+                                                  'authorId': novel.authorId,
+                                                },
+                                              ),
+                                        ),
+                                      );
+                                    } else if (value == 'delete') {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: Text(
+                                            'حذف الرواية',
+                                            style: cairoStyle.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          content: Text(
+                                            'هل أنت متأكد من حذف هذه الرواية؟',
+                                            style: cairoStyle,
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: Text(
+                                                'إلغاء',
+                                                style: cairoStyle,
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: Text(
+                                                'حذف',
+                                                style: cairoStyle.copyWith(
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        final error = await context
+                                            .read<NovelsProvider>()
+                                            .deleteNovel(novel.id);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                error == null
+                                                    ? 'تم حذف الرواية.'
+                                                    : error,
+                                                style: cairoStyle,
+                                              ),
+                                              backgroundColor: error == null
+                                                  ? Colors.green
+                                                  : Colors.redAccent,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(
+                                      value: 'view',
+                                      child: Text(
+                                        'عرض الرواية',
+                                        style: cairoStyle,
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(
+                                        'حذف الرواية',
+                                        style: cairoStyle.copyWith(
+                                          color: Colors.redAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         );

@@ -10,12 +10,11 @@ import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/views/auth/auth_screen.dart';
 import 'package:my_first_app/views/home/main_navigation_screen.dart';
+import 'core/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
       providers: [
@@ -62,7 +61,8 @@ class RawiApp extends StatelessWidget {
           themeProvider.isDarkMode
               ? ThemeData.dark().textTheme
               : ThemeData.light().textTheme,
-        ),
+        ).apply(fontSizeFactor: kBaseFontFactor),
+        iconTheme: const IconThemeData(size: kIconMedium),
       ),
       home: const AuthWrapper(),
     );

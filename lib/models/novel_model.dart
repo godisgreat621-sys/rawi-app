@@ -42,9 +42,9 @@ class Novel {
       description: data['description'] ?? '',
       content: data['content'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),
-      likes: (data['likes'] ?? 0) as int,
-      readers: (data['readers'] ?? 0) as int,
-      chaptersCount: (data['chaptersCount'] ?? 0) as int,
+      likes: (data['likes'] ?? 0).toInt(),
+      readers: (data['readers'] ?? 0).toInt(),
+      chaptersCount: (data['chaptersCount'] ?? 0).toInt(),
       titleChanged: data['titleChanged'] ?? false,
       status: data['status'] ?? 'active',
     );

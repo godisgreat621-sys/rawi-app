@@ -74,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'رواة 📝',
+                  'رواة ',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.cairo(
                     fontSize: 40,
@@ -88,8 +88,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ? 'سجل دخولك لتستمتع بأجمل الروايات'
                       : 'أنشئ حسابك وابدأ رحلتك في عالم الكتابة',
                   textAlign: TextAlign.center,
-                  style:
-                      GoogleFonts.cairo(color: Colors.grey, fontSize: 14),
+                  style: GoogleFonts.cairo(color: Colors.grey, fontSize: 14),
                 ),
                 const SizedBox(height: 40),
 
@@ -102,8 +101,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       labelText: 'اسم العرض',
                       labelStyle: cairoStyle,
                       hintText: 'الاسم الذي سيراه القراء',
-                      hintStyle:
-                          cairoStyle.copyWith(color: Colors.grey, fontSize: 13),
+                      hintStyle: cairoStyle.copyWith(
+                        color: Colors.grey,
+                        fontSize: 13,
+                      ),
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -155,11 +156,13 @@ class _AuthScreenState extends State<AuthScreen> {
                     labelStyle: cairoStyle,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                      onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -175,8 +178,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 24),
 
                 ElevatedButton(
-                  onPressed:
-                      authViewModel.isLoading ? null : _submitAuthForm,
+                  onPressed: authViewModel.isLoading ? null : _submitAuthForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.black,

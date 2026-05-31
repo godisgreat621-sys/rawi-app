@@ -14,10 +14,18 @@ class DraftsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
-        title: Text('المسودات', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+        title: Text(
+          'المسودات',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        ),
       ),
       body: user == null
-          ? Center(child: Text('يجب تسجيل الدخول لعرض المسودات.', style: GoogleFonts.cairo(color: Colors.grey)))
+          ? Center(
+              child: Text(
+                'يجب تسجيل الدخول لعرض المسودات.',
+                style: GoogleFonts.cairo(color: Colors.grey),
+              ),
+            )
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('drafts')
@@ -30,7 +38,10 @@ class DraftsScreen extends StatelessWidget {
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
-                    child: Text('لا توجد مسودات حالياً.', style: GoogleFonts.cairo(color: Colors.grey)),
+                    child: Text(
+                      'لا توجد مسودات حالياً.',
+                      style: GoogleFonts.cairo(color: Colors.grey),
+                    ),
                   );
                 }
 
@@ -43,8 +54,13 @@ class DraftsScreen extends StatelessWidget {
                     final data = doc.data() as Map<String, dynamic>;
                     final isNewNovel = data['isNewNovel'] == true;
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: ListTile(
                         onTap: () {
                           Navigator.push(
@@ -66,13 +82,79 @@ class DraftsScreen extends StatelessWidget {
                         ),
                         subtitle: Text(
                           'تصنيف: ${data['category'] ?? 'عام'} • ${data['wordCount'] ?? 0} كلمة',
-                          style: GoogleFonts.cairo(fontSize: 12, color: Colors.grey),
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                              icon: const Icon(Icons.send, color: Colors.green),
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: Text(
+                                      'نشر المسودة',
+                                      style: GoogleFonts.cairo(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'هل تريد نشر هذه المسودة الآن؟',
+                                      style: GoogleFonts.cairo(),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: Text(
+                                          'إلغاء',
+                                          style: GoogleFonts.cairo(),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: Text(
+                                          'نشر',
+                                          style: GoogleFonts.cairo(
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true) {
+                                  final error = await context
+                                      .read<NovelsProvider>()
+                                      .publishDraft(doc.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          error == null
+                                              ? 'تم نشر المسودة بنجاح!'
+                                              : error,
+                                          style: GoogleFonts.cairo(),
+                                        ),
+                                        backgroundColor: error == null
+                                            ? Colors.green
+                                            : Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.blueGrey,
+                              ),
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -87,27 +169,63 @@ class DraftsScreen extends StatelessWidget {
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    title: Text('حذف المسودة', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-                                    content: Text('هل أنت متأكد من حذف هذه المسودة؟', style: GoogleFonts.cairo()),
+                                    title: Text(
+                                      'حذف المسودة',
+                                      style: GoogleFonts.cairo(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    content: Text(
+                                      'هل أنت متأكد من حذف هذه المسودة؟',
+                                      style: GoogleFonts.cairo(),
+                                    ),
                                     actions: [
-                                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('إلغاء', style: GoogleFonts.cairo())),
-                                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('حذف', style: GoogleFonts.cairo(color: Colors.redAccent))),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: Text(
+                                          'إلغاء',
+                                          style: GoogleFonts.cairo(),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: Text(
+                                          'حذف',
+                                          style: GoogleFonts.cairo(
+                                            color: Colors.redAccent,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
                                 if (confirm == true) {
-                                  final error = await context.read<NovelsProvider>().deleteDraft(doc.id);
+                                  final error = await context
+                                      .read<NovelsProvider>()
+                                      .deleteDraft(doc.id);
                                   if (error != null) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text(error, style: GoogleFonts.cairo()),
-                                        backgroundColor: Colors.redAccent,
-                                      ));
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            error,
+                                            style: GoogleFonts.cairo(),
+                                          ),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
                                     }
                                   }
                                 }

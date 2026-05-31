@@ -8,24 +8,19 @@ class NotificationsScreen extends StatelessWidget {
 
   Future<void> _markAllRead(String userId) async {
     final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
         .collection('notifications')
+        .where('userId', isEqualTo: userId)
         .where('isRead', isEqualTo: false)
         .get();
-
     for (final doc in snapshot.docs) {
       await doc.reference.update({'isRead': true});
     }
   }
 
-  Future<void> _markAsRead(DocumentReference ref) async {
-    await ref.update({'isRead': true});
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -40,14 +35,11 @@ class NotificationsScreen extends StatelessWidget {
         ],
       ),
       body: user == null
-          ? Center(
-              child: Text('يجب تسجيل الدخول لعرض الإشعارات.', style: GoogleFonts.cairo(color: Colors.grey)),
-            )
+          ? Center(child: Text('يجب تسجيل الدخول لعرض الإشعارات.', style: GoogleFonts.cairo(color: Colors.grey)))
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
                   .collection('notifications')
+                  .where('userId', isEqualTo: user.uid)
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -56,32 +48,89 @@ class NotificationsScreen extends StatelessWidget {
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
-                    child: Text('لا توجد إشعارات جديدة.', style: GoogleFonts.cairo(color: Colors.grey)),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.notifications_none, size: 56, color: theme.colorScheme.primary.withOpacity(0.3)),
+                        const SizedBox(height: 12),
+                        Text('لا توجد إشعارات.', style: GoogleFonts.cairo(color: Colors.grey, fontSize: 14)),
+                      ],
+                    ),
                   );
                 }
 
-                final notifications = snapshot.data!.docs;
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  itemCount: notifications.length,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    final doc = notifications[index];
+                    final doc = snapshot.data!.docs[index];
                     final data = doc.data() as Map<String, dynamic>;
                     final isRead = data['isRead'] == true;
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      tileColor: isRead ? null : Colors.amber.withOpacity(0.08),
-                      title: Text(data['title'] ?? 'تنبيه', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-                      subtitle: Text(data['body'] ?? '', style: GoogleFonts.cairo()),
-                      trailing: Text(
-                        data['createdAt'] != null
-                            ? _formatTimestamp(data['createdAt'])
-                            : '',
-                        style: GoogleFonts.cairo(fontSize: 11, color: Colors.grey),
-                      ),
+                    final type = data['type'] ?? '';
+
+                    IconData icon;
+                    Color iconColor;
+                    switch (type) {
+                      case 'like':
+                        icon = Icons.favorite;
+                        iconColor = Colors.redAccent;
+                        break;
+                      case 'comment':
+                        icon = Icons.chat_bubble_outline;
+                        iconColor = Colors.blueAccent;
+                        break;
+                      case 'rating':
+                        icon = Icons.star;
+                        iconColor = Colors.amber;
+                        break;
+                      default:
+                        icon = Icons.notifications_outlined;
+                        iconColor = theme.colorScheme.primary;
+                    }
+
+                    return InkWell(
                       onTap: () {
-                        if (!isRead) _markAsRead(doc.reference);
+                        if (!isRead) doc.reference.update({'isRead': true});
                       },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isRead
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.primary.withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isRead
+                                ? Colors.transparent
+                                : theme.colorScheme.primary.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: iconColor.withOpacity(0.12),
+                              child: Icon(icon, size: 18, color: iconColor),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                data['message'] ?? '',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 13,
+                                  fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              data['createdAt'] != null ? _formatTimestamp(data['createdAt']) : '',
+                              style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 );
@@ -93,7 +142,7 @@ class NotificationsScreen extends StatelessWidget {
   String _formatTimestamp(dynamic value) {
     if (value is Timestamp) {
       final date = value.toDate();
-      return '${date.day}/${date.month}/${date.year}';
+      return '${date.day}/${date.month}';
     }
     return '';
   }

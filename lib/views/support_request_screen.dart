@@ -31,7 +31,9 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    if (_type == 'spelling' && (_originalCtrl.text.trim().isEmpty || _correctedCtrl.text.trim().isEmpty)) {
+    if (_type == 'spelling' &&
+        (_originalCtrl.text.trim().isEmpty ||
+            _correctedCtrl.text.trim().isEmpty)) {
       _showError('يرجى إدخال النص الأصلي والنص الصحيح.');
       return;
     }
@@ -42,12 +44,16 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
 
     setState(() => _isSending = true);
     final response = await context.read<NovelsProvider>().sendSupportRequest(
-          type: _type,
-          title: _type == 'spelling' ? 'تصحيح إملائي' : _type == 'violation' ? 'إزالة مخالفة' : 'طلب إكمال',
-          description: _type == 'spelling'
-              ? 'من "${_originalCtrl.text.trim()}" إلى "${_correctedCtrl.text.trim()}"'
-              : _messageCtrl.text.trim(),
-        );
+      type: _type,
+      title: _type == 'spelling'
+          ? 'تصحيح إملائي'
+          : _type == 'violation'
+          ? 'إزالة مخالفة'
+          : 'طلب إكمال',
+      description: _type == 'spelling'
+          ? 'من "${_originalCtrl.text.trim()}" إلى "${_correctedCtrl.text.trim()}"'
+          : _messageCtrl.text.trim(),
+    );
     setState(() => _isSending = false);
 
     if (response != null) {
@@ -56,19 +62,26 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('تم إرسال طلب الدعم بنجاح.', style: GoogleFonts.cairo()),
-        backgroundColor: Colors.green,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم إرسال طلب الدعم بنجاح.',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
       Navigator.pop(context);
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message, style: GoogleFonts.cairo()),
-      backgroundColor: Colors.redAccent,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.cairo()),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -76,14 +89,20 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text('طلب دعم', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+        title: Text(
+          'طلب دعم',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('اختر نوع الطلب', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+            Text(
+              'اختر نوع الطلب',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -101,7 +120,9 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
                   labelText: 'النص الخاطئ',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -110,7 +131,9 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
                   labelText: 'النص الصحيح',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ] else ...[
@@ -120,7 +143,9 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'اترك التفاصيل هنا...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -132,12 +157,21 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _isSending ? null : _sendRequest,
                 child: _isSending
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('أرسل طلب الدعم', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        'أرسل طلب الدعم',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                      ),
               ),
             ),
           ],
@@ -153,14 +187,21 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.primary : Colors.grey.withOpacity(0.15),
+          color: selected
+              ? theme.colorScheme.primary
+              : Colors.grey.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? theme.colorScheme.primary : Colors.transparent),
+          border: Border.all(
+            color: selected ? theme.colorScheme.primary : Colors.transparent,
+          ),
         ),
-        child: Text(label,
-            style: GoogleFonts.cairo(
-                color: selected ? Colors.black : Colors.grey,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+        child: Text(
+          label,
+          style: GoogleFonts.cairo(
+            color: selected ? Colors.black : Colors.grey,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }
