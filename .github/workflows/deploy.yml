@@ -22,7 +22,7 @@ jobs:
       - name: Build Web
         run: |
           flutter pub get
-          flutter build web --release
+          flutter build web --release --web-renderer html
 
       - name: Install Vercel CLI
         run: npm install --global vercel
@@ -34,4 +34,4 @@ jobs:
         run: vercel build --prod
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --prod --project=${{ env.VERCEL_PROJECT_ID }} --team=${{ env.VERCEL_ORG_ID }}
+        run: vercel deploy --prebuilt --prod
