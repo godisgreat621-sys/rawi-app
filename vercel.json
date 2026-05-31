@@ -6,14 +6,14 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://*.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com; worker-src 'self' blob:; child-src 'self' blob:; img-src 'self' data: https:;"
+          "value": "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://*.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://*.gstatic.com; worker-src 'self' blob:; child-src 'self' blob:; img-src 'self' data: https:; font-src 'self' https://*.gstatic.com https://fonts.gstatic.com;"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.).*)",
       "destination": "/index.html"
     }
   ]
