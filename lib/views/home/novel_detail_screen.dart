@@ -838,7 +838,6 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                             .collection('novels')
                             .doc(novelId)
                             .collection('chapters')
-                            .where('isDraft', isEqualTo: false)
                             .orderBy('chapterNumber')
                             .snapshots(),
                         builder: (_, chapSnap) {
@@ -846,6 +845,11 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                               ConnectionState.waiting) {
                             return const Center(
                               child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (chapSnap.hasError) {
+                            return Center(
+                              child: Text('حدث خطأ في تحميل الفصول: ${chapSnap.error}'),
                             );
                           }
                           if (!chapSnap.hasData ||
