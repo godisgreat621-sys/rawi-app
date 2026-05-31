@@ -128,18 +128,11 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
 
   Future<void> _saveProgress() async {
     try {
-      final pagePercent =
-          _scrollController.hasClients &&
-              _scrollController.position.maxScrollExtent > 0
-          ? (_scrollController.offset /
-                    _scrollController.position.maxScrollExtent)
-                .clamp(0.0, 1.0)
-          : _savedPagePercent;
       await NovelRepository.saveReadingProgress(
         novelId: _novelId,
         chapterId: _chapterId,
         secondsRead: _secondsRead,
-        pagePercent: pagePercent,
+        pagePercent: _savedPagePercent,
         fontSize: _fontSize,
       );
     } catch (_) {
