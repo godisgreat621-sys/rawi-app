@@ -39,6 +39,16 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   int _wordCount = 0;
   String? _currentDraftId;
 
+  // ── ألوان المظهر الجديد ──────────────────────────────────────────────────
+  static const _bg            = Color(0xFF0D0F14);
+  static const _surface       = Color(0xFF161920);
+  static const _surfaceHigh   = Color(0xFF1E2130);
+  static const _accent        = Color(0xFF8BAF7C);
+  static const _border        = Color(0xFF252836);
+  static const _textPrimary   = Color(0xFFECECEC);
+  static const _textSecondary = Color(0xFF6B7280);
+  static const _gold          = Color(0xFFD4A843);
+
   Timer? _autosaveTimer;
 
   static const int _minWords = 500;
@@ -63,7 +73,12 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     _currentDraftId = widget.draftId;
     _contentController.addListener(_updateWordCount);
     if (_currentDraftId != null) {
+      // If it's a draft, load its content
       _loadDraft();
+    } else if (widget.novelId != null && widget.novelTitle == null) {
+      // If it's a new chapter for an existing novel, but novelTitle wasn't passed, fetch it.
+      // This happens when navigating from WriterScreen to add a chapter to an existing novel.
+      _fetchNovelTitle(widget.novelId!).then((title) => setState(() => _novelTitleController.text = title ?? ''));
     }
     _startAutosave();
   }
@@ -129,35 +144,17 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     if (!userDoc.exists) return {'canPublish': true};
 
     final data = userDoc.data()!;
-
-    int points = 0;
     final lastPublished = data['lastPublished'] as Timestamp?;
-    bool timeOk = true;
     
     if (lastPublished != null) {
       final diff = DateTime.now().difference(lastPublished.toDate());
-      if (diff.inHours >= 24) points += 3;
-      else timeOk = false;
-    } else {
-      points += 3; // النشر لأول مرة مسموح
-    }
-
-    final ratingsGiven = data['ratingsGiven'] ?? 0;
-    if (ratingsGiven >= 3) points += 3;
-
-    final lastChapterRatings = data['lastChapterRatingsReceived'] ?? 0;
-    if (lastChapterRatings >= 3) points += 4;
-
-    if (points < 10) {
-      String reason = 'تحتاج 10 نقاط لنشر فصل جديد (لديك حالياً $points).\nكسب النقاط:\n';
-      if (!timeOk) reason += '• انتظار 24 ساعة (3 نقاط)\n';
-      if (ratingsGiven < 3) reason += '• تقييم ${3 - ratingsGiven} فصول لكتّاب آخرين (3 نقاط)\n';
-      if (lastChapterRatings < 3) reason += '• فصلك السابق يحتاج ${3 - lastChapterRatings} تقييمات (4 نقاط)';
-      
-      return {
-        'canPublish': false,
-        'reason': reason,
-      };
+      if (diff.inHours < 24) {
+        final hoursLeft = 24 - diff.inHours;
+        return {
+          'canPublish': false,
+          'reason': 'قيد الـ 24 ساعة: يرجى الانتظار $hoursLeft ساعة إضافية قبل نشر الفصل التالي.\n\nاستغل هذا الوقت في قراءة وتقييم أعمال زملائك لتطوير مهاراتك!',
+        };
+      }
     }
 
     return {'canPublish': true};
@@ -255,6 +252,16 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     });
   }
 
+  // Fetch novel title if it's a chapter draft and title isn't provided
+  Future<String?> _fetchNovelTitle(String novelId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+      return doc.data()?['title'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> _publish() async {
     final localError = _validateLocal();
     if (localError != null) {
@@ -343,9 +350,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       label = 'يحتاج ${_minWords - _wordCount} كلمة أخرى';
     } else if (_wordCount > _maxWords) {
       color = Colors.red;
-      label = 'تجاوز الحد بـ ${_wordCount - _maxWords} كلمة';
+      label = 'تجاوزت الحد المسموح';
     } else {
-      color = Colors.green;
+      color = _accent;
       label = 'ضمن الحد المسموح ✓';
     }
 
@@ -357,7 +364,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: GoogleFonts.cairo(fontSize: 12, color: color)),
+            Text(label, style: GoogleFonts.cairo(fontSize: 11, color: color)),
             Text(
               '$_wordCount / $_maxWords',
               style: GoogleFonts.cairo(
@@ -374,7 +381,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 5,
-            backgroundColor: Colors.grey.withOpacity(0.2),
+            backgroundColor: _border,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -387,14 +394,14 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
+      backgroundColor: _bg,
       appBar: AppBar(
+        backgroundColor: _bg,
+        elevation: 0,
         title: Text(
-          _isNewNovel ? 'رواية جديدة 🖋️' : 'فصل جديد — "${widget.novelTitle}"',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15),
+          _isNewNovel ? 'رواية جديدة 🖋️' : 'فصل جديد — "${widget.novelTitle ?? _novelTitleController.text}"',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15, color: _textPrimary),
         ),
         actions: [
           TextButton(
@@ -403,14 +410,14 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
                   )
                 : Text(
                     'حفظ مسودة',
                     style: GoogleFonts.cairo(
-                      color: theme.colorScheme.primary,
+                      color: _accent,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -420,14 +427,14 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
                   )
                 : Text(
                     'نشر 🚀',
                     style: GoogleFonts.cairo(
-                      color: theme.colorScheme.primary,
+                      color: _gold,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
           ),
@@ -444,14 +451,16 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  color: _accent.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _accent.withOpacity(0.2)),
                 ),
                 child: Text(
                   'تحرير مسودة محفوظة',
                   style: GoogleFonts.cairo(
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                    color: _accent,
                   ),
                 ),
               ),
@@ -479,20 +488,20 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                   height: 150,
                   width: 100,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: _surfaceHigh,
                     borderRadius: BorderRadius.circular(12),
                     image: _coverUrl != null 
                       ? DecorationImage(image: NetworkImage(_coverUrl!), fit: BoxFit.cover)
                       : null,
                   ),
                   child: _isUploadingCover 
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator(color: _accent))
                     : _coverUrl == null 
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.add_photo_alternate_outlined),
-                            Text('غلاف', style: GoogleFonts.cairo(fontSize: 10)),
+                            const Icon(Icons.add_photo_alternate_outlined, color: _textSecondary),
+                            Text('غلاف', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
                           ],
                         )
                       : null,
@@ -501,7 +510,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               if (_coverUrl != null) 
                 TextButton(
                   onPressed: () => setState(() => _coverUrl = null),
-                  child: Text('حذف الغلاف', style: GoogleFonts.cairo(color: Colors.red, fontSize: 12)),
+                  child: Text('حذف الغلاف', style: GoogleFonts.cairo(color: Colors.redAccent, fontSize: 12)),
                 ),
 
               const Divider(height: 28),
@@ -524,25 +533,15 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: sel
-                              ? theme.colorScheme.primary
-                              : (isDark
-                                    ? theme.colorScheme.surface
-                                    : Colors.grey.shade100),
+                          color: sel ? _accent : _surface,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: theme.colorScheme.primary.withOpacity(0.3),
+                            color: sel ? _accent : _border,
                           ),
                         ),
                         child: Text(
                           cat,
-                          style: GoogleFonts.cairo(
-                            fontSize: 12,
-                            color: sel ? Colors.black : Colors.grey,
-                            fontWeight: sel
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
+                          style: GoogleFonts.cairo(fontSize: 12, color: sel ? _bg : _textSecondary, fontWeight: sel ? FontWeight.bold : FontWeight.normal),
                         ),
                       ),
                     );
@@ -556,7 +555,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 hint: 'اكتب ملخصاً قصيراً لجذب القراء...',
                 maxLines: 3,
               ),
-              const Divider(height: 28),
+              const Divider(height: 28, color: _border),
             ],
 
             // ── عنوان الفصل ──
@@ -566,7 +565,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               fontSize: 17,
               bold: true,
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: _border),
 
             // ── محتوى الفصل ──
             _field(
@@ -582,7 +581,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
             const SizedBox(height: 20),
 
             // ── بطاقة شروط النشر الإرشادية (تظهر للفصول فقط) ──
-            if (!_isNewNovel) _conditionsCard(theme, isDark),
+            if (!_isNewNovel) _conditionsCard(),
 
             const SizedBox(height: 80),
           ],
@@ -624,7 +623,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   // كارت عرض شروط النشر
   // ─────────────────────────────────────────────────────────────────────────────
-  Widget _conditionsCard(ThemeData theme, bool isDark) {
+  Widget _conditionsCard() {
     final items = [
       (Icons.hourglass_top, 'انتظار 24 ساعة (3 نقاط)'),
       (Icons.auto_stories, 'تقييم 3 فصول لكتّاب آخرين (3 نقاط)'),
@@ -634,16 +633,16 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.07),
+        color: _surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+        border: Border.all(color: _border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'شروط نشر الفصل:',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13, color: _textPrimary),
           ),
           const SizedBox(height: 8),
           ...items.map(
@@ -655,7 +654,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                     Icon(
                       item.$1 as IconData,
                       size: 16,
-                      color: theme.colorScheme.primary,
+                      color: _accent,
                     )
                   else
                     Text(
@@ -668,7 +667,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                       item.$2,
                       style: GoogleFonts.cairo(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: _textSecondary,
                       ),
                     ),
                   ),

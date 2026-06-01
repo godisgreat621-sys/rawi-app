@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/novel_model.dart';
+import '../models/library_item.dart'; // New import
+import 'package:rxdart/rxdart.dart'; // New import for combining streams
 
 class NovelsProvider with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -178,6 +180,38 @@ class NovelsProvider with ChangeNotifier {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map((d) => Novel.fromFirestore(d)).toList());
+  }
+
+  // ── Stream لجلب كل الروايات والمسودات للمستخدم الحالي ────────────────────────
+  Stream<List<LibraryItem>> getMyLibraryItemsStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value([]);
+
+    final novelsStream = _db
+        .collection('novels')
+        .where('authorId', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => LibraryItem.fromNovel(Novel.fromFirestore(d))).toList());
+
+    final draftsStream = _db
+        .collection('drafts')
+        .where('authorId', isEqualTo: user.uid)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => LibraryItem.fromDraft(doc.data() as Map<String, dynamic>, doc.id)).toList());
+
+    return Rx.combineLatest2(novelsStream, draftsStream, (List<LibraryItem> novels, List<LibraryItem> drafts) {
+      final allItems = [...novels, ...drafts];
+      // Sort by creation/update time, drafts should probably appear first or by their updated time
+      allItems.sort((a, b) {
+        // For simplicity, sort by title for now. A more robust sorting would involve timestamps.
+        // If a more precise sorting by last activity (creation/update) is needed,
+        // the LibraryItem model would need to store these timestamps.
+        return a.title.compareTo(b.title);
+      });
+      return allItems;
+    });
   }
 
   // ── جلب مسودات المستخدم الحالي ──────────────────────────────────────────────

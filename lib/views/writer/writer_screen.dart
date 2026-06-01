@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:my_first_app/providers/novels_provider.dart';
+import 'package:my_first_app/providers/novels_provider.dart'; // Keep this
+import 'package:my_first_app/models/library_item.dart'; // New import
 import '../../models/novel_model.dart';
 import 'add_novel_screen.dart';
 import '../home/novel_detail_screen.dart';
@@ -84,12 +85,8 @@ class WriterScreen extends StatelessWidget {
 
             // ── القائمة ───────────────────────────────────────────────────
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('novels')
-                    .where('authorId', isEqualTo: currentUser?.uid)
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
+              child: StreamBuilder<List<LibraryItem>>(
+                stream: context.read<NovelsProvider>().getMyLibraryItemsStream(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
@@ -99,20 +96,21 @@ class WriterScreen extends StatelessWidget {
                       ),
                     );
                   }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('حدث خطأ: ${snapshot.error}', style: GoogleFonts.cairo(color: _textSecondary)));
+                  }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return _buildEmptyState(context);
                   }
 
-                  final novels = snapshot.data!.docs
-                      .map((doc) => Novel.fromFirestore(doc))
-                      .toList();
+                  final items = snapshot.data!;
 
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
-                    itemCount: novels.length,
+                    itemCount: items.length,
                     itemBuilder: (context, index) =>
-                        _buildNovelCard(context, novels[index]),
+                        _buildLibraryItemCard(context, items[index]),
                   );
                 },
               ),
@@ -123,27 +121,38 @@ class WriterScreen extends StatelessWidget {
     );
   }
 
-  // ── بطاقة الرواية ─────────────────────────────────────────────────────────
-  Widget _buildNovelCard(BuildContext context, Novel novel) {
-    final isCompleted = novel.status == 'completed';
+  // ── بطاقة عنصر المكتبة (رواية أو مسودة) ──────────────────────────────────
+  Widget _buildLibraryItemCard(BuildContext context, LibraryItem item) {
+    final isCompleted = item.status == 'completed';
+    final isDraft     = item.isDraft;
 
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => NovelDetailScreen(
-            novel: {
-              'id':          novel.id,
-              'title':       novel.title,
-              'description': novel.description,
-              'category':    novel.category,
-              'author':      novel.author,
-              'authorId':    novel.authorId,
-              'coverUrl':    novel.coverUrl,
-            },
+          builder: (_) => isDraft
+              ? AddNovelScreen(
+                  draftId:    item.id,
+                  novelId:    item.novelIdForChapterDraft, // Pass novelId for chapter drafts
+                  novelTitle: null, // Let AddNovelScreen fetch the novel title
+                )
+              : NovelDetailScreen(
+                  novel: {
+                    'id':          item.id,
+                    'title':       item.title,
+                    'description': item.description,
+                    'category':    item.category,
+                    'author':      item.author,
+                    'authorId':    item.authorId,
+                    'coverUrl':    item.coverUrl,
+                    'rating':      item.rating ?? 0.0,
+                    'likes':       item.likes ?? 0,
+                    'readers':     item.readers ?? 0,
+                    'chaptersCount': item.chaptersCount ?? 0,
+                  },
+                ),
           ),
         ),
-      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
@@ -164,17 +173,17 @@ class WriterScreen extends StatelessWidget {
                     width: 56,
                     height: 78,
                     decoration: BoxDecoration(
-                      color: _surfaceHigh,
+                      color: isDraft ? _accent.withOpacity(0.1) : _surfaceHigh,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: _border),
-                      image: novel.coverUrl != null
+                      image: item.coverUrl != null
                           ? DecorationImage(
-                              image: NetworkImage(novel.coverUrl!),
+                              image: NetworkImage(item.coverUrl!),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: novel.coverUrl == null
+                    child: item.coverUrl == null
                         ? Icon(
                             Icons.auto_stories_rounded,
                             color: _accent.withOpacity(0.4),
@@ -194,7 +203,7 @@ class WriterScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                novel.title,
+                                item.title,
                                 style: GoogleFonts.cairo(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
@@ -211,17 +220,17 @@ class WriterScreen extends StatelessWidget {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: isCompleted
+                                color: isDraft ? _gold.withOpacity(0.12) : isCompleted
                                     ? Colors.green.withOpacity(0.12)
                                     : _accent.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                isCompleted ? 'مكتملة' : 'جارية',
+                                isDraft ? 'مسودة' : (isCompleted ? 'مكتملة' : 'جارية'),
                                 style: GoogleFonts.cairo(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isCompleted ? Colors.green : _accent,
+                                  color: isDraft ? _gold : (isCompleted ? Colors.green : _accent),
                                 ),
                               ),
                             ),
@@ -230,7 +239,7 @@ class WriterScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         // التصنيف
                         Text(
-                          novel.category,
+                          item.category,
                           style: GoogleFonts.cairo(
                             fontSize: 11,
                             color: _textSecondary,
@@ -240,14 +249,14 @@ class WriterScreen extends StatelessWidget {
                         // الإحصائيات الأساسية
                         Row(
                           children: [
-                            _miniStat(Icons.menu_book_rounded,
-                                '${novel.chaptersCount} فصل', _accent),
+                            if (!isDraft) _miniStat(Icons.menu_book_rounded,
+                                '${item.chaptersCount ?? 0} فصل', _accent),
                             const SizedBox(width: 16),
-                            _miniStat(Icons.remove_red_eye_rounded,
-                                '${novel.readers}', Colors.blueGrey),
+                            if (!isDraft) _miniStat(Icons.remove_red_eye_rounded,
+                                '${item.readers ?? 0}', Colors.blueGrey),
                             const SizedBox(width: 16),
-                            _miniStat(Icons.favorite_rounded,
-                                '${novel.likes}', Colors.redAccent),
+                            if (!isDraft) _miniStat(Icons.favorite_rounded,
+                                '${item.likes ?? 0}', Colors.redAccent),
                           ],
                         ),
                       ],
@@ -270,20 +279,12 @@ class WriterScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // التقييم
-                  Row(
-                    children: [
+                  if (!isDraft)
+                    Row(children: [
                       Icon(Icons.star_rounded, size: 14, color: _gold),
                       const SizedBox(width: 4),
-                      Text(
-                        novel.rating.toStringAsFixed(1),
-                        style: GoogleFonts.cairo(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: _gold,
-                        ),
-                      ),
-                    ],
-                  ),
+                      Text(item.rating?.toStringAsFixed(1) ?? '0.0', style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w700, color: _gold)),
+                    ]),
 
                   // زر إضافة فصل (للروايات الجارية فقط)
                   if (!isCompleted)
@@ -292,8 +293,8 @@ class WriterScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => AddNovelScreen(
-                            novelId:    novel.id,
-                            novelTitle: novel.title,
+                            novelId:    item.id,
+                            novelTitle: item.title,
                           ),
                         ),
                       ),
@@ -329,7 +330,7 @@ class WriterScreen extends StatelessWidget {
 
                   // زر حذف
                   GestureDetector(
-                    onTap: () => _confirmDelete(context, novel),
+                    onTap: () => _confirmDelete(context, item),
                     child: Icon(
                       Icons.delete_outline_rounded,
                       size: 18,
@@ -435,7 +436,7 @@ class WriterScreen extends StatelessWidget {
   }
 
   // ── حذف رواية ─────────────────────────────────────────────────────────────
-  Future<void> _confirmDelete(BuildContext context, Novel novel) async {
+  Future<void> _confirmDelete(BuildContext context, LibraryItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -449,7 +450,7 @@ class WriterScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          'هل أنت متأكد من حذف "${novel.title}"؟\nلا يمكن التراجع عن هذا الإجراء.',
+          'هل أنت متأكد من حذف "${item.title}"؟\nلا يمكن التراجع عن هذا الإجراء.',
           style: GoogleFonts.cairo(color: _textSecondary, height: 1.6),
         ),
         actions: [
@@ -472,7 +473,9 @@ class WriterScreen extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final error = await context.read<NovelsProvider>().deleteNovel(novel.id);
+      final error = item.isDraft
+          ? await context.read<NovelsProvider>().deleteDraft(item.id)
+          : await context.read<NovelsProvider>().deleteNovel(item.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

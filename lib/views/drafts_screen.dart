@@ -12,18 +12,28 @@ class DraftsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    const bgColor = Color(0xFF0D0F14);
+    const surfaceColor = Color(0xFF161920);
+    const accentColor = Color(0xFF8BAF7C);
+    const borderColor = Color(0xFF252836);
+    const textPrimary = Color(0xFFECECEC);
+    const textSecondary = Color(0xFF6B7280);
+
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
+        backgroundColor: bgColor,
+        elevation: 0,
         title: Text(
           'المسودات',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: textPrimary),
         ),
       ),
       body: user == null
           ? Center(
               child: Text(
                 'يجب تسجيل الدخول لعرض المسودات.',
-                style: GoogleFonts.cairo(color: Colors.grey),
+            style: GoogleFonts.cairo(color: textSecondary),
               ),
             )
           : StreamBuilder<QuerySnapshot>(
@@ -40,7 +50,7 @@ class DraftsScreen extends StatelessWidget {
                   return Center(
                     child: Text(
                       'لا توجد مسودات حالياً.',
-                      style: GoogleFonts.cairo(color: Colors.grey),
+                      style: GoogleFonts.cairo(color: textSecondary),
                     ),
                   );
                 }
@@ -54,12 +64,14 @@ class DraftsScreen extends StatelessWidget {
                     final data = doc.data() as Map<String, dynamic>;
                     final isNewNovel = data['isNewNovel'] == true;
                     return Card(
+                      color: surfaceColor,
                       margin: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: borderColor),
                       ),
                       child: ListTile(
                         onTap: () {
@@ -78,13 +90,13 @@ class DraftsScreen extends StatelessWidget {
                           isNewNovel
                               ? 'مسودة رواية: ${data['novelTitle'] ?? 'بدون عنوان'}'
                               : 'مسودة فصل: ${data['chapterTitle'] ?? 'بدون عنوان'}',
-                          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: textPrimary),
                         ),
                         subtitle: Text(
                           'تصنيف: ${data['category'] ?? 'عام'} • ${data['wordCount'] ?? 0} كلمة',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: textSecondary,
                           ),
                         ),
                         trailing: Row(
