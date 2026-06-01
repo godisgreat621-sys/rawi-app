@@ -41,15 +41,15 @@ class UserRepository {
     }
 
     final json = jsonDecode(body) as Map<String, dynamic>;
-    final url  = json['secure_url'] as String?;
-    if (url == null || url.isEmpty) {
-      throw Exception('لم يتم الحصول على رابط الصورة.');
+    if (json.containsKey('error')) {
+      throw Exception('خطأ Cloudinary: ${json['error']['message']}');
     }
-    return url;
+    
+    final url  = json['secure_url'] as String?;
+    return url ?? '';
   }
 
   // ── واجهة عامة: اختر وارفع ──────────────────────────────────────────────
-  // يجب استدعاء هذه الدالة مباشرة من onTap/onPressed بدون await مسبق
   static Future<String> pickAndUploadImage(String folder) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('يجب تسجيل الدخول لرفع الصور.');

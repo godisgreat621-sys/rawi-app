@@ -256,10 +256,30 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 38,
       child: Row(
         children: [
+          // أيقونة المحفوظات في بداية الشريط (على اليمين في العربية)
+          Padding(
+            padding: const EdgeInsets.only(right: 16, left: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _showBookmarkedOnly = !_showBookmarkedOnly),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _showBookmarkedOnly ? _gold : _surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _showBookmarkedOnly ? _gold : _border),
+                ),
+                child: Icon(
+                  _showBookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  size: 18,
+                  color: _showBookmarkedOnly ? const Color(0xFF0D0F14) : _textSecondary,
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.only(left: 16),
               itemCount: _categories.length,
               itemBuilder: (_, i) {
                 final cat = _categories[i];
