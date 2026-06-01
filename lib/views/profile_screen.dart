@@ -21,52 +21,55 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   // ── ألوان ─────────────────────────────────────────────────────────────────
-  static const _bg            = Color(0xFF0D0F14);
-  static const _surface       = Color(0xFF161920);
-  static const _surfaceHigh   = Color(0xFF1E2130);
-  static const _accent        = Color(0xFF8BAF7C);
-  static const _border        = Color(0xFF252836);
-  static const _textPrimary   = Color(0xFFECECEC);
+  static const _bg = Color(0xFF0D0F14);
+  static const _surface = Color(0xFF161920);
+  static const _surfaceHigh = Color(0xFF1E2130);
+  static const _accent = Color(0xFF8BAF7C);
+  static const _border = Color(0xFF252836);
+  static const _textPrimary = Color(0xFFECECEC);
   static const _textSecondary = Color(0xFF6B7280);
-  static const _gold          = Color(0xFFD4A843);
+  static const _gold = Color(0xFFD4A843);
 
   bool _isUploading = false;
 
   Future<void> _pickAndUploadImage() async {
-    setState(() => _isUploading = true);
+    if (_isUploading) return;
     try {
-      await UserRepository.uploadProfilePicture(); // This now throws on error
-      if (mounted) {
-        _showSnack('تم تحديث الصورة الشخصية ✅', Colors.green);
-      }
-    } catch (e) {
-      if (mounted) _showSnack(e.toString().replaceFirst('Exception: ', ''), Colors.redAccent); // Display specific error
-    } finally {
+      final url = await UserRepository.uploadProfilePicture();
       if (mounted) setState(() => _isUploading = false);
+      if (mounted) _showSnack('تم تحديث الصورة الشخصية ✅', Colors.green);
+    } catch (e) {
+      if (mounted) setState(() => _isUploading = false);
+      if (mounted)
+        _showSnack(
+          e.toString().replaceFirst('Exception: ', ''),
+          Colors.redAccent,
+        );
     }
   }
 
   // ── نظام تغيير الاسم: مرة كل 30 يوماً ────────────────────────────────────
   void _showEditNameDialog(String currentName, Map<String, dynamic>? userData) {
     final controller = TextEditingController(text: currentName);
-    final lastChanged =
-        (userData?['nameLastChangedAt'] as Timestamp?)?.toDate();
-    final now         = DateTime.now();
-    final canChange   = lastChanged == null ||
-        now.difference(lastChanged).inDays >= 30;
-    final daysLeft    = canChange
-        ? 0
-        : 30 - now.difference(lastChanged!).inDays;
+    final lastChanged = (userData?['nameLastChangedAt'] as Timestamp?)
+        ?.toDate();
+    final now = DateTime.now();
+    final canChange =
+        lastChanged == null || now.difference(lastChanged).inDays >= 30;
+    final daysLeft = canChange ? 0 : 30 - now.difference(lastChanged!).inDays;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _surface,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: Text('تعديل الاسم',
-            style: GoogleFonts.cairo(
-                fontWeight: FontWeight.w700, color: _textPrimary)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'تعديل الاسم',
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,13 +81,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: Colors.orange.withOpacity(0.3)),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
                 ),
                 child: Text(
                   'يمكنك تغيير اسمك مرة كل 30 يوماً.\nباقي $daysLeft يوم للتغيير القادم.',
-                  style: GoogleFonts.cairo(
-                      fontSize: 12, color: Colors.orange),
+                  style: GoogleFonts.cairo(fontSize: 12, color: Colors.orange),
                 ),
               ),
             if (canChange)
@@ -98,22 +99,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Text(
                   'تنبيه: يرى القراء اسمك على تعليقاتك وتقييماتك.\nاختر اسماً ثابتاً حتى لا يضيع القراء.',
-                  style: GoogleFonts.cairo(
-                      fontSize: 12, color: _accent),
+                  style: GoogleFonts.cairo(fontSize: 12, color: _accent),
                 ),
               ),
             TextField(
-              controller:  controller,
-              enabled:     canChange,
-              style: GoogleFonts.cairo(
-                  color: _textPrimary, fontSize: 14),
+              controller: controller,
+              enabled: canChange,
+              style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),
               decoration: InputDecoration(
-                hintText:  'اسمك بين القراء',
+                hintText: 'اسمك بين القراء',
                 hintStyle: GoogleFonts.cairo(color: _textSecondary),
-                filled:    true,
+                filled: true,
                 fillColor: _surfaceHigh,
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(color: _border),
@@ -124,8 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide:
-                      const BorderSide(color: _accent, width: 1.5),
+                  borderSide: const BorderSide(color: _accent, width: 1.5),
                 ),
               ),
             ),
@@ -133,9 +133,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('إلغاء',
-                  style: GoogleFonts.cairo(color: _textSecondary))),
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'إلغاء',
+              style: GoogleFonts.cairo(color: _textSecondary),
+            ),
+          ),
           if (canChange)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -143,7 +146,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 foregroundColor: const Color(0xFF0D0F14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () async {
                 final newName = controller.text.trim();
@@ -155,17 +159,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .collection('users')
                     .doc(user.uid)
                     .update({
-                  'displayName':        newName,
-                  'nameLastChangedAt':  FieldValue.serverTimestamp(),
-                });
+                      'displayName': newName,
+                      'nameLastChangedAt': FieldValue.serverTimestamp(),
+                    });
                 await user.updateDisplayName(newName);
                 if (mounted) {
                   Navigator.pop(ctx);
                   _showSnack('تم تحديث اسمك ✅', Colors.green);
                 }
               },
-              child: Text('حفظ',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+              child: Text(
+                'حفظ',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
             ),
         ],
       ),
@@ -175,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── نافذة الدعم الفني ─────────────────────────────────────────────────────
   void _showSupportDialog() {
     final titleCtrl = TextEditingController();
-    final descCtrl  = TextEditingController();
+    final descCtrl = TextEditingController();
     String selectedType = 'مشكلة تقنية';
 
     showModalBottomSheet(
@@ -185,48 +191,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Container(
           padding: EdgeInsets.only(
-              bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           decoration: const BoxDecoration(
             color: Color(0xFF161920),
-            borderRadius:
-                BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('الدعم الفني',
-                    style: GoogleFonts.cairo(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: _textPrimary)),
+                Text(
+                  'الدعم الفني',
+                  style: GoogleFonts.cairo(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: _textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedType,
                   dropdownColor: _surfaceHigh,
-                  style: GoogleFonts.cairo(
-                      color: _textPrimary, fontSize: 13),
-                  items: ['مشكلة تقنية', 'اقتراح',
-                          'استفسار عن النقاط', 'أخرى']
-                      .map((e) => DropdownMenuItem(
+                  style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+                  items: ['مشكلة تقنية', 'اقتراح', 'استفسار عن النقاط', 'أخرى']
+                      .map(
+                        (e) => DropdownMenuItem(
                           value: e,
-                          child: Text(e,
-                              style: GoogleFonts.cairo(
-                                  color: _textPrimary))))
+                          child: Text(
+                            e,
+                            style: GoogleFonts.cairo(color: _textPrimary),
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setS(() => selectedType = v!),
                   decoration: InputDecoration(
-                    filled:    true,
+                    filled: true,
                     fillColor: _surfaceHigh,
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: _border)),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _border),
+                    ),
                     enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: _border)),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _border),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -240,17 +251,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: const Color(0xFF0D0F14),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () async {
-                      await context.read<NovelsProvider>()
-                          .sendSupportRequest(
-                        title:       titleCtrl.text,
-                        type:        selectedType,
+                      await context.read<NovelsProvider>().sendSupportRequest(
+                        title: titleCtrl.text,
+                        type: selectedType,
                         description: descCtrl.text,
                       );
                       if (mounted) {
@@ -258,9 +268,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _showSnack('تم إرسال طلبك ✅', Colors.green);
                       }
                     },
-                    child: Text('إرسال الطلب',
-                        style: GoogleFonts.cairo(
-                            fontWeight: FontWeight.w700)),
+                    child: Text(
+                      'إرسال الطلب',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -272,43 +283,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _supportField(TextEditingController ctrl, String hint,
-      {int maxLines = 1}) {
+  Widget _supportField(
+    TextEditingController ctrl,
+    String hint, {
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: ctrl,
-      maxLines:   maxLines,
+      maxLines: maxLines,
       style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
       decoration: InputDecoration(
-        hintText:  hint,
-        hintStyle: GoogleFonts.cairo(
-            color: _textSecondary, fontSize: 13),
-        filled:    true,
+        hintText: hint,
+        hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+        filled: true,
         fillColor: _surfaceHigh,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _border)),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _border),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: _border)),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _border),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: _accent, width: 1.5)),
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _accent, width: 1.5),
+        ),
       ),
     );
   }
 
   void _showSnack(String msg, Color bg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.cairo()),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.cairo()),
+        backgroundColor: bg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -319,8 +337,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         backgroundColor: _bg,
         body: Center(
-            child: Text('يرجى تسجيل الدخول',
-                style: GoogleFonts.cairo(color: _textSecondary))),
+          child: Text(
+            'يرجى تسجيل الدخول',
+            style: GoogleFonts.cairo(color: _textSecondary),
+          ),
+        ),
       );
     }
 
@@ -328,21 +349,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: _bg,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('users').doc(user.uid).snapshots(),
+            .collection('users')
+            .doc(user.uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator(
-                    color: _accent, strokeWidth: 2));
+              child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+            );
           }
 
-          final userData =
-              snapshot.data?.data() as Map<String, dynamic>?;
-          final name       = userData?['displayName'] ?? 'مستخدم';
-          final email      = userData?['email']       ?? user.email ?? '';
+          final userData = snapshot.data?.data() as Map<String, dynamic>?;
+          final name = userData?['displayName'] ?? 'مستخدم';
+          final email = userData?['email'] ?? user.email ?? '';
           final profilePic = userData?['profilePicture'] as String?;
-          final points     = userData?['points']      ?? 0;
-          final role       = userData?['role']        ?? 'user';
+          final points = userData?['points'] ?? 0;
+          final role = userData?['role'] ?? 'user';
           final ratingsGiven = userData?['ratingsGiven'] ?? 0;
           final ratingsReceived = userData?['ratingsReceived'] ?? 0;
           final avgRating = (userData?['avgRating'] ?? 0.0).toDouble();
@@ -368,20 +390,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  _accent.withOpacity(0.05),
-                                  _bg,
-                                ],
+                                colors: [_accent.withOpacity(0.05), _bg],
                                 begin: Alignment.topCenter,
-                                end:   Alignment.bottomCenter,
+                                end: Alignment.bottomCenter,
                               ),
                             ),
                           ),
                         ),
                         Center(
                           child: Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const SizedBox(height: 30),
                               // الصورة الشخصية
@@ -391,7 +409,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                          color: _accent, width: 2),
+                                        color: _accent,
+                                        width: 2,
+                                      ),
                                     ),
                                     child: CircleAvatar(
                                       radius: 48,
@@ -399,20 +419,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       backgroundImage: profilePic != null
                                           ? NetworkImage(profilePic)
                                           : null,
-                              child: profilePic == null ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟', style: GoogleFonts.cairo(fontSize: 34, fontWeight: FontWeight.w700, color: _accent)) : null,
+                                      child: profilePic == null
+                                          ? Text(
+                                              name.isNotEmpty
+                                                  ? name[0].toUpperCase()
+                                                  : '؟',
+                                              style: GoogleFonts.cairo(
+                                                fontSize: 34,
+                                                fontWeight: FontWeight.w700,
+                                                color: _accent,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   ),
                                   if (_isUploading)
                                     Positioned.fill(
                                       child: Container(
                                         decoration: const BoxDecoration(
-                                          color:  Colors.black38,
-                                          shape:  BoxShape.circle,
+                                          color: Colors.black38,
+                                          shape: BoxShape.circle,
                                         ),
                                         child: const Center(
-                                          child:
-                                              CircularProgressIndicator(
-                                            color:      _accent,
+                                          child: CircularProgressIndicator(
+                                            color: _accent,
                                             strokeWidth: 2,
                                           ),
                                         ),
@@ -420,39 +450,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   Positioned(
                                     bottom: 0,
-                                    right:  0,
+                                    right: 0,
                                     child: GestureDetector(
                                       onTap: _isUploading
                                           ? null
                                           : _pickAndUploadImage,
                                       child: Container(
-                                        width:  30,
+                                        width: 30,
                                         height: 30,
                                         decoration: BoxDecoration(
-                                          color:  _accent,
-                                          shape:  BoxShape.circle,
+                                          color: _accent,
+                                          shape: BoxShape.circle,
                                           border: Border.all(
-                                              color: _bg, width: 2),
+                                            color: _bg,
+                                            width: 2,
+                                          ),
                                         ),
                                         child: const Icon(
-                                            Icons.camera_alt_rounded,
-                                            color: Color(0xFF0D0F14),
-                                            size: 15),
+                                          Icons.camera_alt_rounded,
+                                          color: Color(0xFF0D0F14),
+                                          size: 15,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 10),
-                              Text(name,
-                                  style: GoogleFonts.cairo(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: _textPrimary)),
-                              Text(email,
-                                  style: GoogleFonts.cairo(
-                                      fontSize: 11,
-                                      color: _textSecondary)),
+                              Text(
+                                name,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: _textPrimary,
+                                ),
+                              ),
+                              Text(
+                                email,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 11,
+                                  color: _textSecondary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -475,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color:  _surface,
+                          color: _surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: _border),
                         ),
@@ -485,21 +524,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 InkWell(
-                                  onTap: () => _showUserList('المتابعون', 'followers'),
+                                  onTap: () =>
+                                      _showUserList('المتابعون', 'followers'),
                                   borderRadius: BorderRadius.circular(10),
-                                  child: _statCard(Icons.group_outlined, followersCount.toString(), 'متابع', _accent),
+                                  child: _statCard(
+                                    Icons.group_outlined,
+                                    followersCount.toString(),
+                                    'متابع',
+                                    _accent,
+                                  ),
                                 ),
                                 _vDiv(),
                                 InkWell(
-                                  onTap: () => _showUserList('أتابعهم', 'following'),
+                                  onTap: () =>
+                                      _showUserList('أتابعهم', 'following'),
                                   borderRadius: BorderRadius.circular(10),
-                                  child: _statCard(Icons.person_add_outlined, followingCount.toString(), 'أتابع', _accent),
+                                  child: _statCard(
+                                    Icons.person_add_outlined,
+                                    followingCount.toString(),
+                                    'أتابع',
+                                    _accent,
+                                  ),
                                 ),
                                 _vDiv(),
                                 InkWell(
                                   onTap: _showPointsInfoDialog,
                                   borderRadius: BorderRadius.circular(10),
-                                  child: _statCard(Icons.stars_rounded, points.toString(), 'نقطة', _gold),
+                                  child: _statCard(
+                                    Icons.stars_rounded,
+                                    points.toString(),
+                                    'نقطة',
+                                    _gold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -510,14 +566,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 InkWell(
                                   onTap: _showRatedNovels,
                                   borderRadius: BorderRadius.circular(10),
-                                  child: _statCard(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم أعطيته', _textSecondary),
+                                  child: _statCard(
+                                    Icons.rate_review_rounded,
+                                    ratingsGiven.toString(),
+                                    'تقييم أعطيته',
+                                    _textSecondary,
+                                  ),
                                 ),
                                 if (showPublicRating) ...[
                                   _vDiv(),
                                   InkWell(
-                                    onTap: () {}, // يمكن إضافة عرض قائمة التقييمات المستلمة
+                                    onTap:
+                                        () {}, // يمكن إضافة عرض قائمة التقييمات المستلمة
                                     borderRadius: BorderRadius.circular(10),
-                                    child: _statCard(Icons.star_half_rounded, avgRating.toStringAsFixed(1), 'تقييمي العام', _gold),
+                                    child: _statCard(
+                                      Icons.star_half_rounded,
+                                      avgRating.toStringAsFixed(1),
+                                      'تقييمي العام',
+                                      _gold,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -532,8 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Icons.person_outline_rounded,
                         'تعديل الاسم',
                         subtitle: 'مرة كل 30 يوماً',
-                        onTap: () =>
-                            _showEditNameDialog(name, userData),
+                        onTap: () => _showEditNameDialog(name, userData),
                       ),
                       _menuTile(
                         Icons.bookmark_outline_rounded,
@@ -553,7 +619,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const AdminScreen()),
+                              builder: (_) => const AdminScreen(),
+                            ),
                           ),
                         ),
                       _menuTile(
@@ -576,22 +643,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () =>
                               context.read<AuthViewModel>().logout(),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Colors.redAccent.withOpacity(0.08),
+                            backgroundColor: Colors.redAccent.withOpacity(0.08),
                             foregroundColor: Colors.redAccent,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
-                                  color: Colors.redAccent
-                                      .withOpacity(0.2)),
+                                color: Colors.redAccent.withOpacity(0.2),
+                              ),
                             ),
                           ),
-                          child: Text('تسجيل الخروج',
-                              style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.w700)),
+                          child: Text(
+                            'تسجيل الخروج',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -614,28 +682,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: _bg,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('روايات قيمتها', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+            child: Text(
+              'روايات قيمتها',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.bold,
+                color: _accent,
+              ),
+            ),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collectionGroup('ratings').where('authorId', isEqualTo: user.uid).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collectionGroup('ratings')
+                  .where('authorId', isEqualTo: user.uid)
+                  .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
                 final docs = snapshot.data!.docs;
-                if (docs.isEmpty) return Center(child: Text('لم تقم بتقييم أي رواية بعد', style: GoogleFonts.cairo(color: _textSecondary)));
-                
+                if (docs.isEmpty)
+                  return Center(
+                    child: Text(
+                      'لم تقم بتقييم أي رواية بعد',
+                      style: GoogleFonts.cairo(color: _textSecondary),
+                    ),
+                  );
+
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, i) {
                     final data = docs[i].data() as Map<String, dynamic>;
                     return ListTile(
-                      title: Text(data['comment'] ?? 'تقييم بدون تعليق', style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13)),
-                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [Text(data['rating'].toString(), style: GoogleFonts.cairo(color: _gold)), const Icon(Icons.star, color: _gold, size: 14)]),
+                      title: Text(
+                        data['comment'] ?? 'تقييم بدون تعليق',
+                        style: GoogleFonts.cairo(
+                          color: _textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            data['rating'].toString(),
+                            style: GoogleFonts.cairo(color: _gold),
+                          ),
+                          const Icon(Icons.star, color: _gold, size: 14),
+                        ],
+                      ),
                     );
                   },
                 );
@@ -651,14 +752,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _getWriterRank(int points) {
     if (points >= 2000) return 'عميد الرواة';
     if (points >= 1000) return 'أديب متألق';
-    if (points >= 500)  return 'حكواتي متمكن';
-    if (points >= 100)  return 'كاتب واعد';
+    if (points >= 500) return 'حكواتي متمكن';
+    if (points >= 100) return 'كاتب واعد';
     return 'راوي ناشئ';
   }
 
   Color _getRankColor(int points) {
     if (points >= 2000) return _gold;
-    if (points >= 500)  return _accent;
+    if (points >= 500) return _accent;
     return _textSecondary;
   }
 
@@ -669,25 +770,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: _bg,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Container(
         height: MediaQuery.of(ctx).size.height * 0.7,
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('المحفوظات (للقراءة لاحقاً)', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+              child: Text(
+                'المحفوظات (للقراءة لاحقاً)',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  color: _accent,
+                ),
+              ),
             ),
             Expanded(
               child: StreamBuilder<List<Novel>>(
-                stream: context.read<NovelsProvider>().getBookmarkedNovelsStream(),
+                stream: context
+                    .read<NovelsProvider>()
+                    .getBookmarkedNovelsStream(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  if (!snapshot.hasData)
+                    return const Center(child: CircularProgressIndicator());
                   final items = snapshot.data!;
-                  if (items.isEmpty) return Center(child: Text('لا توجد روايات محفوظة', style: GoogleFonts.cairo(color: _textSecondary)));
+                  if (items.isEmpty)
+                    return Center(
+                      child: Text(
+                        'لا توجد روايات محفوظة',
+                        style: GoogleFonts.cairo(color: _textSecondary),
+                      ),
+                    );
                   return ListView.builder(
                     itemCount: items.length,
-                    itemBuilder: (context, index) => _buildNovelListTile(items[index]),
+                    itemBuilder: (context, index) =>
+                        _buildNovelListTile(items[index]),
                   );
                 },
               ),
@@ -700,10 +819,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildNovelListTile(Novel novel) {
     return ListTile(
-      leading: Container(width: 40, height: 60, decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: _surfaceHigh, image: novel.coverUrl != null ? DecorationImage(image: NetworkImage(novel.coverUrl!), fit: BoxFit.cover) : null)),
-      title: Text(novel.title, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13)),
-      subtitle: Text(novel.author, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11)),
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': novel.id, 'title': novel.title, 'author': novel.author, 'coverUrl': novel.coverUrl}))),
+      leading: Container(
+        width: 40,
+        height: 60,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: _surfaceHigh,
+          image: novel.coverUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(novel.coverUrl!),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+      ),
+      title: Text(
+        novel.title,
+        style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+      ),
+      subtitle: Text(
+        novel.author,
+        style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11),
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NovelDetailScreen(
+            novel: {
+              'id': novel.id,
+              'title': novel.title,
+              'author': novel.author,
+              'coverUrl': novel.coverUrl,
+            },
+          ),
+        ),
+      ),
     );
   }
 
@@ -716,45 +866,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: _bg,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(user.uid).collection(collectionPath).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection(collectionPath)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final docs = snapshot.data!.docs;
           return Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(title, style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+                child: Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold,
+                    color: _accent,
+                  ),
+                ),
               ),
               Expanded(
-                child: docs.isEmpty 
-                  ? Center(child: Text('القائمة فارغة', style: GoogleFonts.cairo(color: _textSecondary)))
-                  : ListView.builder(
-                      itemCount: docs.length,
-                      itemBuilder: (context, i) => FutureBuilder<DocumentSnapshot>(
-                        future: FirebaseFirestore.instance.collection('users').doc(docs[i].id).get(),
-                        builder: (context, userSnap) {
-                          if (!userSnap.hasData) return const SizedBox();
-                          final uData = userSnap.data!.data() as Map<String, dynamic>;
-                          return ListTile(
-                            leading: CircleAvatar(backgroundImage: uData['profilePicture'] != null ? NetworkImage(uData['profilePicture']) : null),
-                            title: Text(uData['displayName'] ?? 'مستخدم', style: GoogleFonts.cairo(color: _textPrimary)),
-                            trailing: collectionPath == 'following' 
-                              ? TextButton(onPressed: () => context.read<NovelsProvider>().toggleFollow(docs[i].id), child: Text('إلغاء المتابعة', style: GoogleFonts.cairo(color: Colors.redAccent, fontSize: 11)))
-                              : null,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => AuthorScreen(
-                                authorId: docs[i].id,
-                                authorName: uData['displayName'] ?? 'مؤلف',
-                              )),
+                child: docs.isEmpty
+                    ? Center(
+                        child: Text(
+                          'القائمة فارغة',
+                          style: GoogleFonts.cairo(color: _textSecondary),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: docs.length,
+                        itemBuilder: (context, i) =>
+                            FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(docs[i].id)
+                                  .get(),
+                              builder: (context, userSnap) {
+                                if (!userSnap.hasData) return const SizedBox();
+                                final uData =
+                                    userSnap.data!.data()
+                                        as Map<String, dynamic>;
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundImage:
+                                        uData['profilePicture'] != null
+                                        ? NetworkImage(uData['profilePicture'])
+                                        : null,
+                                  ),
+                                  title: Text(
+                                    uData['displayName'] ?? 'مستخدم',
+                                    style: GoogleFonts.cairo(
+                                      color: _textPrimary,
+                                    ),
+                                  ),
+                                  trailing: collectionPath == 'following'
+                                      ? TextButton(
+                                          onPressed: () => context
+                                              .read<NovelsProvider>()
+                                              .toggleFollow(docs[i].id),
+                                          child: Text(
+                                            'إلغاء المتابعة',
+                                            style: GoogleFonts.cairo(
+                                              color: Colors.redAccent,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AuthorScreen(
+                                        authorId: docs[i].id,
+                                        authorName:
+                                            uData['displayName'] ?? 'مؤلف',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
                       ),
-                    ),
               ),
             ],
           );
@@ -779,24 +977,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('إعدادات الخصوصية', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary)),
+              Text(
+                'إعدادات الخصوصية',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.bold,
+                  color: _textPrimary,
+                ),
+              ),
               const SizedBox(height: 10),
               SwitchListTile(
-                title: Text('إظهار نقاطي للآخرين', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14)),
+                title: Text(
+                  'إظهار نقاطي للآخرين',
+                  style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+                ),
                 value: showPoints,
                 activeColor: _accent,
                 onChanged: (v) async {
                   setS(() => showPoints = v);
-                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'showPublicPoints': v});
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .update({'showPublicPoints': v});
                 },
               ),
               SwitchListTile(
-                title: Text('إظهار تقييمي العام للآخرين', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14)),
+                title: Text(
+                  'إظهار تقييمي العام للآخرين',
+                  style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+                ),
                 value: showRatings,
                 activeColor: _accent,
                 onChanged: (v) async {
                   setS(() => showRatings = v);
-                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'showPublicRatings': v});
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .update({'showPublicRatings': v});
                 },
               ),
             ],
@@ -812,7 +1028,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('نظام النقاط', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _gold)),
+        title: Text(
+          'نظام النقاط',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _gold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -820,7 +1039,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _pointRow('3 نقاط', 'عند تقييم 3 روايات لزملاء آخرين'),
             _pointRow('4 نقاط', 'عند حصول فصولك على تقييمات إيجابية'),
             const SizedBox(height: 15),
-            Text('النقاط تساعدك على النشر وتبرز مكانتك ككاتب متفاعل في المجتمع.', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+            Text(
+              'النقاط تساعدك على النشر وتبرز مكانتك ككاتب متفاعل في المجتمع.',
+              style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary),
+            ),
           ],
         ),
       ),
@@ -830,11 +1052,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _pointRow(String pts, String desc) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Text(pts, style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.bold, fontSize: 13)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(desc, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 12))),
-      ]),
+      child: Row(
+        children: [
+          Text(
+            pts,
+            style: GoogleFonts.cairo(
+              color: _accent,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              desc,
+              style: GoogleFonts.cairo(color: _textPrimary, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -843,22 +1079,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       backgroundColor: _bg,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             const SizedBox(height: 20),
-            Text('عن منصة راوي', style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.bold, color: _accent)),
+            Text(
+              'عن منصة راوي',
+              style: GoogleFonts.cairo(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _accent,
+              ),
+            ),
             const SizedBox(height: 20),
-            _aboutItem(Icons.history_edu_rounded, 'إبداع بشري خالص', 'نشجع الكتابة الشخصية والابتعاد عن الاعتماد الكلي على الذكاء الاصطناعي لضمان روح النص.'),
-            _aboutItem(Icons.groups_rounded, 'مجتمع متفاعل', 'هدفنا أن لا يكتب أحد لنفسه فقط؛ نحن هنا لنقرأ لبعضنا، نقيم، ونطور مهاراتنا معاً.'),
-            _aboutItem(Icons.timer_rounded, 'نظام النشر المنضبط', 'يسمح بنشر فصل واحد كل 24 ساعة لمنح كل عمل فرصة عادلة في القراءة والظهور.'),
-            _aboutItem(Icons.auto_awesome_rounded, 'التحفيز المتبادل', 'بتقييمك للآخرين، تساهم في نمو المجتمع وتحصل على دعم مماثل لأعمالك.'),
+            _aboutItem(
+              Icons.history_edu_rounded,
+              'إبداع بشري خالص',
+              'نشجع الكتابة الشخصية والابتعاد عن الاعتماد الكلي على الذكاء الاصطناعي لضمان روح النص.',
+            ),
+            _aboutItem(
+              Icons.groups_rounded,
+              'مجتمع متفاعل',
+              'هدفنا أن لا يكتب أحد لنفسه فقط؛ نحن هنا لنقرأ لبعضنا، نقيم، ونطور مهاراتنا معاً.',
+            ),
+            _aboutItem(
+              Icons.timer_rounded,
+              'نظام النشر المنضبط',
+              'يسمح بنشر فصل واحد كل 24 ساعة لمنح كل عمل فرصة عادلة في القراءة والظهور.',
+            ),
+            _aboutItem(
+              Icons.auto_awesome_rounded,
+              'التحفيز المتبادل',
+              'بتقييمك للآخرين، تساهم في نمو المجتمع وتحصل على دعم مماثل لأعمالك.',
+            ),
             const SizedBox(height: 20),
-            Text('الإصدار 1.0.0 - صنع بشغف لخدمة الأدب العربي', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+            Text(
+              'الإصدار 1.0.0 - صنع بشغف لخدمة الأدب العربي',
+              style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary),
+            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -869,80 +1140,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _aboutItem(IconData icon, String title, String desc) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: _accent, size: 24),
-        const SizedBox(width: 15),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 14)),
-          Text(desc, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, height: 1.5)),
-        ])),
-      ]),
-    );
-  }
-
-  // ── مساعدات ───────────────────────────────────────────────────────────────
-  Widget _statCard(
-      IconData icon, String val, String label, Color color) {
-    return Column(children: [
-      Icon(icon, color: color, size: 22),
-      const SizedBox(height: 4),
-      Text(val,
-          style: GoogleFonts.cairo(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: _textPrimary)),
-      Text(label,
-          style:
-              GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
-    ]);
-  }
-
-  Widget _vDiv() =>
-      Container(height: 40, width: 1, color: _border);
-
-  Widget _menuTile(IconData icon, String title,
-      {String? subtitle, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color:  _surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _border),
-        ),
-        child: Row(children: [
-          Container(
-            width:  36,
-            height: 36,
-            decoration: BoxDecoration(
-              color:  _surfaceHigh,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: _accent, size: 18),
-          ),
-          const SizedBox(width: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: _accent, size: 24),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _textPrimary)),
-                if (subtitle != null)
-                  Text(subtitle,
-                      style: GoogleFonts.cairo(
-                          fontSize: 11, color: _textSecondary)),
+                Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.bold,
+                    color: _textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: GoogleFonts.cairo(
+                    color: _textSecondary,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded,
-              size: 13, color: _textSecondary),
-        ]),
+        ],
+      ),
+    );
+  }
+
+  // ── مساعدات ───────────────────────────────────────────────────────────────
+  Widget _statCard(IconData icon, String val, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 4),
+        Text(
+          val,
+          style: GoogleFonts.cairo(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _vDiv() => Container(height: 40, width: 1, color: _border);
+
+  Widget _menuTile(
+    IconData icon,
+    String title, {
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _surfaceHigh,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: _accent, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.cairo(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _textPrimary,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        color: _textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 13,
+              color: _textSecondary,
+            ),
+          ],
+        ),
       ),
     );
   }
