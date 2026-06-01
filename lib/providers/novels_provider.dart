@@ -6,6 +6,21 @@ import '../models/novel_model.dart';
 class NovelsProvider with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  // ── جلب اسم المستخدم من Firestore ──────────────────────────────────────────
+  Future<String> _getDisplayName(String uid) async {
+    try {
+      final doc = await _db.collection('users').doc(uid).get();
+      final data = doc.data();
+      final name = data?['displayName'] ?? '';
+      if (name.toString().trim().isNotEmpty) return name.toString().trim();
+      // fallback: الجزء الأول من البريد
+      final email = FirebaseAuth.instance.currentUser?.email ?? '';
+      return email.split('@').first;
+    } catch (_) {
+      return FirebaseAuth.instance.currentUser?.email?.split('@').first ?? 'كاتب';
+    }
+  }
+
   // ── إنشاء رواية جديدة مع فصلها الأول ──────────────────────────────────────
   Future<String?> addNovel({
     required String title,
@@ -20,36 +35,41 @@ class NovelsProvider with ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return 'يجب تسجيل الدخول أولاً';
 
+      // ← جلب الاسم الحقيقي أولاً
+      final authorName = await _getDisplayName(user.uid);
+
       final novelRef = await _db.collection('novels').add({
-        'title': title,
+        'title':       title,
         'description': description,
-        'category': category,
-        'coverUrl': coverUrl,
-        'authorId': user.uid,
+        'category':    category,
+        'coverUrl':    coverUrl,
+        'authorId':    user.uid,
+        'authorName':  authorName,        // ← الاسم الحقيقي
         'authorEmail': user.email ?? '',
-        'rating': 0.0,
-        'likes': 0,
-        'readers': 0,
+        'rating':      0.0,
+        'likes':       0,
+        'readers':     0,
         'chaptersCount': 1,
-        'status': 'ongoing',
-        'createdAt': FieldValue.serverTimestamp(),
+        'status':      'ongoing',
+        'createdAt':   FieldValue.serverTimestamp(),
       });
 
       await novelRef.collection('chapters').add({
-        'title': chapterTitle.isEmpty ? 'الفصل الأول' : chapterTitle,
-        'content': chapterContent,
+        'title':         chapterTitle.isEmpty ? 'الفصل الأول' : chapterTitle,
+        'content':       chapterContent,
         'chapterNumber': 1,
-        'isDraft': false,
-        'wordCount': wordCount,
-        'rating': 0.0,
-        'ratingsCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
+        'isDraft':       false,
+        'wordCount':     wordCount,
+        'rating':        0.0,
+        'ratingsCount':  0,
+        'createdAt':     FieldValue.serverTimestamp(),
       });
 
+      // ← تحديث lastPublished فقط، بدون مسح ratingsGiven
       await _db.collection('users').doc(user.uid).set({
-        'lastPublished': FieldValue.serverTimestamp(),
-        'ratingsGiven': 0,
+        'lastPublished':              FieldValue.serverTimestamp(),
         'lastChapterRatingsReceived': 0,
+        'lastChapterId':              novelRef.id,
       }, SetOptions(merge: true));
 
       notifyListeners();
@@ -70,27 +90,28 @@ class NovelsProvider with ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return 'يجب تسجيل الدخول أولاً';
 
-      final novelRef = _db.collection('novels').doc(novelId);
+      final novelRef     = _db.collection('novels').doc(novelId);
       final chaptersSnap = await novelRef.collection('chapters').get();
-      final nextNumber = chaptersSnap.docs.length + 1;
+      final nextNumber   = chaptersSnap.docs.length + 1;
 
-      await novelRef.collection('chapters').add({
-        'title': chapterTitle.isEmpty ? 'الفصل $nextNumber' : chapterTitle,
-        'content': chapterContent,
+      final chapterRef = await novelRef.collection('chapters').add({
+        'title':         chapterTitle.isEmpty ? 'الفصل $nextNumber' : chapterTitle,
+        'content':       chapterContent,
         'chapterNumber': nextNumber,
-        'isDraft': false,
-        'wordCount': wordCount,
-        'rating': 0.0,
-        'ratingsCount': 0,
-        'createdAt': FieldValue.serverTimestamp(),
+        'isDraft':       false,
+        'wordCount':     wordCount,
+        'rating':        0.0,
+        'ratingsCount':  0,
+        'createdAt':     FieldValue.serverTimestamp(),
       });
 
       await novelRef.update({'chaptersCount': nextNumber});
 
+      // ← تحديث lastPublished فقط، بدون مسح ratingsGiven
       await _db.collection('users').doc(user.uid).set({
-        'lastPublished': FieldValue.serverTimestamp(),
-        'ratingsGiven': 0,
+        'lastPublished':              FieldValue.serverTimestamp(),
         'lastChapterRatingsReceived': 0,
+        'lastChapterId':              chapterRef.id,
       }, SetOptions(merge: true));
 
       notifyListeners();
@@ -106,33 +127,32 @@ class NovelsProvider with ChangeNotifier {
       final draftDoc = await _db.collection('drafts').doc(draftId).get();
       if (!draftDoc.exists) return 'المسودة غير موجودة';
 
-      final data = draftDoc.data()!;
+      final data       = draftDoc.data()!;
       final isNewNovel = data['isNewNovel'] ?? true;
 
       String? error;
       if (isNewNovel) {
         error = await addNovel(
-          title: data['novelTitle'] ?? '',
-          description: data['description'] ?? '',
-          category: data['category'] ?? 'عام',
-          chapterTitle: data['chapterTitle'] ?? '',
+          title:          data['novelTitle'] ?? '',
+          description:    data['description'] ?? '',
+          category:       data['category'] ?? 'عام',
+          chapterTitle:   data['chapterTitle'] ?? '',
           chapterContent: data['chapterContent'] ?? '',
-          wordCount: data['wordCount'] ?? 0,
-          coverUrl: data['coverUrl'],
+          wordCount:      data['wordCount'] ?? 0,
+          coverUrl:       data['coverUrl'],
         );
       } else {
         error = await addChapter(
-          novelId: data['novelId'] ?? '',
-          chapterTitle: data['chapterTitle'] ?? '',
+          novelId:        data['novelId'] ?? '',
+          chapterTitle:   data['chapterTitle'] ?? '',
           chapterContent: data['chapterContent'] ?? '',
-          wordCount: data['wordCount'] ?? 0,
+          wordCount:      data['wordCount'] ?? 0,
         );
       }
 
       if (error == null) {
         await _db.collection('drafts').doc(draftId).delete();
       }
-
       return error;
     } catch (e) {
       return 'حدث خطأ: $e';
@@ -143,7 +163,7 @@ class NovelsProvider with ChangeNotifier {
   Future<bool> isContentDuplicate(String content) async {
     if (content.length < 50) return false;
     final sample = content.substring(0, 100);
-    final snap = await _db
+    final snap   = await _db
         .collection('novels')
         .where('contentSample', isEqualTo: sample)
         .limit(1)
@@ -168,7 +188,8 @@ class NovelsProvider with ChangeNotifier {
         .collection('drafts')
         .where('authorId', isEqualTo: user.uid)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map((snap) =>
+            snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   // ── حذف رواية ──────────────────────────────────────────────────────────────
@@ -232,13 +253,13 @@ class NovelsProvider with ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return 'يجب تسجيل الدخول أولاً';
       await _db.collection('support_requests').add({
-        'title': title,
-        'type': type,
+        'title':       title,
+        'type':        type,
         'description': description,
-        'authorId': user.uid,
+        'authorId':    user.uid,
         'authorEmail': user.email,
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
+        'status':      'pending',
+        'createdAt':   FieldValue.serverTimestamp(),
       });
       return null;
     } catch (e) {
@@ -256,11 +277,11 @@ class NovelsProvider with ChangeNotifier {
   ) async {
     try {
       await _db.collection('support_requests').doc(requestId).update({
-        'status': status,
-        'response': response,
-        'resolvedBy': adminId,
-        'resolvedByName': adminName,
-        'resolvedAt': FieldValue.serverTimestamp(),
+        'status':          status,
+        'response':        response,
+        'resolvedBy':      adminId,
+        'resolvedByName':  adminName,
+        'resolvedAt':      FieldValue.serverTimestamp(),
       });
       return null;
     } catch (e) {
@@ -276,10 +297,10 @@ class NovelsProvider with ChangeNotifier {
   ) async {
     try {
       await _db.collection('notifications').add({
-        'userId': authorId,
-        'type': 'like',
-        'message': '$likerName أعجب برواية "$novelTitle" ❤️',
-        'isRead': false,
+        'userId':    authorId,
+        'type':      'like',
+        'message':   '$likerName أعجب برواية "$novelTitle" ❤️',
+        'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}
@@ -293,10 +314,10 @@ class NovelsProvider with ChangeNotifier {
   ) async {
     try {
       await _db.collection('notifications').add({
-        'userId': authorId,
-        'type': 'comment',
-        'message': '$commenterName علّق على "$novelTitle" 💬',
-        'isRead': false,
+        'userId':    authorId,
+        'type':      'comment',
+        'message':   '$commenterName علّق على "$novelTitle" 💬',
+        'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}
@@ -311,10 +332,10 @@ class NovelsProvider with ChangeNotifier {
   ) async {
     try {
       await _db.collection('notifications').add({
-        'userId': authorId,
-        'type': 'rating',
-        'message': '$raterName قيّم فصل "$chapterTitle" في "$novelTitle" ⭐',
-        'isRead': false,
+        'userId':    authorId,
+        'type':      'rating',
+        'message':   '$raterName قيّم فصل "$chapterTitle" في "$novelTitle" ⭐',
+        'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}

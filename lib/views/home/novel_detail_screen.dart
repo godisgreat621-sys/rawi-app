@@ -15,51 +15,59 @@ class NovelDetailScreen extends StatefulWidget {
 }
 
 class _NovelDetailScreenState extends State<NovelDetailScreen> {
-  bool _isFollowing = false;
+  // ── ألوان ─────────────────────────────────────────────────────────────────
+  static const _bg           = Color(0xFF0D0F14);
+  static const _surface      = Color(0xFF161920);
+  static const _surfaceHigh  = Color(0xFF1E2130);
+  static const _accent       = Color(0xFF8BAF7C);
+  static const _border       = Color(0xFF252836);
+  static const _textPrimary  = Color(0xFFECECEC);
+  static const _textSecondary= Color(0xFF6B7280);
+  static const _gold         = Color(0xFFD4A843);
+
+  bool _isFollowing     = false;
   bool _isFollowLoading = false;
-  int _userRating = 0;
-  bool _isRatingLoading = false;
+
+  // ── ألوان الغلاف بحسب التصنيف ──────────────────────────────────────────────
+  static const _categoryColors = <String, Color>{
+    'فانتازيا':  Color(0xFF2D1F4E),
+    'رومانسية':  Color(0xFF4E1F2D),
+    'رعب':       Color(0xFF1F2D20),
+    'غموض':      Color(0xFF1F2A4E),
+    'تاريخية':   Color(0xFF4E3A1F),
+    'خيال علمي': Color(0xFF1F3A4E),
+    'عام':       Color(0xFF252836),
+  };
 
   @override
   void initState() {
     super.initState();
     _checkIfFollowing();
-    _loadUserRating();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // متابعة
-  // ─────────────────────────────────────────────────────────────────────────────
   Future<void> _checkIfFollowing() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user     = FirebaseAuth.instance.currentUser;
     final authorId = widget.novel['authorId'];
     if (user == null || authorId == null || authorId.isEmpty) return;
     final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('following')
-        .doc(authorId)
-        .get();
+        .collection('users').doc(user.uid)
+        .collection('following').doc(authorId).get();
     if (mounted) setState(() => _isFollowing = doc.exists);
   }
 
   Future<void> _toggleFollow() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user     = FirebaseAuth.instance.currentUser;
     final authorId = widget.novel['authorId'];
     if (user == null || authorId == null || authorId.isEmpty) return;
     if (user.uid == authorId) return;
     setState(() => _isFollowLoading = true);
 
     final followingRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('following')
-        .doc(authorId);
+        .collection('users').doc(user.uid)
+        .collection('following').doc(authorId);
     final followersRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(authorId)
-        .collection('followers')
-        .doc(user.uid);
+        .collection('users').doc(authorId)
+        .collection('followers').doc(user.uid);
 
     if (_isFollowing) {
       await followingRef.delete();
@@ -68,100 +76,26 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
       await followingRef.set({'followedAt': FieldValue.serverTimestamp()});
       await followersRef.set({'followedAt': FieldValue.serverTimestamp()});
     }
-    if (mounted)
-      setState(() {
-        _isFollowing = !_isFollowing;
-        _isFollowLoading = false;
-      });
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // تقييم
-  // ─────────────────────────────────────────────────────────────────────────────
-  Future<void> _loadUserRating() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final novelId = widget.novel['id'];
-    if (user == null || novelId == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('novels')
-        .doc(novelId)
-        .collection('ratings')
-        .doc(user.uid)
-        .get();
-    if (mounted && doc.exists)
-      setState(() => _userRating = (doc.data()?['rating'] ?? 0) as int);
-  }
-
-  Future<void> _submitRating(int rating) async {
-    final user = FirebaseAuth.instance.currentUser;
-    final novelId = widget.novel['id'];
-    if (user == null || novelId == null) return;
-    setState(() => _isRatingLoading = true);
-
-    final ratingsRef = FirebaseFirestore.instance
-        .collection('novels')
-        .doc(novelId)
-        .collection('ratings');
-    await ratingsRef.doc(user.uid).set({
-      'rating': rating,
-      'ratedAt': FieldValue.serverTimestamp(),
+    if (mounted) setState(() {
+      _isFollowing = !_isFollowing;
+      _isFollowLoading = false;
     });
-
-    final all = await ratingsRef.get();
-    final total = all.docs.fold<int>(
-      0,
-      (s, d) => s + ((d.data()['rating'] ?? 0) as int),
-    );
-    final avg = total / all.docs.length;
-    await FirebaseFirestore.instance.collection('novels').doc(novelId).update({
-      'rating': double.parse(avg.toStringAsFixed(1)),
-    });
-
-    if (mounted) {
-      setState(() {
-        _userRating = rating;
-        _isRatingLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'تم تقييمك بـ $rating نجوم',
-                  style: GoogleFonts.cairo(),
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.star, size: 16, color: Colors.amber),
-            ],
-          ),
-          backgroundColor: Colors.amber,
-        ),
-      );
-    }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // تعديل معلومات الرواية
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── تعديل الرواية ──────────────────────────────────────────────────────────
   void _showEditSheet(Map<String, dynamic> novelData) {
-    final theme = Theme.of(context);
-    final titleCtrl = TextEditingController(text: widget.novel['title']);
-    final descCtrl = TextEditingController(text: widget.novel['description']);
-    String selectedCat = widget.novel['category'] ?? 'عام';
+    final titleCtrl = TextEditingController(
+        text: novelData['title'] ?? widget.novel['title']);
+    final descCtrl = TextEditingController(
+        text: novelData['description'] ?? widget.novel['description']);
+    String selectedCat = novelData['category'] ?? widget.novel['category'] ?? 'عام';
     final titleChanged = novelData['titleChanged'] ?? false;
-    final readers = (novelData['readers'] ?? 0) as int;
+    final readers      = (novelData['readers'] ?? 0) as int;
     final canEditTitle = !titleChanged && readers < 10;
 
-    final categories = [
-      'عام',
-      'فانتازيا',
-      'رعب',
-      'رومانسية',
-      'غموض',
-      'تاريخية',
-      'خيال علمي',
+    const categories = [
+      'عام', 'فانتازيا', 'رعب', 'رومانسية',
+      'غموض', 'تاريخية', 'خيال علمي',
     ];
 
     showModalBottomSheet(
@@ -171,11 +105,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Container(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          decoration: const BoxDecoration(
+            color: Color(0xFF161920),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -186,15 +119,13 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'تعديل الرواية ✏️',
-                      style: GoogleFonts.cairo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('تعديل الرواية',
+                        style: GoogleFonts.cairo(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: _textPrimary)),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: _textSecondary),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
@@ -202,140 +133,103 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
 
                 // العنوان
                 if (canEditTitle) ...[
-                  Text(
-                    'العنوان (مرة واحدة فقط قبل 10 قراء)',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      color: Colors.orange,
-                    ),
-                  ),
+                  Text('العنوان — يمكن تعديله مرة واحدة قبل 10 قراء',
+                      style: GoogleFonts.cairo(
+                          fontSize: 11, color: Colors.orange)),
                   const SizedBox(height: 6),
-                  TextField(
-                    controller: titleCtrl,
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      hintText: 'عنوان الرواية',
-                      hintStyle: GoogleFonts.cairo(color: Colors.grey),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
+                  _sheetField(titleCtrl, 'عنوان الرواية'),
                   const SizedBox(height: 14),
                 ] else ...[
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: _surfaceHigh,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.lock_outline,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'العنوان مقفل (تم تعديله أو تجاوز 10 قراء)',
+                    child: Row(children: [
+                      const Icon(Icons.lock_outline,
+                          size: 15, color: _textSecondary),
+                      const SizedBox(width: 8),
+                      Text('العنوان مقفل',
                           style: GoogleFonts.cairo(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
+                              fontSize: 12, color: _textSecondary)),
+                    ]),
                   ),
                   const SizedBox(height: 14),
                 ],
 
                 // التصنيف
-                Text(
-                  'التصنيف',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                ),
+                Text('التصنيف',
+                    style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: _textPrimary)),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 36,
-                  child: ListView.builder(
+                  child: ListView(
                     scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    itemBuilder: (_, i) {
-                      final cat = categories[i];
+                    children: categories.map((cat) {
                       final sel = cat == selectedCat;
                       return GestureDetector(
                         onTap: () => setS(() => selectedCat = cat),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+                              horizontal: 14, vertical: 6),
                           decoration: BoxDecoration(
-                            color: sel
-                                ? theme.colorScheme.primary
-                                : Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            color: sel ? _accent : _surfaceHigh,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: sel ? _accent : _border),
                           ),
-                          child: Text(
-                            cat,
-                            style: GoogleFonts.cairo(
-                              fontSize: 12,
-                              color: sel ? Colors.black : Colors.grey,
-                            ),
-                          ),
+                          child: Text(cat,
+                              style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  color: sel
+                                      ? const Color(0xFF0D0F14)
+                                      : _textSecondary,
+                                  fontWeight: sel
+                                      ? FontWeight.w700
+                                      : FontWeight.w400)),
                         ),
                       );
-                    },
+                    }).toList(),
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // الوصف
-                Text(
-                  'الوصف',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                ),
+                Text('الوصف',
+                    style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: _textPrimary)),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: descCtrl,
-                  maxLines: 3,
-                  style: GoogleFonts.cairo(fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'وصف الرواية...',
-                    hintStyle: GoogleFonts.cairo(color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    contentPadding: const EdgeInsets.all(12),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                _sheetField(descCtrl, 'وصف الرواية...', maxLines: 3),
+                const SizedBox(height: 18),
 
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.black,
+                      backgroundColor: _accent,
+                      foregroundColor: const Color(0xFF0D0F14),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
                     ),
                     onPressed: () async {
                       final updates = <String, dynamic>{
                         'description': descCtrl.text.trim(),
-                        'category': selectedCat,
+                        'category':    selectedCat,
                       };
                       if (canEditTitle &&
-                          titleCtrl.text.trim() != widget.novel['title']) {
-                        updates['title'] = titleCtrl.text.trim();
+                          titleCtrl.text.trim() !=
+                              (novelData['title'] ?? widget.novel['title'])) {
+                        updates['title']        = titleCtrl.text.trim();
                         updates['titleChanged'] = true;
                       }
                       await FirebaseFirestore.instance
@@ -344,10 +238,8 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           .update(updates);
                       if (ctx.mounted) Navigator.pop(ctx);
                     },
-                    child: Text(
-                      'حفظ التعديلات',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                    ),
+                    child: Text('حفظ التعديلات',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -359,37 +251,60 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // تأكيد إكمال الرواية
-  // ─────────────────────────────────────────────────────────────────────────────
+  Widget _sheetField(TextEditingController ctrl, String hint,
+      {int maxLines = 1}) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+        filled: true,
+        fillColor: _surfaceHigh,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _accent, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  // ── إكمال الرواية ──────────────────────────────────────────────────────────
   Future<void> _confirmComplete() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          'إعلان اكتمال الرواية ✅',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: _surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('إعلان اكتمال الرواية',
+            style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700, color: _textPrimary)),
         content: Text(
-          'بعد الإعلان لن تتمكن من إضافة فصول جديدة لهذه الرواية، '
-          'وستتمكن من نشر رواية جديدة.',
-          style: GoogleFonts.cairo(),
+          'بعد الإعلان لن تتمكن من إضافة فصول جديدة.',
+          style: GoogleFonts.cairo(color: _textSecondary, height: 1.6),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('إلغاء', style: GoogleFonts.cairo()),
-          ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('إلغاء',
+                  style: GoogleFonts.cairo(color: _textSecondary))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'تأكيد الاكتمال',
-              style: GoogleFonts.cairo(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('تأكيد',
+                  style: GoogleFonts.cairo(
+                      color: Colors.green, fontWeight: FontWeight.w700))),
         ],
       ),
     );
@@ -398,50 +313,43 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           .collection('novels')
           .doc(widget.novel['id'])
           .update({
-            'status': 'completed',
-            'completedAt': FieldValue.serverTimestamp(),
-          });
+        'status':      'completed',
+        'completedAt': FieldValue.serverTimestamp(),
+      });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'رواية "محتواها مكتملة" الآن ✅',
-              style: GoogleFonts.cairo(),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('الرواية مكتملة الآن ✅',
+              style: GoogleFonts.cairo()),
+          backgroundColor: Colors.green,
+        ));
       }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // حذف الرواية
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── حذف الرواية ────────────────────────────────────────────────────────────
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          'حذف الرواية',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'هل أنت متأكد؟ لا يمكن التراجع.',
-          style: GoogleFonts.cairo(),
-        ),
+        backgroundColor: _surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('حذف الرواية',
+            style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700, color: _textPrimary)),
+        content: Text('هل أنت متأكد؟ لا يمكن التراجع.',
+            style: GoogleFonts.cairo(color: _textSecondary)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('إلغاء', style: GoogleFonts.cairo()),
-          ),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('إلغاء',
+                  style: GoogleFonts.cairo(color: _textSecondary))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'حذف',
-              style: GoogleFonts.cairo(color: Colors.redAccent),
-            ),
-          ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('حذف',
+                  style: GoogleFonts.cairo(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w700))),
         ],
       ),
     );
@@ -454,220 +362,189 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Build
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currentUser = FirebaseAuth.instance.currentUser;
-    final authorId = widget.novel['authorId'] ?? '';
-    final isOwner = currentUser?.uid == authorId;
-    final novelId = widget.novel['id'] ?? '';
+    final authorId    = widget.novel['authorId'] ?? '';
+    final isOwner     = currentUser?.uid == authorId;
+    final novelId     = widget.novel['id'] ?? '';
+    final category    = widget.novel['category'] ?? 'عام';
+    final coverBg     = _categoryColors[category] ?? _surfaceHigh;
+    final coverUrl    = widget.novel['coverUrl'] as String?;
 
     return Scaffold(
+      backgroundColor: _bg,
       body: CustomScrollView(
         slivers: [
-          // ── AppBar ──────────────────────────────────────────────────────────
+          // ── AppBar + غلاف ────────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 280,
             pinned: true,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            leading: CircleAvatar(
-              backgroundColor: isDark ? Colors.black54 : Colors.white70,
-              child: IconButton(
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: isDark ? Colors.white : Colors.black87,
+            backgroundColor: _bg,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8),
+              child: CircleAvatar(
+                backgroundColor: _surface,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: _textPrimary, size: 16),
+                  onPressed: () => Navigator.pop(context),
                 ),
-                onPressed: () => Navigator.pop(context),
               ),
             ),
             actions: [
               if (isOwner) ...[
-                // تعديل
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('novels')
-                      .doc(novelId)
-                      .snapshots(),
+                      .collection('novels').doc(novelId).snapshots(),
                   builder: (_, snap) {
                     final data = snap.hasData && snap.data!.exists
                         ? snap.data!.data() as Map<String, dynamic>
                         : <String, dynamic>{};
-                    return CircleAvatar(
-                      backgroundColor: isDark ? Colors.black54 : Colors.white70,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          color: theme.colorScheme.primary,
+                    return Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: CircleAvatar(
+                        backgroundColor: _surface,
+                        child: IconButton(
+                          icon: const Icon(Icons.edit_outlined,
+                              color: _accent, size: 18),
+                          onPressed: () => _showEditSheet(data),
                         ),
-                        onPressed: () => _showEditSheet(data),
                       ),
                     );
                   },
                 ),
-                const SizedBox(width: 8),
-                // حذف
-                CircleAvatar(
-                  backgroundColor: isDark ? Colors.black54 : Colors.white70,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.redAccent,
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                  child: CircleAvatar(
+                    backgroundColor: _surface,
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.redAccent, size: 18),
+                      onPressed: _confirmDelete,
                     ),
-                    onPressed: _confirmDelete,
                   ),
                 ),
               ],
-              const SizedBox(width: 12),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary.withOpacity(0.15),
-                      theme.scaffoldBackgroundColor,
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 140,
-                    height: 210,
-                    margin: const EdgeInsets.only(top: 40),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? theme.colorScheme.surface
-                          : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark ? Colors.black54 : Colors.black12,
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.book_rounded,
-                        size: 64,
-                        color: theme.colorScheme.primary.withOpacity(0.8),
+                color: _bg,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 50),
+                    // الغلاف
+                    Container(
+                      width: 130,
+                      height: 190,
+                      decoration: BoxDecoration(
+                        color: coverBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: _border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                        image: coverUrl != null
+                            ? DecorationImage(
+                                image: NetworkImage(coverUrl),
+                                fit: BoxFit.cover)
+                            : null,
                       ),
+                      child: coverUrl == null
+                          ? Icon(Icons.auto_stories_rounded,
+                              size: 50,
+                              color: _accent.withOpacity(0.4))
+                          : null,
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: _border),
+            ),
           ),
 
-          // ── المحتوى ─────────────────────────────────────────────────────────
+          // ── المحتوى ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('novels')
-                    .doc(novelId)
-                    .snapshots(),
-                builder: (_, novelSnap) {
-                  final novelData = novelSnap.hasData && novelSnap.data!.exists
-                      ? novelSnap.data!.data() as Map<String, dynamic>
-                      : <String, dynamic>{};
-                  final isCompleted = novelData['status'] == 'completed';
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('novels').doc(novelId).snapshots(),
+              builder: (_, novelSnap) {
+                final novelData =
+                    novelSnap.hasData && novelSnap.data!.exists
+                        ? novelSnap.data!.data() as Map<String, dynamic>
+                        : <String, dynamic>{};
+                final isCompleted = novelData['status'] == 'completed';
+                final title = novelData['title'] ??
+                    widget.novel['title'] ?? '';
+                final authorName = novelData['authorName'] ??
+                    widget.novel['author'] ?? 'كاتب مجهول';
+                final desc = novelData['description'] ??
+                    widget.novel['description'] ?? '';
+                final cat = novelData['category'] ??
+                    widget.novel['category'] ?? 'عام';
 
-                  return Column(
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // تصنيف
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(
-                                0.15,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              novelData['category'] ??
-                                  widget.novel['category'] ??
-                                  'عام',
-                              style: GoogleFonts.cairo(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          if (isCompleted) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'مكتملة ✅',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 12,
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                      // تصنيف + حالة
+                      Row(children: [
+                        _badge(cat, _accent.withOpacity(0.15), _accent),
+                        if (isCompleted) ...[
+                          const SizedBox(width: 8),
+                          _badge('مكتملة ✅',
+                              Colors.green.withOpacity(0.12), Colors.green),
                         ],
-                      ),
+                      ]),
                       const SizedBox(height: 12),
 
                       // العنوان
-                      Text(
-                        novelData['title'] ?? widget.novel['title'] ?? '',
-                        style: GoogleFonts.cairo(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
+                      Text(title,
+                          style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: _textPrimary)),
+
+                      const SizedBox(height: 8),
 
                       // الكاتب + متابعة
-                      const SizedBox(height: 6),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
                           GestureDetector(
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => AuthorScreen(
-                                  authorId: authorId,
-                                  authorName:
-                                      widget.novel['author'] ?? 'كاتب مجهول',
+                                  authorId:   authorId,
+                                  authorName: authorName,
                                 ),
                               ),
                             ),
-                            child: Text(
-                              'بقلم: ${widget.novel['author'] ?? 'كاتب مجهول'}',
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: theme.colorScheme.primary,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
+                            child: Row(children: [
+                              const Icon(Icons.person_outline_rounded,
+                                  size: 15, color: _accent),
+                              const SizedBox(width: 5),
+                              Text(authorName,
+                                  style: GoogleFonts.cairo(
+                                      fontSize: 13,
+                                      color: _accent,
+                                      decoration:
+                                          TextDecoration.underline,
+                                      decorationColor: _accent)),
+                            ]),
                           ),
                           if (!isOwner && authorId.isNotEmpty)
                             _isFollowLoading
@@ -675,164 +552,144 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : OutlinedButton.icon(
-                                    onPressed: _toggleFollow,
-                                    icon: Icon(
-                                      _isFollowing
-                                          ? Icons.person_remove_outlined
-                                          : Icons.person_add_outlined,
-                                      size: 15,
-                                      color: _isFollowing
-                                          ? Colors.grey
-                                          : theme.colorScheme.primary,
-                                    ),
-                                    label: Text(
-                                      _isFollowing ? 'متابَع' : 'تابع',
-                                      style: GoogleFonts.cairo(
-                                        fontSize: 12,
+                                        color: _accent, strokeWidth: 2))
+                                : GestureDetector(
+                                    onTap: _toggleFollow,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                          milliseconds: 200),
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 6),
+                                      decoration: BoxDecoration(
                                         color: _isFollowing
-                                            ? Colors.grey
-                                            : theme.colorScheme.primary,
+                                            ? _surface
+                                            : _accent,
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        border: Border.all(
+                                            color: _isFollowing
+                                                ? _border
+                                                : _accent),
                                       ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: BorderSide(
-                                        color: _isFollowing
-                                            ? Colors.grey
-                                            : theme.colorScheme.primary,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
+                                      child: Text(
+                                        _isFollowing ? 'متابَع' : 'تابع',
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: _isFollowing
+                                              ? _textSecondary
+                                              : const Color(0xFF0D0F14),
+                                        ),
                                       ),
                                     ),
                                   ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
 
-                      // إحصائيات
+                      // الإحصائيات
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 8),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? theme.colorScheme.surface
-                              : Colors.grey.shade100,
+                          color: _surface,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: _border),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceAround,
                           children: [
-                            _stat(
-                              Icons.star_rounded,
-                              (novelData['rating'] ?? 0.0).toStringAsFixed(1),
-                              'التقييم',
-                              theme,
-                              color: Colors.amber,
-                            ),
-                            _divider(),
-                            _stat(
-                              Icons.favorite_rounded,
-                              (novelData['likes'] ?? 0).toString(),
-                              'إعجاب',
-                              theme,
-                              color: Colors.redAccent,
-                            ),
-                            _divider(),
-                            _stat(
-                              Icons.remove_red_eye_rounded,
-                              (novelData['readers'] ?? 0).toString(),
-                              'قارئ',
-                              theme,
-                            ),
-                            _divider(),
-                            _stat(
-                              Icons.menu_book_rounded,
-                              (novelData['chaptersCount'] ?? 0).toString(),
-                              'فصل',
-                              theme,
-                            ),
+                            _stat(Icons.star_rounded,
+                                (novelData['rating'] ?? 0.0)
+                                    .toStringAsFixed(1),
+                                'التقييم',
+                                color: _gold),
+                            _vDiv(),
+                            _stat(Icons.favorite_rounded,
+                                (novelData['likes'] ?? 0).toString(),
+                                'إعجاب',
+                                color: Colors.redAccent),
+                            _vDiv(),
+                            _stat(Icons.remove_red_eye_rounded,
+                                (novelData['readers'] ?? 0).toString(),
+                                'قارئ'),
+                            _vDiv(),
+                            _stat(Icons.menu_book_rounded,
+                                (novelData['chaptersCount'] ?? 0)
+                                    .toString(),
+                                'فصل'),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 22),
 
-                      // تقييم بالنجوم (للقراء)
-                      if (!isOwner) ...[
-                        _ratingWidget(theme),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // وصف
-                      Text(
-                        'نبذة عن الرواية',
-                        style: GoogleFonts.cairo(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
+                      // الوصف
+                      _sectionTitle('نبذة عن الرواية'),
                       const SizedBox(height: 8),
                       Text(
-                        (novelData['description'] ??
-                                    widget.novel['description'] ??
-                                    '')
-                                .toString()
-                                .isEmpty
+                        desc.toString().isEmpty
                             ? 'لا يوجد وصف لهذه الرواية.'
-                            : (novelData['description'] ??
-                                  widget.novel['description'] ??
-                                  ''),
+                            : desc,
                         style: GoogleFonts.cairo(
                           fontSize: 14,
-                          height: 1.7,
-                          color: isDark ? Colors.white70 : Colors.black54,
+                          height: 1.8,
+                          color: _textSecondary,
                         ),
                       ),
                       const SizedBox(height: 24),
 
-                      // ── قائمة الفصول ──────────────────────────────────────
+                      // الفصول
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'الفصول',
-                            style: GoogleFonts.cairo(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
+                          _sectionTitle('الفصول'),
                           if (isOwner && !isCompleted)
-                            TextButton.icon(
-                              onPressed: () => Navigator.push(
+                            GestureDetector(
+                              onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => AddNovelScreen(
-                                    novelId: novelId,
-                                    novelTitle:
-                                        novelData['title'] ??
-                                        widget.novel['title'],
+                                    novelId:    novelId,
+                                    novelTitle: title,
                                   ),
                                 ),
                               ),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: Text(
-                                'فصل جديد',
-                                style: GoogleFonts.cairo(fontSize: 13),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _accent.withOpacity(0.12),
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color:
+                                          _accent.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.add,
+                                        size: 14, color: _accent),
+                                    const SizedBox(width: 4),
+                                    Text('فصل جديد',
+                                        style: GoogleFonts.cairo(
+                                            fontSize: 12,
+                                            color: _accent,
+                                            fontWeight:
+                                                FontWeight.w700)),
+                                  ],
+                                ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
-                      // فصول stream
+                      // قائمة الفصول
                       StreamBuilder<QuerySnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('novels')
@@ -844,118 +701,142 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           if (chapSnap.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          if (chapSnap.hasError) {
-                            return Center(
-                              child: Text('حدث خطأ في تحميل الفصول: ${chapSnap.error}'),
-                            );
+                                child: CircularProgressIndicator(
+                                    color: _accent, strokeWidth: 2));
                           }
                           if (!chapSnap.hasData ||
                               chapSnap.data!.docs.isEmpty) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                ),
-                                child: Text(
-                                  'لا توجد فصول بعد.',
-                                  style: GoogleFonts.cairo(color: Colors.grey),
-                                ),
-                              ),
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                  child: Text('لا توجد فصول بعد.',
+                                      style: GoogleFonts.cairo(
+                                          color: _textSecondary))),
                             );
                           }
 
-                          final chapters = chapSnap.data!.docs;
                           return ListView.builder(
                             shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: chapters.length,
+                            physics:
+                                const NeverScrollableScrollPhysics(),
+                            itemCount: chapSnap.data!.docs.length,
                             itemBuilder: (_, i) {
-                              final ch =
-                                  chapters[i].data() as Map<String, dynamic>;
-                              final chapterId = chapters[i].id;
-                              final chNum = ch['chapterNumber'] ?? (i + 1);
-                              final wc = ch['wordCount'] ?? 0;
-                              final rt = (ch['rating'] ?? 0.0).toDouble();
-                              final rtCt = ch['ratingsCount'] ?? 0;
+                              final ch = chapSnap.data!.docs[i];
+                              final chData =
+                                  ch.data() as Map<String, dynamic>;
+                              final chNum =
+                                  chData['chapterNumber'] ?? (i + 1);
+                              final wc = chData['wordCount'] ?? 0;
+                              final rt = (chData['rating'] ?? 0.0)
+                                  .toDouble();
+                              final rtCt =
+                                  chData['ratingsCount'] ?? 0;
 
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                              return GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => NovelReaderScreen(
+                                      novel: {
+                                        'id':           novelId,
+                                        'chapterId':    ch.id,
+                                        'chapterTitle': chData['title'] ?? '',
+                                        'chapterNumber': chNum.toString(),
+                                        'title':        title,
+                                        'author':       authorName,
+                                        'content':      chData['content'] ?? '',
+                                        'likes':        (novelData['likes'] ?? 0).toString(),
+                                        'readers':      (novelData['readers'] ?? 0).toString(),
+                                        'authorId':     authorId,
+                                      },
+                                    ),
+                                  ),
                                 ),
-                                child: ListTile(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => NovelReaderScreen(
-                                        novel: {
-                                          'id': novelId,
-                                          'chapterId': chapterId,
-                                          'chapterTitle': ch['title'] ?? '',
-                                          'chapterNumber': chNum.toString(),
-                                          'title':
-                                              novelData['title'] ??
-                                              widget.novel['title'] ??
-                                              '',
-                                          'author':
-                                              widget.novel['author'] ?? '',
-                                          'content': ch['content'] ?? '',
-                                          'likes': (novelData['likes'] ?? 0)
-                                              .toString(),
-                                          'readers': (novelData['readers'] ?? 0)
-                                              .toString(),
-                                          'authorId': authorId,
-                                        },
+                                child: Container(
+                                  margin: const EdgeInsets.only(
+                                      bottom: 10),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: _surface,
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                    border:
+                                        Border.all(color: _border),
+                                  ),
+                                  child: Row(children: [
+                                    // رقم الفصل
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: _accent.withOpacity(0.12),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Center(
+                                        child: Text('$chNum',
+                                            style: GoogleFonts.cairo(
+                                                fontWeight:
+                                                    FontWeight.w700,
+                                                color: _accent,
+                                                fontSize: 13)),
                                       ),
                                     ),
-                                  ),
-                                  leading: CircleAvatar(
-                                    backgroundColor: theme.colorScheme.primary
-                                        .withOpacity(0.1),
-                                    child: Text(
-                                      '$chNum',
-                                      style: GoogleFonts.cairo(
-                                        fontWeight: FontWeight.bold,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    ch['title'] ?? 'فصل $chNum',
-                                    style: GoogleFonts.cairo(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  subtitle: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '$wc كلمة  •  ${rt.toStringAsFixed(1)} ($rtCt تقييم)',
-                                          style: GoogleFonts.cairo(
-                                            fontSize: 11,
-                                            color: Colors.grey,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            chData['title'] ??
+                                                'فصل $chNum',
+                                            style: GoogleFonts.cairo(
+                                              fontWeight:
+                                                  FontWeight.w700,
+                                              fontSize: 13,
+                                              color: _textPrimary,
+                                            ),
                                           ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                          const SizedBox(height: 3),
+                                          Row(children: [
+                                            Text(
+                                              '$wc كلمة',
+                                              style: GoogleFonts.cairo(
+                                                  fontSize: 11,
+                                                  color:
+                                                      _textSecondary),
+                                            ),
+                                            if (rtCt > 0) ...[
+                                              Text('  ·  ',
+                                                  style: GoogleFonts
+                                                      .cairo(
+                                                          fontSize: 11,
+                                                          color:
+                                                              _textSecondary)),
+                                              Icon(
+                                                  Icons.star_rounded,
+                                                  size: 11,
+                                                  color: _gold),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                '${rt.toStringAsFixed(1)} ($rtCt)',
+                                                style: GoogleFonts.cairo(
+                                                    fontSize: 11,
+                                                    color:
+                                                        _textSecondary),
+                                              ),
+                                            ],
+                                          ]),
+                                        ],
                                       ),
-                                      const SizedBox(width: 6),
-                                      const Icon(
-                                        Icons.star,
-                                        size: 12,
-                                        color: Colors.amber,
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 14,
-                                    color: Colors.grey,
-                                  ),
+                                    ),
+                                    const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 13,
+                                        color: _textSecondary),
+                                  ]),
                                 ),
                               );
                             },
@@ -963,7 +844,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                         },
                       ),
 
-                      // زر إكمال الرواية
+                      // زر الاكتمال
                       if (isOwner && !isCompleted) ...[
                         const SizedBox(height: 16),
                         SizedBox(
@@ -971,29 +852,31 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           child: OutlinedButton.icon(
                             onPressed: _confirmComplete,
                             icon: const Icon(
-                              Icons.check_circle_outline,
-                              color: Colors.green,
-                            ),
-                            label: Text(
-                              'أعلن اكتمال الرواية',
-                              style: GoogleFonts.cairo(color: Colors.green),
-                            ),
+                                Icons.check_circle_outline,
+                                color: Colors.green,
+                                size: 18),
+                            label: Text('أعلن اكتمال الرواية',
+                                style: GoogleFonts.cairo(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w700)),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.green),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(
+                                  color: Colors.green),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                                  borderRadius:
+                                      BorderRadius.circular(12)),
                             ),
                           ),
                         ),
                       ],
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
                     ],
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -1001,91 +884,50 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  Widget _ratingWidget(ThemeData theme) {
+  // ── مساعدات ───────────────────────────────────────────────────────────────
+  Widget _badge(String text, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _userRating == 0
-                      ? 'قيّم هذه الرواية'
-                      : 'تقييمك: $_userRating نجوم',
-                  style: GoogleFonts.cairo(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber.shade700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.star, size: 14, color: Colors.amber),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _isRatingLoading
-              ? const Center(
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.amber,
-                    ),
-                  ),
-                )
-              : Row(
-                  children: List.generate(5, (i) {
-                    final star = i + 1;
-                    return GestureDetector(
-                      onTap: () => _submitRating(star),
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Icon(
-                          star <= _userRating
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
-                          color: Colors.amber,
-                          size: 34,
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-        ],
-      ),
+          color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Text(text,
+          style: GoogleFonts.cairo(
+              fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
     );
   }
 
-  Widget _stat(
-    IconData icon,
-    String val,
-    String label,
-    ThemeData theme, {
-    Color? color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color ?? theme.colorScheme.primary, size: 22),
-        const SizedBox(height: 3),
-        Text(
-          val,
-          style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        Text(label, style: GoogleFonts.cairo(fontSize: 10, color: Colors.grey)),
-      ],
-    );
+  Widget _sectionTitle(String text) {
+    return Row(children: [
+      Container(
+        width: 3,
+        height: 16,
+        decoration: BoxDecoration(
+            color: _accent, borderRadius: BorderRadius.circular(2)),
+      ),
+      const SizedBox(width: 8),
+      Text(text,
+          style: GoogleFonts.cairo(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _textSecondary)),
+    ]);
   }
 
-  Widget _divider() =>
-      Container(height: 36, width: 1, color: Colors.grey.withOpacity(0.25));
+  Widget _stat(IconData icon, String val, String label, {Color? color}) {
+    return Column(children: [
+      Icon(icon, color: color ?? _accent, size: 20),
+      const SizedBox(height: 3),
+      Text(val,
+          style: GoogleFonts.cairo(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary)),
+      Text(label,
+          style:
+              GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+    ]);
+  }
+
+  Widget _vDiv() =>
+      Container(height: 36, width: 1, color: _border);
 }

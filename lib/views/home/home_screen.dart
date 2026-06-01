@@ -102,11 +102,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Text(
                         'راوي',
-                        style: GoogleFonts.amiri(
+                        style: GoogleFonts.cairo(
                           fontWeight: FontWeight.w700,
                           fontSize: 22,
                           color: _textPrimary,
-                          letterSpacing: 0.5,
+                          letterSpacing: 1,
                         ),
                       ),
                     ],
