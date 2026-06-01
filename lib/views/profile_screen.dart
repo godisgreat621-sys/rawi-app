@@ -508,13 +508,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onTap: () =>
                             _showEditNameDialog(name, userData),
                       ),
-                      _menuTile(
-                        Icons.auto_stories_outlined,
-                        'مسوداتي',
-                        subtitle: 'روايات وفصول لم تُنشر بعد',
-                        onTap: () => Navigator.pushNamed(
-                            context, '/drafts'),
-                      ),
                       if (role == 'admin')
                         _menuTile(
                           Icons.admin_panel_settings_outlined,

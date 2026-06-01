@@ -123,14 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               else ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_note_rounded, color: _textSecondary, size: 23),
-                  tooltip: 'المسودات',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DraftsListScreen()),
-                  ),
-                ),
-                IconButton(
                   icon: const Icon(Icons.search_rounded, color: _textSecondary, size: 22),
                   onPressed: () => setState(() => _isSearching = true),
                 ),

@@ -232,10 +232,6 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     if (user == null || _novelId.isEmpty) return;
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
-    if (text.length < 30) {
-      _showSnack('التعليق يجب أن يكون 30 حرفاً على الأقل', Colors.orange);
-      return;
-    }
 
     setState(() => _isPostingComment = true);
 
@@ -333,17 +329,11 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('تعليق (30 حرفاً على الأقل)',
+                    Text('تعليق',
                         style: GoogleFonts.cairo(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: _textPrimary)),
-                    Text('$charCount / 30',
-                        style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            color: charCount >= 30
-                                ? _accent
-                                : _textSecondary)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -387,7 +377,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: (tempRating == 0 || charCount < 30)
+                    onPressed: (tempRating == 0 || charCount == 0)
                         ? null
                         : () async {
                             // ← إغلاق الشيت أولاً ثم الإرسال بدون انتظار إخفاء الكيبورد
@@ -708,22 +698,6 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                               ),
                             ),
                     ]),
-                    // عداد الحروف
-                    if (_commentCharCount > 0 &&
-                        _commentCharCount < 30)
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(top: 4, right: 4),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '$_commentCharCount / 30 حرفاً',
-                            style: GoogleFonts.cairo(
-                                fontSize: 11,
-                                color: _textSecondary),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
