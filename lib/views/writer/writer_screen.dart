@@ -396,7 +396,7 @@ class WriterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'ابدأ روايتك الأولى\nوشارك قصتك مع القراء ✍️',
+              'ابدأ روايتك الأولى\nوشارك قصتك مع القراء',
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 13,

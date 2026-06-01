@@ -38,6 +38,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   bool _isSavingDraft = false;
   int _wordCount = 0;
   String? _currentDraftId;
+  DateTime? _lastPublishedDate;
 
   // ── ألوان المظهر الجديد ──────────────────────────────────────────────────
   static const _bg            = Color(0xFF0D0F14);
@@ -73,14 +74,19 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     _currentDraftId = widget.draftId;
     _contentController.addListener(_updateWordCount);
     if (_currentDraftId != null) {
-      // If it's a draft, load its content
       _loadDraft();
-    } else if (widget.novelId != null && widget.novelTitle == null) {
-      // If it's a new chapter for an existing novel, but novelTitle wasn't passed, fetch it.
-      // This happens when navigating from WriterScreen to add a chapter to an existing novel.
-      _fetchNovelTitle(widget.novelId!).then((title) => setState(() => _novelTitleController.text = title ?? ''));
     }
+    _fetchLastPublished();
     _startAutosave();
+  }
+
+  Future<void> _fetchLastPublished() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    if (doc.exists && doc.data()?['lastPublished'] != null) {
+      setState(() => _lastPublishedDate = (doc.data()?['lastPublished'] as Timestamp).toDate());
+    }
   }
 
   void _updateWordCount() {
@@ -164,6 +170,11 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // نشر
   // ─────────────────────────────────────────────────────────────────────────────
   Future<void> _saveDraft({bool silent = false}) async {
+    if (_wordCount < 30) {
+      if (!silent)
+        _showError('يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة');
+      return;
+    }
     final draftError = _validateDraft();
     if (draftError != null) {
       if (!silent) _showError(draftError);
@@ -213,6 +224,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     if (_isNewNovel && _novelTitleController.text.trim().isEmpty) {
       return 'الرجاء إدخال عنوان الرواية لحفظ المسودة';
     }
+    if (_wordCount < 30) {
+      return 'يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة';
+    }
     return null;
   }
 
@@ -242,16 +256,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         await _saveDraft(silent: true);
       }
     });
-  }
-
-  // Fetch novel title if it's a chapter draft and title isn't provided
-  Future<String?> _fetchNovelTitle(String novelId) async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
-      return doc.data()?['title'] as String?;
-    } catch (e) {
-      return null;
-    }
   }
 
   Future<void> _publish() async {
@@ -331,6 +335,27 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     );
   }
 
+  Widget _buildPublishTimer() {
+    if (_lastPublishedDate == null) return const SizedBox();
+    final now = DateTime.now();
+    final diff = now.difference(_lastPublishedDate!);
+    if (diff.inHours >= 24) return const SizedBox();
+
+    final remaining = const Duration(hours: 24) - diff;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: _gold.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _gold.withOpacity(0.3))),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined, color: _gold, size: 18),
+          const SizedBox(width: 10),
+          Expanded(child: Text('يمكنك نشر الفصل التالي بعد: ${remaining.inHours} ساعة و ${remaining.inMinutes % 60} دقيقة', style: GoogleFonts.cairo(fontSize: 12, color: _gold, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // عداد الكلمات الاحترافي (شريط تقدم بصرى متطور)
   // ─────────────────────────────────────────────────────────────────────────────
@@ -378,207 +403,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Build
-  // ─────────────────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _bg,
-        elevation: 0,
-        title: Text(
-          _isNewNovel ? 'رواية جديدة 🖋️' : 'فصل جديد — "${widget.novelTitle ?? _novelTitleController.text}"',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15, color: _textPrimary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isSavingDraft ? null : _saveDraft,
-            child: _isSavingDraft
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
-                  )
-                : Text(
-                    'حفظ مسودة',
-                    style: GoogleFonts.cairo(
-                      color: _accent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-          ),
-          TextButton(
-            onPressed: _isPublishing ? null : _publish,
-            child: _isPublishing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
-                  )
-                : Text(
-                    'نشر 🚀',
-                    style: GoogleFonts.cairo(
-                      color: _gold,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_isDraftMode)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _accent.withOpacity(0.2)),
-                ),
-                child: Text(
-                  'تحرير مسودة محفوظة',
-                  style: GoogleFonts.cairo(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: _accent,
-                  ),
-                ),
-              ),
-
-            // ── حقول الرواية الجديدة فقط ──
-            if (_isNewNovel) ...[
-              _field(
-                controller: _novelTitleController,
-                hint: 'عنوان الرواية...',
-                fontSize: 22,
-                bold: true,
-              ),
-              const SizedBox(height: 12),
-              // اختيار غلاف الرواية
-              GestureDetector(
-                onTap: _isUploadingCover ? null : () async {
-                  setState(() => _isUploadingCover = true);
-                  final url = await UserRepository.pickAndUploadImage('novel_covers');
-                  setState(() {
-                    _coverUrl = url;
-                    _isUploadingCover = false;
-                  });
-                },
-                child: Container(
-                  height: 150,
-                  width: 100,
-                  decoration: BoxDecoration(
-                    color: _surfaceHigh,
-                    borderRadius: BorderRadius.circular(12),
-                    image: _coverUrl != null 
-                      ? DecorationImage(image: NetworkImage(_coverUrl!), fit: BoxFit.cover)
-                      : null,
-                  ),
-                  child: _isUploadingCover 
-                    ? const Center(child: CircularProgressIndicator(color: _accent))
-                    : _coverUrl == null 
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.add_photo_alternate_outlined, color: _textSecondary),
-                            Text('غلاف', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
-                          ],
-                        )
-                      : null,
-                ),
-              ),
-              if (_coverUrl != null) 
-                TextButton(
-                  onPressed: () => setState(() => _coverUrl = null),
-                  child: Text('حذف الغلاف', style: GoogleFonts.cairo(color: Colors.redAccent, fontSize: 12)),
-                ),
-
-              const Divider(height: 28),
-
-              // التصنيفات الأفقية المميزة
-              SizedBox(
-                height: 38,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categories.length,
-                  itemBuilder: (_, i) {
-                    final cat = _categories[i];
-                    final sel = cat == _selectedCategory;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedCategory = cat),
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: sel ? _accent : _surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: sel ? _accent : _border,
-                          ),
-                        ),
-                        child: Text(
-                          cat,
-                          style: GoogleFonts.cairo(fontSize: 12, color: sel ? _bg : _textSecondary, fontWeight: sel ? FontWeight.bold : FontWeight.normal),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              _field(
-                controller: _descriptionController,
-                hint: 'اكتب ملخصاً قصيراً لجذب القراء...',
-                maxLines: 3,
-              ),
-              const Divider(height: 28, color: _border),
-            ],
-
-            // ── عنوان الفصل ──
-            _field(
-              controller: _chapterTitleController,
-              hint: _isNewNovel ? 'عنوان الفصل الأول...' : 'عنوان الفصل...',
-              fontSize: 17,
-              bold: true,
-            ),
-            const Divider(height: 24, color: _border),
-
-            // ── محتوى الفصل ──
-            _field(
-              controller: _contentController,
-              hint: 'اكتب الفصل هنا...',
-              maxLines: null,
-              fontSize: 16,
-              lineHeight: 1.9,
-            ),
-
-            const SizedBox(height: 20),
-            _wordCounterBar(),
-            const SizedBox(height: 20),
-
-            // ── بطاقة شروط النشر الإرشادية (تظهر للفصول فقط) ──
-            if (!_isNewNovel) _conditionsCard(),
-
-            const SizedBox(height: 80),
-          ],
-        ),
-      ),
     );
   }
 
@@ -668,6 +492,210 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _bg,
+        elevation: 0,
+        title: Text(
+          _isNewNovel ? 'رواية جديدة' : 'فصل جديد — "${widget.novelTitle ?? _novelTitleController.text}"',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 15, color: _textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSavingDraft ? null : _saveDraft,
+            child: _isSavingDraft
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
+                  )
+                : Text(
+                    'حفظ مسودة',
+                    style: GoogleFonts.cairo(
+                      color: _accent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+          ),
+          TextButton(
+            onPressed: _isPublishing ? null : _publish,
+            child: _isPublishing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
+                  )
+                : Text(
+                    'نشر',
+                    style: GoogleFonts.cairo(
+                      color: _gold,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!_isNewNovel) _buildPublishTimer(),
+            if (_isDraftMode)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _accent.withOpacity(0.2)),
+                ),
+                child: Text(
+                  'تحرير مسودة محفوظة',
+                  style: GoogleFonts.cairo(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: _accent,
+                  ),
+                ),
+              ),
+
+            // ── حقول الرواية الجديدة فقط ──
+            if (_isNewNovel) ...[
+              _field(
+                controller: _novelTitleController,
+                hint: 'عنوان الرواية...',
+                fontSize: 22,
+                bold: true,
+              ),
+              const SizedBox(height: 12),
+              // اختيار غلاف الرواية
+              GestureDetector(
+                onTap: _isUploadingCover ? null : () async {
+                  setState(() => _isUploadingCover = true);
+                  try {
+                    final url = await UserRepository.pickAndUploadImage('novel_covers');
+                    setState(() => _coverUrl = url);
+                  } catch (e) {
+                    _showError(e.toString().replaceFirst('Exception: ', ''));
+                  }
+                  setState(() => _isUploadingCover = false);
+                },
+                child: Container(
+                  height: 150,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: _surfaceHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    image: _coverUrl != null
+                      ? DecorationImage(image: NetworkImage(_coverUrl!), fit: BoxFit.cover)
+                      : null,
+                  ),
+                  child: _isUploadingCover
+                    ? const Center(child: CircularProgressIndicator(color: _accent))
+                    : _coverUrl == null
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_photo_alternate_outlined, color: _textSecondary),
+                            Text('غلاف', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+                          ],
+                        )
+                      : null,
+                ),
+              ),
+              if (_coverUrl != null)
+                TextButton(
+                  onPressed: () => setState(() => _coverUrl = null),
+                  child: Text('حذف الغلاف', style: GoogleFonts.cairo(color: Colors.redAccent, fontSize: 12)),
+                ),
+
+              const Divider(height: 28),
+
+              // التصنيفات الأفقية المميزة
+              SizedBox(
+                height: 38,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _categories.length,
+                  itemBuilder: (_, i) {
+                    final cat = _categories[i];
+                    final sel = cat == _selectedCategory;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedCategory = cat),
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: sel ? _accent : _surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: sel ? _accent : _border,
+                          ),
+                        ),
+                        child: Text(
+                          cat,
+                          style: GoogleFonts.cairo(fontSize: 12, color: sel ? _bg : _textSecondary, fontWeight: sel ? FontWeight.bold : FontWeight.normal),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              _field(
+                controller: _descriptionController,
+                hint: 'اكتب ملخصاً قصيراً لجذب القراء...',
+                maxLines: 3,
+              ),
+              const Divider(height: 28, color: _border),
+            ],
+
+            // ── عنوان الفصل ──
+            _field(
+              controller: _chapterTitleController,
+              hint: _isNewNovel ? 'عنوان الفصل الأول...' : 'عنوان الفصل...',
+              fontSize: 17,
+              bold: true,
+            ),
+            const Divider(height: 24, color: _border),
+
+            // ── محتوى الفصل ──
+            _field(
+              controller: _contentController,
+              hint: 'اكتب الفصل هنا...',
+              maxLines: null,
+              fontSize: 16,
+              lineHeight: 1.9,
+            ),
+
+            const SizedBox(height: 20),
+            _wordCounterBar(),
+            const SizedBox(height: 20),
+
+            // ── بطاقة شروط النشر الإرشادية (تظهر للفصول فقط) ──
+            if (!_isNewNovel) _conditionsCard(),
+
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }

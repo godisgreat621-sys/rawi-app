@@ -75,7 +75,7 @@ class NovelsProvider with ChangeNotifier {
       }, SetOptions(merge: true));
 
       // إشعار المتابعين
-      _notifyFollowers(user.uid, title, authorName, isNew: true);
+      _notifyFollowers(user.uid, title, authorName, isNew: true); // تم تنظيف النصوص بالداخل
 
       notifyListeners();
       return null;
@@ -337,7 +337,7 @@ class NovelsProvider with ChangeNotifier {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'like',
-        'message':   '$likerName أعجب برواية "$novelTitle" ❤️',
+        'message':   '$likerName أعجب برواية "$novelTitle"',
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -354,7 +354,7 @@ class NovelsProvider with ChangeNotifier {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'comment',
-        'message':   '$commenterName علّق على "$novelTitle" 💬',
+        'message':   '$commenterName علّق على "$novelTitle"',
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -372,7 +372,7 @@ class NovelsProvider with ChangeNotifier {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'rating',
-        'message':   '$raterName قيّم فصل "$chapterTitle" في "$novelTitle" ⭐',
+        'message':   '$raterName قيّم فصل "$chapterTitle" في "$novelTitle"',
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -385,8 +385,8 @@ class NovelsProvider with ChangeNotifier {
     if (followers.docs.isEmpty) return;
 
     String message = isNew 
-      ? 'نشر $authorName رواية جديدة: "$title" 📖'
-      : 'تم نشر فصل جديد في رواية تتابعها! ✨';
+      ? 'نشر $authorName رواية جديدة: "$title"'
+      : 'تم نشر فصل جديد في رواية تتابعها';
 
     for (var doc in followers.docs) {
       await _db.collection('notifications').add({

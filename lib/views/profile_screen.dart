@@ -484,11 +484,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           mainAxisAlignment:
                               MainAxisAlignment.spaceAround,
                           children: [
-                            _statCard(
-                                Icons.stars_rounded,
-                                points.toString(),
-                                'نقطة',
-                                _gold),
+                            GestureDetector(
+                              onTap: _showPointsInfoDialog,
+                              child: _statCard(
+                                  Icons.stars_rounded,
+                                  points.toString(),
+                                  'نقطة (اضغط للتفاصيل)',
+                                  _gold),
+                            ),
                             _vDiv(),
                             _statCard(
                                 Icons.rate_review_rounded,
@@ -526,11 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _menuTile(
                         Icons.info_outline_rounded,
                         'عن منصة راوي',
-                        onTap: () => showAboutDialog(
-                          context: context,
-                          applicationName:    'منصة راوي',
-                          applicationVersion: '1.0.0',
-                        ),
+                        onTap: _showAboutPlatformDialog,
                       ),
 
                       const SizedBox(height: 30),
@@ -569,6 +568,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
       ),
+    );
+  }
+
+  void _showPointsInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('نظام النقاط', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _gold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _pointRow('3 نقاط', 'عند الانتظار 24 ساعة بين الفصول'),
+            _pointRow('3 نقاط', 'عند تقييم 3 روايات لزملاء آخرين'),
+            _pointRow('4 نقاط', 'عند حصول فصولك على تقييمات إيجابية'),
+            const SizedBox(height: 15),
+            Text('النقاط تساعدك على النشر وتبرز مكانتك ككاتب متفاعل في المجتمع.', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pointRow(String pts, String desc) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Text(pts, style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(width: 8),
+        Expanded(child: Text(desc, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 12))),
+      ]),
+    );
+  }
+
+  void _showAboutPlatformDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text('عن منصة راوي', style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.bold, color: _accent)),
+            const SizedBox(height: 20),
+            _aboutItem(Icons.history_edu_rounded, 'إبداع بشري خالص', 'نشجع الكتابة الشخصية والابتعاد عن الاعتماد الكلي على الذكاء الاصطناعي لضمان روح النص.'),
+            _aboutItem(Icons.groups_rounded, 'مجتمع متفاعل', 'هدفنا أن لا يكتب أحد لنفسه فقط؛ نحن هنا لنقرأ لبعضنا، نقيم، ونطور مهاراتنا معاً.'),
+            _aboutItem(Icons.timer_rounded, 'نظام النشر المنضبط', 'يسمح بنشر فصل واحد كل 24 ساعة لمنح كل عمل فرصة عادلة في القراءة والظهور.'),
+            _aboutItem(Icons.auto_awesome_rounded, 'التحفيز المتبادل', 'بتقييمك للآخرين، تساهم في نمو المجتمع وتحصل على دعم مماثل لأعمالك.'),
+            const SizedBox(height: 20),
+            Text('الإصدار 1.0.0 - صنع بشغف لخدمة الأدب العربي', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _aboutItem(IconData icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: _accent, size: 24),
+        const SizedBox(width: 15),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 14)),
+          Text(desc, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, height: 1.5)),
+        ])),
+      ]),
     );
   }
 
