@@ -190,14 +190,12 @@ class NovelsProvider with ChangeNotifier {
     final novelsStream = _db
         .collection('novels')
         .where('authorId', isEqualTo: user.uid)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map((d) => LibraryItem.fromNovel(Novel.fromFirestore(d))).toList());
 
     final draftsStream = _db
         .collection('drafts')
         .where('authorId', isEqualTo: user.uid)
-        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map((doc) => LibraryItem.fromDraft(doc.data() as Map<String, dynamic>, doc.id)).toList());
 
