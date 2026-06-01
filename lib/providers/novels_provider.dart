@@ -417,4 +417,28 @@ class NovelsProvider with ChangeNotifier {
       });
     } catch (_) {}
   }
+
+  // ── نظام الإشارات المرجعية (القراءة لاحقاً) ──────────────────────────────────
+  Future<void> toggleBookmark(String novelId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final ref = _db.collection('users').doc(user.uid).collection('bookmarks').doc(novelId);
+    final doc = await ref.get();
+    if (doc.exists) {
+      await ref.delete();
+    } else {
+      await ref.set({'bookmarkedAt': FieldValue.serverTimestamp()});
+    }
+    notifyListeners();
+  }
+
+  Stream<bool> isBookmarked(String novelId) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(false);
+    return _db
+        .collection('users').doc(user.uid)
+        .collection('bookmarks').doc(novelId)
+        .snapshots()
+        .map((snap) => snap.exists);
+  }
 }

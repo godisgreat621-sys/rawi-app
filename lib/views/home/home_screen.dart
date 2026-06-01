@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:my_first_app/providers/novels_provider.dart';
 import '../../models/novel_model.dart';
 import 'novel_detail_screen.dart';
 import '../writer/drafts_list_screen.dart';
@@ -408,10 +410,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              Icon(
-                                Icons.auto_stories_rounded,
-                                size: 32,
-                                color: _accent.withOpacity(0.4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Icon(
+                                    Icons.auto_stories_rounded,
+                                    size: 24,
+                                    color: _accent.withOpacity(0.4),
+                                  ),
+                                  StreamBuilder<bool>(
+                                    stream: context.read<NovelsProvider>().isBookmarked(novel.id),
+                                    builder: (context, bookmarkSnap) {
+                                      final isBookmarked = bookmarkSnap.data ?? false;
+                                      return IconButton(
+                                        icon: Icon(
+                                          isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                          color: isBookmarked ? _gold : _textSecondary,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => context.read<NovelsProvider>().toggleBookmark(novel.id),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),

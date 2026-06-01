@@ -41,6 +41,8 @@ class NotificationsScreen extends StatelessWidget {
         return _NotifStyle(Icons.star_rounded, _gold, 'تقييم جديد');
       case 'follow':
         return _NotifStyle(Icons.person_add_rounded, _accent, 'متابع جديد');
+      case 'follow_post':
+        return _NotifStyle(Icons.auto_stories_rounded, _accent, 'عمل جديد من متابَع');
       default:
         return _NotifStyle(Icons.notifications_rounded, _textSecondary,
             'إشعار');

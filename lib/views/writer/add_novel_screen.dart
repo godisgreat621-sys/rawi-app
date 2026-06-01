@@ -170,11 +170,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // نشر
   // ─────────────────────────────────────────────────────────────────────────────
   Future<void> _saveDraft({bool silent = false}) async {
-    if (_wordCount < 30) {
-      if (!silent)
-        _showError('يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة');
-      return;
-    }
     final draftError = _validateDraft();
     if (draftError != null) {
       if (!silent) _showError(draftError);
@@ -224,9 +219,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     if (_isNewNovel && _novelTitleController.text.trim().isEmpty) {
       return 'الرجاء إدخال عنوان الرواية لحفظ المسودة';
     }
-    if (_wordCount < 30) {
-      return 'يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة';
-    }
     return null;
   }
 
@@ -251,10 +243,8 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   void _startAutosave() {
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
-      if (!mounted) return;
-      if (_wordCount >= 30) {
-        await _saveDraft(silent: true);
-      }
+      if (!mounted || _contentController.text.isEmpty) return;
+      await _saveDraft(silent: true);
     });
   }
 
@@ -552,7 +542,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!_isNewNovel) _buildPublishTimer(),
+            _buildPublishTimer(),
             if (_isDraftMode)
               Container(
                 width: double.infinity,

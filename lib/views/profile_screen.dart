@@ -340,6 +340,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final points     = userData?['points']      ?? 0;
           final role       = userData?['role']        ?? 'user';
           final ratingsGiven = userData?['ratingsGiven'] ?? 0;
+          final ratingsReceived = userData?['ratingsReceived'] ?? 0;
+          final avgRating = (userData?['avgRating'] ?? 0.0).toDouble();
+          final followersCount = userData?['followersCount'] ?? 0;
+          final followingCount = userData?['followingCount'] ?? 0;
+
+          final showPublicRating = ratingsReceived >= 10;
 
           return CustomScrollView(
             slivers: [
@@ -473,31 +479,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       // ── بطاقة الإحصائيات ──────────────────────────
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 8),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color:  _surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: _border),
                         ),
-                        child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceAround,
+                        child: Column(
                           children: [
-                            GestureDetector(
-                              onTap: _showPointsInfoDialog,
-                              child: _statCard(
-                                  Icons.stars_rounded,
-                                  points.toString(),
-                                  'نقطة (اضغط للتفاصيل)',
-                                  _gold),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _showUserList('المتابعون', 'followers'),
+                                  child: _statCard(Icons.group_outlined, followersCount.toString(), 'متابع', _accent),
+                                ),
+                                _vDiv(),
+                                GestureDetector(
+                                  onTap: () => _showUserList('أتابعهم', 'following'),
+                                  child: _statCard(Icons.person_add_outlined, followingCount.toString(), 'أتابع', _accent),
+                                ),
+                                _vDiv(),
+                                GestureDetector(
+                                  onTap: _showPointsInfoDialog,
+                                  child: _statCard(Icons.stars_rounded, points.toString(), 'نقطة', _gold),
+                                ),
+                              ],
                             ),
-                            _vDiv(),
-                            _statCard(
-                                Icons.rate_review_rounded,
-                                ratingsGiven.toString(),
-                                'تقييم أعطيته',
-                                _accent),
+                            const Divider(height: 30, color: _border),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _statCard(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم أعطيته', _textSecondary),
+                                if (showPublicRating) ...[
+                                  _vDiv(),
+                                  _statCard(Icons.star_half_rounded, avgRating.toStringAsFixed(1), 'تقييمي العام', _gold),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -510,6 +529,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: 'مرة كل 30 يوماً',
                         onTap: () =>
                             _showEditNameDialog(name, userData),
+                      ),
+                      _menuTile(
+                        Icons.privacy_tip_outlined,
+                        'الخصوصية',
+                        onTap: _showPrivacySettings,
                       ),
                       if (role == 'admin')
                         _menuTile(
@@ -567,6 +591,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // ── عرض قوائم المتابعين والمتابعين ────────────────────────────────────────
+  void _showUserList(String title, String collectionPath) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').doc(user.uid).collection(collectionPath).snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          final docs = snapshot.data!.docs;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(title, style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+              ),
+              Expanded(
+                child: docs.isEmpty 
+                  ? Center(child: Text('القائمة فارغة', style: GoogleFonts.cairo(color: _textSecondary)))
+                  : ListView.builder(
+                      itemCount: docs.length,
+                      itemBuilder: (context, i) => FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance.collection('users').doc(docs[i].id).get(),
+                        builder: (context, userSnap) {
+                          if (!userSnap.hasData) return const SizedBox();
+                          final uData = userSnap.data!.data() as Map<String, dynamic>;
+                          return ListTile(
+                            leading: CircleAvatar(backgroundImage: uData['profilePicture'] != null ? NetworkImage(uData['profilePicture']) : null),
+                            title: Text(uData['displayName'] ?? 'مستخدم', style: GoogleFonts.cairo(color: _textPrimary)),
+                            onTap: () => Navigator.pushNamed(context, '/author', arguments: docs[i].id),
+                          );
+                        },
+                      ),
+                    ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPrivacySettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('إعدادات الخصوصية', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary)),
+            SwitchListTile(title: Text('إظهار نقاطي للآخرين', style: GoogleFonts.cairo(color: _textSecondary)), value: true, onChanged: (v){}, activeColor: _accent),
+            SwitchListTile(title: Text('إظهار تقييماتي للآخرين', style: GoogleFonts.cairo(color: _textSecondary)), value: true, onChanged: (v){}, activeColor: _accent),
+          ],
+        ),
       ),
     );
   }
