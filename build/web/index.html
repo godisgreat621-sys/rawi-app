@@ -1,30 +1,90 @@
-<!DOCTYPE html>
-<html>
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
-<head>
-  <base href="/">
+class UserRepository {
+  static final _firestore = FirebaseFirestore.instance;
+  static final _auth      = FirebaseAuth.instance;
 
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+  // ── Cloudinary config ────────────────────────────────────────────────────
+  static const _cloudName    = 'dkwnjmbz1';
+  static const _uploadPreset = 'uy1hp02s';
+  static const _uploadUrl    =
+      'https://api.cloudinary.com/v1_1/$_cloudName/image/upload';
 
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  // ── رفع bytes لـ Cloudinary ──────────────────────────────────────────────
+  static Future<String> _uploadToCloudinary(
+    Uint8List bytes,
+    String folder,
+  ) async {
+    final request = http.MultipartRequest('POST', Uri.parse(_uploadUrl))
+      ..fields['upload_preset'] = _uploadPreset
+      ..fields['folder']        = 'rawi/$folder'
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+      );
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="my_first_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    final streamed = await request.send();
+    final body     = await streamed.stream.bytesToString();
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
+    if (streamed.statusCode != 200) {
+      debugPrint('Cloudinary error: $body');
+      throw Exception('فشل رفع الصورة (${streamed.statusCode})');
+    }
 
-  <title>my_first_app</title>
-  <link rel="manifest" href="manifest.json">
-</head>
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    final url  = json['secure_url'] as String?;
+    if (url == null || url.isEmpty) {
+      throw Exception('لم يتم الحصول على رابط الصورة.');
+    }
+    return url;
+  }
 
-<body>
-  <script src="flutter_bootstrap.js" async></script>
-</body>
+  // ── واجهة عامة: اختر وارفع ──────────────────────────────────────────────
+  // يجب استدعاء هذه الدالة مباشرة من onTap/onPressed بدون await مسبق
+  static Future<String> pickAndUploadImage(String folder) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('يجب تسجيل الدخول لرفع الصور.');
 
-</html>
+    // استدعاء مباشر بدون أي await قبله
+    final XFile? image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: kIsWeb ? null : 70,
+    );
+
+    if (image == null) throw Exception('لم يتم اختيار صورة.');
+
+    final Uint8List bytes = await image.readAsBytes();
+    if (bytes.isEmpty) throw Exception('فشل قراءة بيانات الصورة.');
+
+    return _uploadToCloudinary(bytes, folder);
+  }
+
+  // ── رفع الصورة الشخصية ───────────────────────────────────────────────────
+  static Future<String> uploadProfilePicture() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('يجب تسجيل الدخول.');
+
+    final url = await pickAndUploadImage('user_profiles');
+    await _firestore.collection('users').doc(user.uid)
+        .update({'profilePicture': url});
+    return url;
+  }
+
+  // ── تحديث اسم العرض ──────────────────────────────────────────────────────
+  static Future<void> updateDisplayName(String newName) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await user.updateDisplayName(newName);
+    await _firestore.collection('users').doc(user.uid)
+        .update({'displayName': newName});
+  }
+}
