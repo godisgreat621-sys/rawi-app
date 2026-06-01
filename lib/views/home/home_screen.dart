@@ -13,17 +13,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _bg = Color(0xFF0F1117);
-  static const _surface = Color(0xFF1A1D27);
-  static const _accent = Color(0xFF8BAF7C);
-  static const _textPrimary = Color(0xFFEAEAEA);
-  static const _textSecondary = Color(0xFF7A8090);
-  static const _border = Color(0xFF2A2D3A);
+  // ── ألوان ثابتة ──────────────────────────────────────────────────────────
+  static const _bg           = Color(0xFF0D0F14);
+  static const _surface      = Color(0xFF161920);
+  static const _surfaceHigh  = Color(0xFF1E2130);
+  static const _accent       = Color(0xFF8BAF7C);
+  static const _accentDim    = Color(0xFF4A6741);
+  static const _textPrimary  = Color(0xFFECECEC);
+  static const _textSecondary= Color(0xFF6B7280);
+  static const _border       = Color(0xFF252836);
+  static const _gold         = Color(0xFFD4A843);
 
   final _searchController = TextEditingController();
-  String _searchQuery = '';
-  bool _isSearching = false;
-  String _selectedCategory = 'الكل';
+  String _searchQuery     = '';
+  bool   _isSearching     = false;
+  String _selectedCategory= 'الكل';
 
   final List<String> _categories = [
     'الكل', 'فانتازيا', 'رومانسية', 'رعب',
@@ -42,17 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (_) => NovelDetailScreen(
           novel: {
-            'id': novel.id,
-            'title': novel.title,
-            'author': novel.author,
-            'category': novel.category,
+            'id':        novel.id,
+            'title':     novel.title,
+            'author':    novel.author,
+            'category':  novel.category,
             'description': novel.description,
-            'content': novel.content,
-            'rating': novel.rating.toString(),
-            'likes': novel.likes.toString(),
-            'readers': novel.readers.toString(),
-            'authorId': novel.authorId,
-            'coverUrl': novel.coverUrl,
+            'content':   novel.content,
+            'rating':    novel.rating.toString(),
+            'likes':     novel.likes.toString(),
+            'readers':   novel.readers.toString(),
+            'authorId':  novel.authorId,
+            'coverUrl':  novel.coverUrl,
           },
         ),
       ),
@@ -65,10 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: _bg,
       body: CustomScrollView(
         slivers: [
-          // ── AppBar ──────────────────────────────────────────────────────────
+          // ── AppBar ──────────────────────────────────────────────────────
           SliverAppBar(
             floating: true,
-            pinned: true,
+            pinned:   true,
             backgroundColor: _bg,
             elevation: 0,
             expandedHeight: 56,
@@ -76,26 +80,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? TextField(
                     controller: _searchController,
                     autofocus: true,
-                    style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),
+                    style: GoogleFonts.cairo(color: _textPrimary, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'ابحث عن رواية أو كاتب...',
-                      hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+                      hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
                       border: InputBorder.none,
                     ),
                     onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
                   )
-                : Text(
-                    'المكتبة',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: _textPrimary,
-                    ),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: _accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(
+                        'راوي',
+                        style: GoogleFonts.amiri(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 22,
+                          color: _textPrimary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
             actions: [
               if (_isSearching)
                 IconButton(
-                  icon: const Icon(Icons.close, color: _textSecondary, size: 20),
+                  icon: const Icon(Icons.close_rounded, color: _textSecondary, size: 21),
                   onPressed: () => setState(() {
                     _isSearching = false;
                     _searchQuery = '';
@@ -104,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               else ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_note_rounded, color: _textSecondary, size: 22),
+                  icon: const Icon(Icons.edit_note_rounded, color: _textSecondary, size: 23),
                   tooltip: 'المسودات',
                   onPressed: () => Navigator.push(
                     context,
@@ -112,9 +131,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.search, color: _textSecondary, size: 22),
+                  icon: const Icon(Icons.search_rounded, color: _textSecondary, size: 22),
                   onPressed: () => setState(() => _isSearching = true),
                 ),
+                const SizedBox(width: 4),
               ],
             ],
             bottom: PreferredSize(
@@ -123,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // ── المحتوى ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -132,28 +153,18 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
-                    padding: EdgeInsets.all(60),
-                    child: Center(child: CircularProgressIndicator(color: _accent)),
+                    padding: EdgeInsets.all(80),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: _accent,
+                        strokeWidth: 2,
+                      ),
+                    ),
                   );
                 }
 
                 if (snapshot.hasError || !snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(60),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.book_outlined, size: 48, color: _textSecondary.withOpacity(0.4)),
-                          const SizedBox(height: 14),
-                          Text(
-                            'لا توجد روايات بعد\nكن أول من ينشر ✍️',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+                  return _buildEmptyState();
                 }
 
                 final allNovels = snapshot.data!.docs
@@ -173,11 +184,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // ── التصنيفات ──────────────────────────────────────────
+                    // ── التصنيفات ─────────────────────────────────────────
                     SizedBox(
-                      height: 36,
+                      height: 38,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -188,14 +199,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           return GestureDetector(
                             onTap: () => setState(() => _selectedCategory = cat),
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
+                              duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                               decoration: BoxDecoration(
                                 color: sel ? _accent : _surface,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: sel ? _accent : _border,
+                                  width: 1,
                                 ),
                               ),
                               child: Text(
@@ -203,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: GoogleFonts.cairo(
                                   fontSize: 12,
                                   fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-                                  color: sel ? const Color(0xFF0F1117) : _textSecondary,
+                                  color: sel ? const Color(0xFF0D0F14) : _textSecondary,
                                 ),
                               ),
                             ),
@@ -212,29 +224,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 22),
 
-                    // ── عنوان القسم ────────────────────────────────────────
+                    // ── عنوان القسم ──────────────────────────────────────
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        _isSearching && _searchQuery.isNotEmpty
-                            ? 'نتائج البحث (${filtered.length})'
-                            : _selectedCategory == 'الكل'
-                                ? 'أحدث الروايات'
-                                : _selectedCategory,
-                        style: GoogleFonts.cairo(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _textSecondary,
-                          letterSpacing: 0.3,
-                        ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: _accent,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isSearching && _searchQuery.isNotEmpty
+                                ? 'نتائج البحث (${filtered.length})'
+                                : _selectedCategory == 'الكل'
+                                    ? 'أحدث الروايات'
+                                    : _selectedCategory,
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
-                    // ── الروايات ───────────────────────────────────────────
+                    // ── الروايات ──────────────────────────────────────────
                     filtered.isEmpty
                         ? Padding(
                             padding: const EdgeInsets.all(40),
@@ -260,17 +284,59 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── شبكة الروايات ────────────────────────────────────────────────────────────
+  // ── حالة فارغة ───────────────────────────────────────────────────────────
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 80),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _border),
+              ),
+              child: Icon(
+                Icons.auto_stories_outlined,
+                size: 38,
+                color: _accent.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'لا توجد روايات بعد',
+              style: GoogleFonts.cairo(
+                color: _textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'كن أول من يشارك قصته ✍️',
+              style: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── شبكة الروايات (2 عمود) ────────────────────────────────────────────────
   Widget _buildGrid(List<Novel> novels) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.58,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 14,
+        crossAxisCount: 2,
+        childAspectRatio: 0.62,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 16,
       ),
       itemCount: novels.length,
       itemBuilder: (_, i) => _buildNovelCard(novels[i]),
@@ -278,18 +344,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNovelCard(Novel novel) {
+    // خلفية ملونة للغلاف بناءً على التصنيف
+    final categoryColors = <String, Color>{
+      'فانتازيا':   const Color(0xFF2D1F4E),
+      'رومانسية':   const Color(0xFF4E1F2D),
+      'رعب':        const Color(0xFF1F2D1F),
+      'غموض':       const Color(0xFF1F2A4E),
+      'تاريخية':    const Color(0xFF4E3A1F),
+      'خيال علمي':  const Color(0xFF1F3A4E),
+      'عام':        const Color(0xFF252836),
+    };
+    final coverBg = categoryColors[novel.category] ?? _surfaceHigh;
+
     return GestureDetector(
       onTap: () => _navigateToDetail(novel),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // الغلاف
+          // ── الغلاف ──────────────────────────────────────────────────────
           Expanded(
             child: Container(
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _border),
+                color: coverBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _border, width: 1),
                 image: novel.coverUrl != null
                     ? DecorationImage(
                         image: NetworkImage(novel.coverUrl!),
@@ -298,22 +377,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     : null,
               ),
               child: novel.coverUrl == null
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ? Stack(
                       children: [
-                        Icon(Icons.book_rounded, size: 28, color: _accent.withOpacity(0.6)),
-                        const SizedBox(height: 6),
+                        // نقوش خلفية خفية
+                        Positioned(
+                          top: -10,
+                          right: -10,
+                          child: Icon(
+                            Icons.auto_stories_rounded,
+                            size: 80,
+                            color: Colors.white.withOpacity(0.04),
+                          ),
+                        ),
+                        // محتوى الغلاف
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Text(
-                            novel.category,
-                            style: GoogleFonts.cairo(
-                              fontSize: 9,
-                              color: _textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _accent.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  novel.category,
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 9,
+                                    color: _accent,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.auto_stories_rounded,
+                                size: 32,
+                                color: _accent.withOpacity(0.4),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -321,31 +427,46 @@ class _HomeScreenState extends State<HomeScreen> {
                   : null,
             ),
           ),
-          const SizedBox(height: 7),
+
+          const SizedBox(height: 8),
+
+          // ── العنوان ──────────────────────────────────────────────────────
           Text(
             novel.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.cairo(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
               color: _textPrimary,
             ),
           ),
-          Text(
-            novel.author,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary),
-          ),
-          const SizedBox(height: 3),
+
+          const SizedBox(height: 2),
+
+          // ── المؤلف والتقييم ──────────────────────────────────────────────
           Row(
             children: [
-              const Icon(Icons.star_rounded, size: 10, color: Color(0xFFD4A843)),
-              const SizedBox(width: 3),
+              Expanded(
+                child: Text(
+                  novel.author,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.cairo(
+                    fontSize: 11,
+                    color: _textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.star_rounded, size: 11, color: _gold),
+              const SizedBox(width: 2),
               Text(
                 novel.rating.toStringAsFixed(1),
-                style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary),
+                style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  color: _textSecondary,
+                ),
               ),
             ],
           ),
@@ -354,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── قائمة البحث ──────────────────────────────────────────────────────────────
+  // ── قائمة البحث ──────────────────────────────────────────────────────────
   Widget _buildSearchList(List<Novel> novels) {
     return ListView.builder(
       shrinkWrap: true,
@@ -375,14 +496,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Row(
               children: [
+                // مصغّر الغلاف
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: _accent.withOpacity(0.12),
+                    color: _surfaceHigh,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _border),
+                    image: n.coverUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(n.coverUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                  child: const Icon(Icons.book_rounded, color: _accent, size: 20),
+                  child: n.coverUrl == null
+                      ? Icon(Icons.auto_stories_rounded, color: _accent.withOpacity(0.5), size: 22)
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -392,27 +523,50 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         n.title,
                         style: GoogleFonts.cairo(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                           color: _textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        '${n.author} · ${n.category}',
-                        style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary),
+                        n.author,
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          color: _textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          n.category,
+                          style: GoogleFonts.cairo(
+                            fontSize: 10,
+                            color: _accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Row(
+                const SizedBox(width: 8),
+                Column(
                   children: [
-                    const Icon(Icons.favorite, size: 12, color: Colors.redAccent),
-                    const SizedBox(width: 4),
+                    Icon(Icons.star_rounded, size: 14, color: _gold),
                     Text(
-                      n.likes.toString(),
-                      style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary),
+                      n.rating.toStringAsFixed(1),
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        color: _textSecondary,
+                      ),
                     ),
                   ],
                 ),
