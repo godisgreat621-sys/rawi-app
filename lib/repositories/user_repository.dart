@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,24 +14,31 @@ class UserRepository {
     final user = _auth.currentUser;
     if (user == null) throw Exception('يجب تسجيل الدخول لرفع الصور.');
 
-    final picker = ImagePicker();
-    // على الويب، قد يتسبب استخدام imageQuality في إبطال رابط الـ Blob الخاص بالمتصفح بشكل مفاجئ.
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery, 
-      imageQuality: kIsWeb ? null : 60,
-    );
-    
+    XFile? image;
+
+    if (kIsWeb) {
+      image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: null, // Set to null for web to avoid Blob issues
+      );
+    } else {
+      image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 60,
+      );
+    }
+
     if (image == null) throw Exception('لم يتم اختيار صورة.');
 
-    // قراءة البيانات فوراً بعد الاختيار لضمان عدم ضياع الرابط المؤقت (Blob URL) في المتصفح.
     final Uint8List bytes = await image.readAsBytes();
+    final String originalFileName = image.name;
+
+    if (bytes.isEmpty) throw Exception('فشل قراءة بيانات الصورة.');
 
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName = originalFileName.isNotEmpty ? originalFileName : '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child(folder).child(fileName);
-
       await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-
       return await ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading image: $e');
