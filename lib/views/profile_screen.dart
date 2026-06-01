@@ -4,11 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
-import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/repositories/user_repository.dart';
 import 'admin_screen.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,269 +16,633 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // ── ألوان ─────────────────────────────────────────────────────────────────
+  static const _bg            = Color(0xFF0D0F14);
+  static const _surface       = Color(0xFF161920);
+  static const _surfaceHigh   = Color(0xFF1E2130);
+  static const _accent        = Color(0xFF8BAF7C);
+  static const _border        = Color(0xFF252836);
+  static const _textPrimary   = Color(0xFFECECEC);
+  static const _textSecondary = Color(0xFF6B7280);
+  static const _gold          = Color(0xFFD4A843);
+
   bool _isUploading = false;
 
-  // دالة لاختيار ورفع الصورة باستخدام المستودع الذي أنشأناه
   Future<void> _pickAndUploadImage() async {
     setState(() => _isUploading = true);
     try {
       final url = await UserRepository.uploadProfilePicture();
       if (url != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم تحديث الصورة الشخصية بنجاح ✅', style: GoogleFonts.cairo()),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _showSnack('تم تحديث الصورة الشخصية ✅', Colors.green);
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ أثناء الرفع ❌', style: GoogleFonts.cairo()),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    } catch (_) {
+      if (mounted) _showSnack('حدث خطأ أثناء الرفع ❌', Colors.redAccent);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
-  // نافذة تعديل الاسم
-  void _showEditNameDialog(String currentName) {
+  // ── نظام تغيير الاسم: مرة كل 30 يوماً ────────────────────────────────────
+  void _showEditNameDialog(String currentName, Map<String, dynamic>? userData) {
     final controller = TextEditingController(text: currentName);
+    final lastChanged =
+        (userData?['nameLastChangedAt'] as Timestamp?)?.toDate();
+    final now         = DateTime.now();
+    final canChange   = lastChanged == null ||
+        now.difference(lastChanged).inDays >= 30;
+    final daysLeft    = canChange
+        ? 0
+        : 30 - now.difference(lastChanged!).inDays;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('تعديل الاسم', style: GoogleFonts.cairo()),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: "أدخل اسمك الجديد", hintStyle: GoogleFonts.cairo()),
-          style: GoogleFonts.cairo(),
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: Text('تعديل الاسم',
+            style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700, color: _textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!canChange)
+              Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Text(
+                  'يمكنك تغيير اسمك مرة كل 30 يوماً.\nباقي $daysLeft يوم للتغيير القادم.',
+                  style: GoogleFonts.cairo(
+                      fontSize: 12, color: Colors.orange),
+                ),
+              ),
+            if (canChange)
+              Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _accent.withOpacity(0.2)),
+                ),
+                child: Text(
+                  'تنبيه: يرى القراء اسمك على تعليقاتك وتقييماتك.\nاختر اسماً ثابتاً حتى لا يضيع القراء.',
+                  style: GoogleFonts.cairo(
+                      fontSize: 12, color: _accent),
+                ),
+              ),
+            TextField(
+              controller:  controller,
+              enabled:     canChange,
+              style: GoogleFonts.cairo(
+                  color: _textPrimary, fontSize: 14),
+              decoration: InputDecoration(
+                hintText:  'اسمك بين القراء',
+                hintStyle: GoogleFonts.cairo(color: _textSecondary),
+                filled:    true,
+                fillColor: _surfaceHigh,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: _border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide:
+                      const BorderSide(color: _accent, width: 1.5),
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo())),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.text.trim().isNotEmpty) {
-                await UserRepository.updateDisplayName(controller.text.trim());
-                if (mounted) Navigator.pop(ctx);
-              }
-            },
-            child: Text('حفظ', style: GoogleFonts.cairo()),
-          ),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('إلغاء',
+                  style: GoogleFonts.cairo(color: _textSecondary))),
+          if (canChange)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: const Color(0xFF0D0F14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                final newName = controller.text.trim();
+                if (newName.isEmpty) return;
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) return;
+                // تحديث الاسم + تسجيل وقت التغيير
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .update({
+                  'displayName':        newName,
+                  'nameLastChangedAt':  FieldValue.serverTimestamp(),
+                });
+                await user.updateDisplayName(newName);
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  _showSnack('تم تحديث اسمك ✅', Colors.green);
+                }
+              },
+              child: Text('حفظ',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+            ),
         ],
       ),
     );
   }
 
-  // نافذة الدعم الفني
+  // ── نافذة الدعم الفني ─────────────────────────────────────────────────────
   void _showSupportDialog() {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
+    final titleCtrl = TextEditingController();
+    final descCtrl  = TextEditingController();
     String selectedType = 'مشكلة تقنية';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('الدعم الفني 🎧', style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            DropdownButtonFormField<String>(
-              value: selectedType,
-              items: ['مشكلة تقنية', 'اقتراح', 'استفسار عن النقاط', 'أخرى']
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e, style: GoogleFonts.cairo())))
-                  .toList(),
-              onChanged: (v) => selectedType = v!,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          decoration: const BoxDecoration(
+            color: Color(0xFF161920),
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('الدعم الفني',
+                    style: GoogleFonts.cairo(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: _textPrimary)),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  dropdownColor: _surfaceHigh,
+                  style: GoogleFonts.cairo(
+                      color: _textPrimary, fontSize: 13),
+                  items: ['مشكلة تقنية', 'اقتراح',
+                          'استفسار عن النقاط', 'أخرى']
+                      .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e,
+                              style: GoogleFonts.cairo(
+                                  color: _textPrimary))))
+                      .toList(),
+                  onChanged: (v) => setS(() => selectedType = v!),
+                  decoration: InputDecoration(
+                    filled:    true,
+                    fillColor: _surfaceHigh,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: _border)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                            const BorderSide(color: _border)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _supportField(titleCtrl, 'عنوان المشكلة'),
+                const SizedBox(height: 10),
+                _supportField(descCtrl, 'اشرح لنا بالتفصيل...', maxLines: 3),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: const Color(0xFF0D0F14),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () async {
+                      await context.read<NovelsProvider>()
+                          .sendSupportRequest(
+                        title:       titleCtrl.text,
+                        type:        selectedType,
+                        description: descCtrl.text,
+                      );
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        _showSnack('تم إرسال طلبك ✅', Colors.green);
+                      }
+                    },
+                    child: Text('إرسال الطلب',
+                        style: GoogleFonts.cairo(
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(hintText: "عنوان المشكلة", hintStyle: GoogleFonts.cairo(), border: const OutlineInputBorder()),
-              style: GoogleFonts.cairo(),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: descController,
-              maxLines: 3,
-              decoration: InputDecoration(hintText: "اشرح لنا بالتفصيل...", hintStyle: GoogleFonts.cairo(), border: const OutlineInputBorder()),
-              style: GoogleFonts.cairo(),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await context.read<NovelsProvider>().sendSupportRequest(
-                    title: titleController.text,
-                    type: selectedType,
-                    description: descController.text,
-                  );
-                  if (mounted) Navigator.pop(ctx);
-                },
-                child: Text('إرسال الطلب', style: GoogleFonts.cairo()),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _supportField(TextEditingController ctrl, String hint,
+      {int maxLines = 1}) {
+    return TextField(
+      controller: ctrl,
+      maxLines:   maxLines,
+      style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+      decoration: InputDecoration(
+        hintText:  hint,
+        hintStyle: GoogleFonts.cairo(
+            color: _textSecondary, fontSize: 13),
+        filled:    true,
+        fillColor: _surfaceHigh,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _border)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: _border)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide:
+                const BorderSide(color: _accent, width: 1.5)),
+      ),
+    );
+  }
+
+  void _showSnack(String msg, Color bg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: GoogleFonts.cairo()),
+      backgroundColor: bg,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10)),
+    ));
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final theme = Theme.of(context);
-
-    if (user == null) return const Scaffold(body: Center(child: Text('يرجى تسجيل الدخول')));
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: _bg,
+        body: Center(
+            child: Text('يرجى تسجيل الدخول',
+                style: GoogleFonts.cairo(color: _textSecondary))),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('ملفي الشخصي', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: () => themeProvider.toggleTheme(),
-          ),
-        ],
-      ),
+      backgroundColor: _bg,
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('users').doc(user.uid).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(
+                    color: _accent, strokeWidth: 2));
           }
 
-          final userData = snapshot.data?.data() as Map<String, dynamic>?;
-          final name = userData?['displayName'] ?? 'مستخدم';
-          final email = userData?['email'] ?? '';
-          final profilePic = userData?['profilePicture'];
-          final points = userData?['points'] ?? 0;
-          final role = userData?['role'] ?? 'user';
+          final userData =
+              snapshot.data?.data() as Map<String, dynamic>?;
+          final name       = userData?['displayName'] ?? 'مستخدم';
+          final email      = userData?['email']       ?? user.email ?? '';
+          final profilePic = userData?['profilePicture'] as String?;
+          final points     = userData?['points']      ?? 0;
+          final role       = userData?['role']        ?? 'user';
+          final ratingsGiven = userData?['ratingsGiven'] ?? 0;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                // عرض الصورة الشخصية مع زر الكاميرا للرفع
-                Center(
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.primary, width: 2),
-                        ),
-                        child: CircleAvatar(
-                          radius: 65,
-                          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                          backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
-                          child: profilePic == null
-                              ? Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                                  style: GoogleFonts.cairo(fontSize: 45, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
-                                )
-                              : null,
-                        ),
-                      ),
-                      if (_isUploading)
+          return CustomScrollView(
+            slivers: [
+              // ── Header ───────────────────────────────────────────────
+              SliverAppBar(
+                pinned: true,
+                backgroundColor: _bg,
+                elevation: 0,
+                expandedHeight: 200,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    color: _bg,
+                    child: Stack(
+                      children: [
                         Positioned.fill(
                           child: Container(
-                            decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
-                            child: const Center(child: CircularProgressIndicator()),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  _accent.withOpacity(0.05),
+                                  _bg,
+                                ],
+                                begin: Alignment.topCenter,
+                                end:   Alignment.bottomCenter,
+                              ),
+                            ),
                           ),
                         ),
-                      Positioned(
-                        bottom: 0,
-                        right: 4,
-                        child: CircleAvatar(
-                          backgroundColor: theme.colorScheme.primary,
-                          radius: 20,
-                          child: IconButton(
-                            icon: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
-                            onPressed: _isUploading ? null : _pickAndUploadImage,
+                        Center(
+                          child: Column(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 30),
+                              // الصورة الشخصية
+                              Stack(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: _accent, width: 2),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 48,
+                                      backgroundColor: _surface,
+                                      backgroundImage: profilePic != null
+                                          ? NetworkImage(profilePic)
+                                          : null,
+                                      child: profilePic == null
+                                          ? Text(
+                                              name.isNotEmpty
+                                                  ? name[0].toUpperCase()
+                                                  : '؟',
+                                              style: GoogleFonts.cairo(
+                                                  fontSize: 34,
+                                                  fontWeight:
+                                                      FontWeight.w700,
+                                                  color: _accent))
+                                          : null,
+                                    ),
+                                  ),
+                                  if (_isUploading)
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: const BoxDecoration(
+                                          color:  Colors.black38,
+                                          shape:  BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child:
+                                              CircularProgressIndicator(
+                                            color:      _accent,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right:  0,
+                                    child: GestureDetector(
+                                      onTap: _isUploading
+                                          ? null
+                                          : _pickAndUploadImage,
+                                      child: Container(
+                                        width:  30,
+                                        height: 30,
+                                        decoration: BoxDecoration(
+                                          color:  _accent,
+                                          shape:  BoxShape.circle,
+                                          border: Border.all(
+                                              color: _bg, width: 2),
+                                        ),
+                                        child: const Icon(
+                                            Icons.camera_alt_rounded,
+                                            color: Color(0xFF0D0F14),
+                                            size: 15),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(name,
+                                  style: GoogleFonts.cairo(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: _textPrimary)),
+                              Text(email,
+                                  style: GoogleFonts.cairo(
+                                      fontSize: 11,
+                                      color: _textSecondary)),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(name, style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text(email, style: GoogleFonts.cairo(color: Colors.grey)),
-                const SizedBox(height: 15),
-                
-                // --- نظام النقاط المستعاد ---
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.stars_rounded, color: theme.colorScheme.primary, size: 24),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$points نقطة',
-                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                _buildMenuTile(Icons.person_outline, 'تعديل البيانات', () => _showEditNameDialog(name)),
-                if (role == 'admin')
-                  _buildMenuTile(Icons.admin_panel_settings_outlined, 'لوحة الإدارة', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminScreen()));
-                  }),
-                _buildMenuTile(Icons.help_outline, 'الدعم الفني', _showSupportDialog),
-                _buildMenuTile(Icons.info_outline, 'عن المنصة', () {
-                  showAboutDialog(context: context, applicationName: "منصة راوي", applicationVersion: "1.0.0");
-                }),
-                
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => context.read<AuthViewModel>().logout(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent.withOpacity(0.1),
-                      foregroundColor: Colors.redAccent,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ],
                     ),
-                    child: Text('تسجيل الخروج', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
                   ),
                 ),
-              ],
-            ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(1),
+                  child: Container(height: 1, color: _border),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // ── بطاقة الإحصائيات ──────────────────────────
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color:  _surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: _border),
+                        ),
+                        child: Row(
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceAround,
+                          children: [
+                            _statCard(
+                                Icons.stars_rounded,
+                                points.toString(),
+                                'نقطة',
+                                _gold),
+                            _vDiv(),
+                            _statCard(
+                                Icons.rate_review_rounded,
+                                ratingsGiven.toString(),
+                                'تقييم أعطيته',
+                                _accent),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── قائمة الإعدادات ────────────────────────────
+                      _menuTile(
+                        Icons.person_outline_rounded,
+                        'تعديل الاسم',
+                        subtitle: 'مرة كل 30 يوماً',
+                        onTap: () =>
+                            _showEditNameDialog(name, userData),
+                      ),
+                      _menuTile(
+                        Icons.auto_stories_outlined,
+                        'مسوداتي',
+                        subtitle: 'روايات وفصول لم تُنشر بعد',
+                        onTap: () => Navigator.pushNamed(
+                            context, '/drafts'),
+                      ),
+                      if (role == 'admin')
+                        _menuTile(
+                          Icons.admin_panel_settings_outlined,
+                          'لوحة الإدارة',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const AdminScreen()),
+                          ),
+                        ),
+                      _menuTile(
+                        Icons.help_outline_rounded,
+                        'الدعم الفني',
+                        onTap: _showSupportDialog,
+                      ),
+                      _menuTile(
+                        Icons.info_outline_rounded,
+                        'عن منصة راوي',
+                        onTap: () => showAboutDialog(
+                          context: context,
+                          applicationName:    'منصة راوي',
+                          applicationVersion: '1.0.0',
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // ── تسجيل الخروج ──────────────────────────────
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              context.read<AuthViewModel>().logout(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Colors.redAccent.withOpacity(0.08),
+                            foregroundColor: Colors.redAccent,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                  color: Colors.redAccent
+                                      .withOpacity(0.2)),
+                            ),
+                          ),
+                          child: Text('تسجيل الخروج',
+                              style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title, style: GoogleFonts.cairo()),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+  // ── مساعدات ───────────────────────────────────────────────────────────────
+  Widget _statCard(
+      IconData icon, String val, String label, Color color) {
+    return Column(children: [
+      Icon(icon, color: color, size: 22),
+      const SizedBox(height: 4),
+      Text(val,
+          style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary)),
+      Text(label,
+          style:
+              GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+    ]);
+  }
+
+  Widget _vDiv() =>
+      Container(height: 40, width: 1, color: _border);
+
+  Widget _menuTile(IconData icon, String title,
+      {String? subtitle, required VoidCallback onTap}) {
+    return GestureDetector(
       onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color:  _surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _border),
+        ),
+        child: Row(children: [
+          Container(
+            width:  36,
+            height: 36,
+            decoration: BoxDecoration(
+              color:  _surfaceHigh,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: _accent, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _textPrimary)),
+                if (subtitle != null)
+                  Text(subtitle,
+                      style: GoogleFonts.cairo(
+                          fontSize: 11, color: _textSecondary)),
+              ],
+            ),
+          ),
+          const Icon(Icons.arrow_forward_ios_rounded,
+              size: 13, color: _textSecondary),
+        ]),
+      ),
     );
   }
 }
