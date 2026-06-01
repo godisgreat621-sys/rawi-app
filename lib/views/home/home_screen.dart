@@ -139,6 +139,39 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // ── ميزة مبتكرة: متابعة القراءة الذكية ─────────────────────────────
+          if (FirebaseAuth.instance.currentUser != null)
+            SliverToBoxAdapter(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('readingProgress')
+                    .orderBy('updatedAt', descending: true)
+                    .limit(1)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (!snap.hasData || snap.data!.docs.isEmpty) return const SizedBox();
+                  final lastRead = snap.data!.docs.first.data() as Map;
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _accent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _accent.withOpacity(0.3)),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.play_circle_fill_rounded, color: _accent, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('عد للقراءة: استكمل ما بدأت به الآن', style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, fontWeight: FontWeight.bold))),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: _accent),
+                    ]),
+                  );
+                },
+              ),
+            ),
+
           // ── المحتوى ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(

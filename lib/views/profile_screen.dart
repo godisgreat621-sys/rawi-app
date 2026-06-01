@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -398,17 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       backgroundImage: profilePic != null
                                           ? NetworkImage(profilePic)
                                           : null,
-                                      child: profilePic == null
-                                          ? Text(
-                                              name.isNotEmpty
-                                                  ? name[0].toUpperCase()
-                                                  : '؟',
-                                              style: GoogleFonts.cairo(
-                                                  fontSize: 34,
-                                                  fontWeight:
-                                                      FontWeight.w700,
-                                                  color: _accent))
-                                          : null,
+                              child: profilePic == null ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟', style: GoogleFonts.cairo(fontSize: 34, fontWeight: FontWeight.w700, color: _accent)) : null,
                                     ),
                                   ),
                                   if (_isUploading)
@@ -493,18 +484,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                GestureDetector(
+                                InkWell(
                                   onTap: () => _showUserList('المتابعون', 'followers'),
+                                  borderRadius: BorderRadius.circular(10),
                                   child: _statCard(Icons.group_outlined, followersCount.toString(), 'متابع', _accent),
                                 ),
                                 _vDiv(),
-                                GestureDetector(
+                                InkWell(
                                   onTap: () => _showUserList('أتابعهم', 'following'),
+                                  borderRadius: BorderRadius.circular(10),
                                   child: _statCard(Icons.person_add_outlined, followingCount.toString(), 'أتابع', _accent),
                                 ),
                                 _vDiv(),
-                                GestureDetector(
+                                InkWell(
                                   onTap: _showPointsInfoDialog,
+                                  borderRadius: BorderRadius.circular(10),
                                   child: _statCard(Icons.stars_rounded, points.toString(), 'نقطة', _gold),
                                 ),
                               ],
@@ -513,13 +507,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                GestureDetector(
+                                InkWell(
                                   onTap: _showRatedNovels,
+                                  borderRadius: BorderRadius.circular(10),
                                   child: _statCard(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم أعطيته', _textSecondary),
                                 ),
                                 if (showPublicRating) ...[
                                   _vDiv(),
-                                  _statCard(Icons.star_half_rounded, avgRating.toStringAsFixed(1), 'تقييمي العام', _gold),
+                                  InkWell(
+                                    onTap: () {}, // يمكن إضافة عرض قائمة التقييمات المستلمة
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: _statCard(Icons.star_half_rounded, avgRating.toStringAsFixed(1), 'تقييمي العام', _gold),
+                                  ),
                                 ],
                               ],
                             ),
@@ -648,8 +647,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── ميزة مبتكرة: نظام الرتب بناءً على النقاط ────────────────────────────────
+  String _getWriterRank(int points) {
+    if (points >= 2000) return 'عميد الرواة';
+    if (points >= 1000) return 'أديب متألق';
+    if (points >= 500)  return 'حكواتي متمكن';
+    if (points >= 100)  return 'كاتب واعد';
+    return 'راوي ناشئ';
+  }
+
+  Color _getRankColor(int points) {
+    if (points >= 2000) return _gold;
+    if (points >= 500)  return _accent;
+    return _textSecondary;
+  }
+
   // ── عرض الروايات المحفوظة (المحفوظات) ──────────────────────────────────
   void _showBookmarksSheet() {
+    HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
       backgroundColor: _bg,
@@ -694,6 +709,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── عرض قوائم المتابعين والمتابعين ────────────────────────────────────────
   void _showUserList(String title, String collectionPath) {
+    HapticFeedback.selectionClick();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 

@@ -67,6 +67,20 @@ class _AuthorScreenState extends State<AuthorScreen> {
     }
   }
 
+  String _getWriterRank(int points) {
+    if (points >= 2000) return 'عميد الرواة';
+    if (points >= 1000) return 'أديب متألق';
+    if (points >= 500)  return 'حكواتي متمكن';
+    if (points >= 100)  return 'كاتب واعد';
+    return 'راوي ناشئ';
+  }
+
+  Color _getRankColor(int points) {
+    if (points >= 2000) return _gold;
+    if (points >= 500)  return _accent;
+    return _textSecondary;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -88,6 +102,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
           final displayName   = userData['displayName']    ?? widget.authorName;
           final profilePic    = userData['profilePicture'] as String?;
           final points        = userData['points']         ?? 0;
+          final showPoints    = userData['showPublicPoints'] ?? true;
           final joinedAt      = (userData['createdAt'] as Timestamp?)?.toDate();
           final joinYear      = joinedAt?.year.toString() ?? '';
 
@@ -171,6 +186,19 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 fontWeight: FontWeight.w700,
                                 color: _textPrimary,
                               ),
+                          ),
+                          const SizedBox(height: 4),
+                          // عرض رتبة الكاتب للآخرين
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: showPoints ? _getRankColor(points).withOpacity(0.1) : _border,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              showPoints ? _getWriterRank(points) : 'راوي',
+                              style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: showPoints ? _getRankColor(points) : _textSecondary),
+                            ),
                             ),
                             const SizedBox(height: 4),
                             Row(
@@ -285,8 +313,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                       Icon(Icons.stars_rounded,
                                           color: _gold, size: 18),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        '$points نقطة',
+                                      Text( // خفاء النقاط بناءً على الخصوصية
+                                        showPoints ? '$points نقطة' : 'نقاط مخفية',
                                         style: GoogleFonts.cairo(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
@@ -440,9 +468,9 @@ class _AuthorScreenState extends State<AuthorScreen> {
               'category':    novel.category,
               'description': novel.description,
               'content':     novel.content,
-              'rating':      novel.rating.toString(),
-              'likes':       novel.likes.toString(),
-              'readers':     novel.readers.toString(),
+              'rating':      novel.rating,
+              'likes':       novel.likes,
+              'readers':     novel.readers,
               'coverUrl':    novel.coverUrl,
             },
           ),

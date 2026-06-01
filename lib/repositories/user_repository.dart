@@ -36,10 +36,10 @@ class UserRepository {
     if (bytes.isEmpty) throw Exception('فشل قراءة بيانات الصورة.');
 
     try {
-      final fileName = originalFileName.isNotEmpty ? originalFileName : '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName = '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child(folder).child(fileName);
-      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-      return await ref.getDownloadURL();
+      final uploadTask = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      return await uploadTask.ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading image: $e');
       throw Exception('حدث خطأ أثناء رفع الصورة: $e');

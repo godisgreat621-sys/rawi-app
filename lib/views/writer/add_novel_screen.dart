@@ -343,7 +343,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         children: [
           const Icon(Icons.timer_outlined, color: _gold, size: 18),
           const SizedBox(width: 10),
-          Expanded(child: Text('يمكنك نشر الفصل التالي بعد: ${remaining.inHours} ساعة و ${remaining.inMinutes % 60} دقيقة', style: GoogleFonts.cairo(fontSize: 12, color: _gold, fontWeight: FontWeight.bold))),
+          Expanded(child: Text('الوقت المتبقي للنشر: ${remaining.inHours} ساعة و ${remaining.inMinutes % 60} دقيقة', style: GoogleFonts.cairo(fontSize: 12, color: _gold, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -434,9 +434,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _conditionsCard() {
     final items = [
-      (Icons.hourglass_top, 'انتظار 24 ساعة (3 نقاط)'),
-      (Icons.auto_stories, 'تقييم 3 فصول لكتّاب آخرين (3 نقاط)'),
-      (Icons.star, 'الحصول على 3 تقييمات لفصلك السابق (4 نقاط)'),
+      (Icons.hourglass_top, 'الانتظار 24 ساعة بين الفصول'),
       (Icons.edit, 'الفصل بين 500 و5000 كلمة'),
     ];
     return Container(
