@@ -113,7 +113,6 @@ class NotificationsScreen extends StatelessWidget {
                 stream: FirebaseFirestore.instance
                     .collection('notifications')
                     .where('userId', isEqualTo: user.uid)
-                    .orderBy('createdAt', descending: true)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -124,12 +123,24 @@ class NotificationsScreen extends StatelessWidget {
                               color: _accent, strokeWidth: 2)),
                     );
                   }
+                  
+                  if (snapshot.hasError) {
+                    return Center(child: Text('حدث خطأ في جلب الإشعارات', style: GoogleFonts.cairo(color: Colors.redAccent)));
+                  }
 
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return _buildEmpty();
                   }
 
-                  final docs = snapshot.data!.docs;
+                  // الترتيب يدوياً لتجنب الحاجة لـ Index في Firebase
+                  final docs = snapshot.data!.docs.toList();
+                  docs.sort((a, b) {
+                    final aTime = (a.data() as Map)['createdAt'] as Timestamp?;
+                    final bTime = (b.data() as Map)['createdAt'] as Timestamp?;
+                    if (aTime == null || bTime == null) return 0;
+                    return bTime.compareTo(aTime);
+                  });
+
                   final unread =
                       docs.where((d) => (d.data() as Map)['isRead'] != true).length;
 

@@ -418,6 +418,43 @@ class NovelsProvider with ChangeNotifier {
     } catch (_) {}
   }
 
+  // ── نظام المتابعة مع التحديث التلقائي للعدادات ──────────────────────────────
+  Future<void> toggleFollow(String targetAuthorId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid == targetAuthorId) return;
+
+    final followingRef = _db.collection('users').doc(user.uid).collection('following').doc(targetAuthorId);
+    final followersRef = _db.collection('users').doc(targetAuthorId).collection('followers').doc(user.uid);
+    final myDocRef     = _db.collection('users').doc(user.uid);
+    final targetDocRef = _db.collection('users').doc(targetAuthorId);
+
+    final doc = await followingRef.get();
+    final batch = _db.batch();
+
+    if (doc.exists) {
+      batch.delete(followingRef);
+      batch.delete(followersRef);
+      batch.update(myDocRef, {'followingCount': FieldValue.increment(-1)});
+      batch.update(targetDocRef, {'followersCount': FieldValue.increment(-1)});
+    } else {
+      batch.set(followingRef, {'followedAt': FieldValue.serverTimestamp()});
+      batch.set(followersRef, {'followedAt': FieldValue.serverTimestamp()});
+      batch.update(myDocRef, {'followingCount': FieldValue.increment(1)});
+      batch.update(targetDocRef, {'followersCount': FieldValue.increment(1)});
+      
+      // إرسال إشعار للمؤلف
+      await _db.collection('notifications').add({
+        'userId': targetAuthorId,
+        'type': 'follow',
+        'message': 'لديك متابع جديد!',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    notifyListeners();
+  }
+
   // ── نظام الإشارات المرجعية (القراءة لاحقاً) ──────────────────────────────────
   Future<void> toggleBookmark(String novelId) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -440,5 +477,20 @@ class NovelsProvider with ChangeNotifier {
         .collection('bookmarks').doc(novelId)
         .snapshots()
         .map((snap) => snap.exists);
+  }
+
+  // Stream لجلب الروايات المحفوظة فقط
+  Stream<List<Novel>> getBookmarkedNovelsStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value([]);
+
+    return _db.collection('users').doc(user.uid).collection('bookmarks').snapshots().asyncMap((snap) async {
+      List<Novel> bookmarked = [];
+      for (var doc in snap.docs) {
+        final novelDoc = await _db.collection('novels').doc(doc.id).get();
+        if (novelDoc.exists) bookmarked.add(Novel.fromFirestore(novelDoc));
+      }
+      return bookmarked;
+    });
   }
 }

@@ -29,6 +29,8 @@ class AuthViewModel extends ChangeNotifier {
         'isActive': true,
         'points': 0,
         'ratingsGiven': 0,
+        'followersCount': 0,
+        'followingCount': 0,
         'lastChapterRatingsReceived': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });

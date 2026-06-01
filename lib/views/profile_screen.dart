@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
 import 'package:my_first_app/repositories/user_repository.dart';
 import 'admin_screen.dart';
+import 'package:my_first_app/views/author_screen.dart'; // Add this import
 import 'package:my_first_app/providers/novels_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -510,7 +511,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _statCard(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم أعطيته', _textSecondary),
+                                GestureDetector(
+                                  onTap: _showRatedNovels,
+                                  child: _statCard(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم أعطيته', _textSecondary),
+                                ),
                                 if (showPublicRating) ...[
                                   _vDiv(),
                                   _statCard(Icons.star_half_rounded, avgRating.toStringAsFixed(1), 'تقييمي العام', _gold),
@@ -595,6 +599,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── عرض الروايات التي قيمها المستخدم ─────────────────────────────────────
+  void _showRatedNovels() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('روايات قيمتها', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collectionGroup('ratings').where('authorId', isEqualTo: user.uid).snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) return Center(child: Text('لم تقم بتقييم أي رواية بعد', style: GoogleFonts.cairo(color: _textSecondary)));
+                
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, i) {
+                    final data = docs[i].data() as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(data['comment'] ?? 'تقييم بدون تعليق', style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13)),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [Text(data['rating'].toString(), style: GoogleFonts.cairo(color: _gold)), const Icon(Icons.star, color: _gold, size: 14)]),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── عرض قوائم المتابعين والمتابعين ────────────────────────────────────────
   void _showUserList(String title, String collectionPath) {
     final user = FirebaseAuth.instance.currentUser;
@@ -628,7 +673,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return ListTile(
                             leading: CircleAvatar(backgroundImage: uData['profilePicture'] != null ? NetworkImage(uData['profilePicture']) : null),
                             title: Text(uData['displayName'] ?? 'مستخدم', style: GoogleFonts.cairo(color: _textPrimary)),
-                            onTap: () => Navigator.pushNamed(context, '/author', arguments: docs[i].id),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => AuthorScreen(
+                                authorId: docs[i].id,
+                                authorName: uData['displayName'] ?? 'مؤلف',
+                              )),
+                            ),
                           );
                         },
                       ),

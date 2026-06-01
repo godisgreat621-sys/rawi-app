@@ -9,8 +9,15 @@ import '../../models/novel_model.dart';
 import 'add_novel_screen.dart';
 import '../home/novel_detail_screen.dart';
 
-class WriterScreen extends StatelessWidget {
+class WriterScreen extends StatefulWidget {
   const WriterScreen({super.key});
+
+  @override
+  State<WriterScreen> createState() => _WriterScreenState();
+}
+
+class _WriterScreenState extends State<WriterScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   static const _bg          = Color(0xFF0D0F14);
   static const _surface     = Color(0xFF161920);
@@ -20,6 +27,18 @@ class WriterScreen extends StatelessWidget {
   static const _textPrimary = Color(0xFFECECEC);
   static const _textSecondary = Color(0xFF6B7280);
   static const _gold        = Color(0xFFD4A843);
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,36 +102,53 @@ class WriterScreen extends StatelessWidget {
               ),
             ),
 
-            // ── القائمة ───────────────────────────────────────────────────
+            // ── التبويبات ───────────────────────────────────────────────────
+            TabBar(
+              controller: _tabController,
+              indicatorColor: _accent,
+              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelColor: _textSecondary,
+              tabs: const [
+                Tab(text: 'أعمالي'),
+                Tab(text: 'المحفوظات'),
+              ],
+            ),
+
             Expanded(
-              child: StreamBuilder<List<LibraryItem>>(
-                stream: context.read<NovelsProvider>().getMyLibraryItemsStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: _accent,
-                        strokeWidth: 2,
-                      ),
-                    );
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('حدث خطأ: ${snapshot.error}', style: GoogleFonts.cairo(color: _textSecondary)));
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return _buildEmptyState(context);
-                  }
-
-                  final items = snapshot.data!;
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) =>
-                        _buildLibraryItemCard(context, items[index]),
-                  );
-                },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // تبويب أعمالي
+                  StreamBuilder<List<LibraryItem>>(
+                    stream: context.read<NovelsProvider>().getMyLibraryItemsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) return _buildEmptyState(context);
+                      
+                      final items = snapshot.data!;
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) => _buildLibraryItemCard(context, items[index]),
+                      );
+                    },
+                  ),
+                  // تبويب المحفوظات (Bookmarked)
+                  StreamBuilder<List<Novel>>(
+                    stream: context.read<NovelsProvider>().getBookmarkedNovelsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) return Center(child: Text('لا توجد روايات محفوظة', style: GoogleFonts.cairo(color: _textSecondary)));
+                      
+                      final items = snapshot.data!;
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) => _buildLibraryItemCard(context, LibraryItem.fromNovel(items[index])),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],

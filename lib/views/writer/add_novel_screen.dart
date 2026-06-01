@@ -39,6 +39,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   int _wordCount = 0;
   String? _currentDraftId;
   DateTime? _lastPublishedDate;
+  Timer? _timer24h;
 
   // ── ألوان المظهر الجديد ──────────────────────────────────────────────────
   static const _bg            = Color(0xFF0D0F14);
@@ -77,6 +78,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       _loadDraft();
     }
     _fetchLastPublished();
+    _timer24h = Timer.periodic(const Duration(minutes: 1), (t) => setState(() {}));
     _startAutosave();
   }
 
@@ -99,6 +101,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   @override
   void dispose() {
     _autosaveTimer?.cancel();
+    _timer24h?.cancel();
     if (_wordCount >= 30) {
       _saveDraft(silent: true);
     }
