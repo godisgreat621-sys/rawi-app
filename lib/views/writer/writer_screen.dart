@@ -226,7 +226,7 @@ class WriterScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                isDraft ? 'مسودة' : (isCompleted ? 'مكتملة' : 'جارية'),
+                                isDraft ? 'مسودة' : (isCompleted ? 'مكتملة' : 'منشور'),
                                 style: GoogleFonts.cairo(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,

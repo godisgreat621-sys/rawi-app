@@ -252,6 +252,12 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       'reported':     false,
     });
 
+    // إشعار صاحب الرد إذا كان هذا رداً
+    if (replyToId != null) {
+      await context.read<NovelsProvider>().notifyUserOfReply(
+          replyToId, widget.novel['title'] ?? '', name, text);
+    }
+
     // إشعار الكاتب
     final nd  = (await _novelRef.get()).data() as Map<String,dynamic>?;
     final aId = nd?['authorId'] ?? '';
@@ -515,32 +521,6 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
               ),
               Container(height: 1, color: _border),
 
-              // ── بنر الرد ─────────────────────────────────────────────
-              if (replyToName != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  color: _accent.withOpacity(0.08),
-                  child: Row(children: [
-                    const Icon(Icons.reply_rounded,
-                        size: 15, color: _accent),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text('رداً على $replyToName',
-                          style: GoogleFonts.cairo(
-                              fontSize: 12, color: _accent)),
-                    ),
-                    GestureDetector(
-                      onTap: () => setS(() {
-                        replyToId   = null;
-                        replyToName = null;
-                      }),
-                      child: const Icon(Icons.close,
-                          size: 14, color: _textSecondary),
-                    ),
-                  ]),
-                ),
-
               // ── قائمة التعليقات ──────────────────────────────────────
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
@@ -641,6 +621,21 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (replyToName != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: _accent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                        child: Row(children: [
+                          const Icon(Icons.reply, size: 14, color: _accent),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text('الرد على $replyToName', style: GoogleFonts.cairo(fontSize: 12, color: _accent))),
+                          GestureDetector(
+                            onTap: () => setS(() { replyToId = null; replyToName = null; }),
+                            child: const Icon(Icons.close, size: 14, color: _textSecondary),
+                          )
+                        ]),
+                      ),
                     Row(children: [
                       Expanded(
                         child: TextField(
@@ -794,8 +789,16 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       ),
                     ),
                   const Spacer(),
+                  if (isOwn)
+                    GestureDetector(
+                      onTap: () => _deleteComment(docId),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, left: 12),
+                        child: Text('حذف', style: GoogleFonts.cairo(fontSize: 11, color: Colors.redAccent)),
+                      ),
+                    ),
                   GestureDetector(
-                    onTap: () => _reportComment(docId),
+                    onTap: () => _showReportCommentDialog(docId),
                     child: Padding(
                       padding: const EdgeInsets.only(top: 4, right: 4),
                       child: Text('بلاغ',
@@ -825,6 +828,59 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       'createdAt':  FieldValue.serverTimestamp(),
     });
     _showSnack('تم إرسال البلاغ ✅', Colors.green);
+  }
+
+  void _showReportCommentDialog(String commentId) {
+    String? selectedReason;
+    const reasons = ['محتوى مسيء', 'سب/قذف', 'حرق أحداث', 'سرقة أدبية', 'أخرى'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('لماذا تبلغ عن هذا التعليق؟', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary)),
+              const SizedBox(height: 10),
+              ...reasons.map((r) => RadioListTile<String>(
+                title: Text(r, style: GoogleFonts.cairo(fontSize: 13, color: _textSecondary)),
+                value: r,
+                groupValue: selectedReason,
+                onChanged: (v) => setS(() => selectedReason = v),
+                activeColor: _accent,
+              )),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, minimumSize: const Size(double.infinity, 45)),
+                onPressed: selectedReason == null ? null : () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  Navigator.pop(ctx);
+                  _showSnack('تم إرسال البلاغ فوراً ✅ سيتم مراجعته', Colors.green);
+                  if (user != null) {
+                    await FirebaseFirestore.instance.collection('reports').add({
+                      'type': 'comment',
+                      'commentId': commentId,
+                      'reason': selectedReason,
+                      'reportedBy': user.uid,
+                      'createdAt': FieldValue.serverTimestamp(),
+                    });
+                  }
+                },
+                child: Text('إرسال البلاغ', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteComment(String commentId) async {
+    await FirebaseFirestore.instance.collection('novels').doc(_novelId).collection('comments').doc(commentId).delete();
+    _showSnack('تم حذف التعليق بنجاح', _textSecondary);
   }
 
   // ── التبليغ عن محتوى الفصل ────────────────────────────────────────────────

@@ -74,6 +74,9 @@ class NovelsProvider with ChangeNotifier {
         'lastChapterId':              novelRef.id,
       }, SetOptions(merge: true));
 
+      // إشعار المتابعين
+      _notifyFollowers(user.uid, title, authorName, isNew: true);
+
       notifyListeners();
       return null;
     } catch (e) {
@@ -115,6 +118,9 @@ class NovelsProvider with ChangeNotifier {
         'lastChapterRatingsReceived': 0,
         'lastChapterId':              chapterRef.id,
       }, SetOptions(merge: true));
+
+      // إشعار المتابعين بفصل جديد
+      _notifyFollowers(user.uid, '', '', novelId: novelId);
 
       notifyListeners();
       return null;
@@ -368,6 +374,45 @@ class NovelsProvider with ChangeNotifier {
         'type':      'rating',
         'message':   '$raterName قيّم فصل "$chapterTitle" في "$novelTitle" ⭐',
         'isRead':    false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
+  // إشعار المتابعين بنشر جديد
+  Future<void> _notifyFollowers(String authorId, String title, String authorName, {bool isNew = false, String? novelId}) async {
+    final followers = await _db.collection('users').doc(authorId).collection('followers').get();
+    if (followers.docs.isEmpty) return;
+
+    String message = isNew 
+      ? 'نشر $authorName رواية جديدة: "$title" 📖'
+      : 'تم نشر فصل جديد في رواية تتابعها! ✨';
+
+    for (var doc in followers.docs) {
+      await _db.collection('notifications').add({
+        'userId': doc.id,
+        'type': 'follow_post',
+        'message': message,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  // إشعار بالرد على تعليق
+  Future<void> notifyUserOfReply(String originalCommentId, String novelTitle, String replierName, String replyText) async {
+    try {
+      final commentSnap = await _db.collectionGroup('comments').where(FieldPath.documentId, isEqualTo: originalCommentId).get();
+      if (commentSnap.docs.isEmpty) return;
+      
+      final originalAuthorId = commentSnap.docs.first.data()['authorId'];
+      if (originalAuthorId == FirebaseAuth.instance.currentUser?.uid) return;
+
+      await _db.collection('notifications').add({
+        'userId': originalAuthorId,
+        'type': 'comment',
+        'message': '$replierName رد على تعليقك في "$novelTitle": "${replyText.substring(0, replyText.length > 20 ? 20 : replyText.length)}..."',
+        'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}

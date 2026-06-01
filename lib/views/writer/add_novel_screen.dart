@@ -164,11 +164,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // نشر
   // ─────────────────────────────────────────────────────────────────────────────
   Future<void> _saveDraft({bool silent = false}) async {
-    if (_wordCount < 30) {
-      if (!silent)
-        _showError('يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة');
-      return;
-    }
     final draftError = _validateDraft();
     if (draftError != null) {
       if (!silent) _showError(draftError);
@@ -217,9 +212,6 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     }
     if (_isNewNovel && _novelTitleController.text.trim().isEmpty) {
       return 'الرجاء إدخال عنوان الرواية لحفظ المسودة';
-    }
-    if (_wordCount < 30) {
-      return 'يجب أن يحتوي الفصل على 30 كلمة على الأقل لحفظ المسودة';
     }
     return null;
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/novel_model.dart';
 import 'novel_detail_screen.dart';
 import '../writer/drafts_list_screen.dart';
@@ -347,6 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'عام':        const Color(0xFF252836),
     };
     final coverBg = categoryColors[novel.category] ?? _surfaceHigh;
+    final user = FirebaseAuth.instance.currentUser;
 
     return GestureDetector(
       onTap: () => _navigateToDetail(novel),
@@ -414,8 +416,34 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-                      ],
-                    )
+                // علامة القراءة
+                if (user != null)
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance.collection('users').doc(user.uid).collection('readingProgress').doc(novel.id).snapshots(),
+                    builder: (context, snap) {
+                      if (!snap.hasData || !snap.data!.exists) return const SizedBox();
+                      final data = snap.data!.data() as Map<String, dynamic>;
+                      final lastReadChapter = data['chapterId'] ?? '';
+                      
+                      // هل هناك فصول جديدة؟ (بسيطة: قارن عدد الفصول)
+                      bool hasNew = (novel.chaptersCount > 1); // تبسيط للمثال
+                      
+                      return Positioned(
+                        bottom: 8, left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: _bg.withOpacity(0.8), borderRadius: BorderRadius.circular(4)),
+                          child: Row(children: [
+                            Icon(Icons.check_circle, size: 10, color: _accent),
+                            const SizedBox(width: 4),
+                            Text('مقروءة', style: GoogleFonts.cairo(fontSize: 8, color: _textPrimary)),
+                          ]),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            )
                   : null,
             ),
           ),

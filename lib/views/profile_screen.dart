@@ -31,12 +31,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickAndUploadImage() async {
     setState(() => _isUploading = true);
     try {
-      final url = await UserRepository.uploadProfilePicture();
-      if (url != null && mounted) {
+      await UserRepository.uploadProfilePicture(); // This now throws on error
+      if (mounted) {
         _showSnack('تم تحديث الصورة الشخصية ✅', Colors.green);
       }
-    } catch (_) {
-      if (mounted) _showSnack('حدث خطأ أثناء الرفع ❌', Colors.redAccent);
+    } catch (e) {
+      if (mounted) _showSnack(e.toString().replaceFirst('Exception: ', ''), Colors.redAccent); // Display specific error
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }

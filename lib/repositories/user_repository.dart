@@ -11,13 +11,13 @@ class UserRepository {
   static final _auth = FirebaseAuth.instance;
 
   /// وظيفة عامة لرفع الصور متوافقة تماماً مع الويب والموبايل
-  static Future<String?> pickAndUploadImage(String folder) async {
+  static Future<String> pickAndUploadImage(String folder) async {
     final user = _auth.currentUser;
-    if (user == null) return null;
+    if (user == null) throw Exception('يجب تسجيل الدخول لرفع الصور.');
 
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
-    if (image == null) return null;
+    if (image == null) throw Exception('لم يتم اختيار صورة.');
 
     try {
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -30,17 +30,17 @@ class UserRepository {
       return await ref.getDownloadURL();
     } catch (e) {
       debugPrint('Error uploading image: $e');
-      return null;
+      throw Exception('حدث خطأ أثناء رفع الصورة: $e');
     }
   }
 
   /// يرفع صورة شخصية للمستخدم الحالي ويحدث بياناته
-  static Future<String?> uploadProfilePicture() async {
+  static Future<String> uploadProfilePicture() async {
     final user = _auth.currentUser;
-    if (user == null) return null;
-    final url = await pickAndUploadImage('user_profiles');
-    if (url == null) return null;
+    if (user == null) throw Exception('يجب تسجيل الدخول لتحديث الصورة الشخصية.');
+
     try {
+      final url = await pickAndUploadImage('user_profiles');
       await _firestore.collection('users').doc(user.uid).update({
         'profilePicture': url,
       });
@@ -48,7 +48,7 @@ class UserRepository {
       return url;
     } catch (e) {
       debugPrint('Error uploading profile picture: $e');
-      return null;
+      throw Exception('حدث خطأ أثناء تحديث الصورة الشخصية: $e');
     }
   }
 
