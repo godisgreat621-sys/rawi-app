@@ -192,12 +192,12 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: showPoints ? _getRankColor(points).withOpacity(0.1) : _border,
+                              color: showPoints ? _gold.withOpacity(0.1) : _border,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               showPoints ? _getWriterRank(points) : 'راوي',
-                              style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: showPoints ? _getRankColor(points) : _textSecondary),
+                              style: GoogleFonts.cairo(fontSize: 10, fontWeight: FontWeight.bold, color: showPoints ? _gold : _textSecondary),
                             ),
                             ),
                             const SizedBox(height: 4),
@@ -468,9 +468,9 @@ class _AuthorScreenState extends State<AuthorScreen> {
               'category':    novel.category,
               'description': novel.description,
               'content':     novel.content,
-              'rating':      novel.rating,
-              'likes':       novel.likes,
-              'readers':     novel.readers,
+              'rating':      novel.rating.toString(),
+              'likes':       novel.likes.toString(),
+              'readers':     novel.readers.toString(),
               'coverUrl':    novel.coverUrl,
             },
           ),

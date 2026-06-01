@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 38,
       child: Row(
         children: [
-          // أيقونة المحفوظات في بداية الشريط (على اليمين في العربية)
+          // أيقونة المحفوظات كفلتر ذكي
           Padding(
             padding: const EdgeInsets.only(right: 16, left: 8),
             child: GestureDetector(
@@ -279,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _categories.length,
               itemBuilder: (_, i) {
                 final cat = _categories[i];

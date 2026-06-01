@@ -438,27 +438,26 @@ class NovelsProvider with ChangeNotifier {
     final myDocRef     = _db.collection('users').doc(user.uid);
     final targetDocRef = _db.collection('users').doc(targetAuthorId);
 
-    final followDoc = await followingRef.get();
-    final myData = (await myDocRef.get()).data() as Map<String, dynamic>?;
-    final targetData = (await targetDocRef.get()).data() as Map<String, dynamic>?;
-
+    final doc = await followingRef.get();
     final batch = _db.batch();
 
-    if (followDoc.exists) {
+    if (doc.exists) {
       batch.delete(followingRef);
       batch.delete(followersRef);
+      
+      // ضمان عدم النزول تحت الصفر عبر جلب القيمة الحالية
+      final mySnap = await myDocRef.get();
+      final tarSnap = await targetDocRef.get();
+      final myCount = (mySnap.data()?['followingCount'] ?? 0) as int;
+      final tarCount = (tarSnap.data()?['followersCount'] ?? 0) as int;
 
-      int myNewCount = ((myData?['followingCount'] ?? 0) as int) - 1;
-      int targetNewCount = ((targetData?['followersCount'] ?? 0) as int) - 1;
-
-      batch.set(myDocRef, {'followingCount': myNewCount < 0 ? 0 : myNewCount}, SetOptions(merge: true));
-      batch.set(targetDocRef, {'followersCount': targetNewCount < 0 ? 0 : targetNewCount}, SetOptions(merge: true));
+      batch.set(myDocRef, {'followingCount': (myCount - 1).clamp(0, 999999)}, SetOptions(merge: true));
+      batch.set(targetDocRef, {'followersCount': (tarCount - 1).clamp(0, 999999)}, SetOptions(merge: true));
     } else {
       batch.set(followingRef, {'followedAt': FieldValue.serverTimestamp()});
       batch.set(followersRef, {'followedAt': FieldValue.serverTimestamp()});
-
-      batch.set(myDocRef, {'followingCount': FieldValue.increment(1)}, SetOptions(merge: true));
-      batch.set(targetDocRef, {'followersCount': FieldValue.increment(1)}, SetOptions(merge: true));
+      batch.update(myDocRef, {'followingCount': FieldValue.increment(1)});
+      batch.update(targetDocRef, {'followersCount': FieldValue.increment(1)});
       
       // إرسال إشعار للمؤلف
       await _db.collection('notifications').add({
