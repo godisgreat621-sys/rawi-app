@@ -332,12 +332,14 @@ class NovelsProvider with ChangeNotifier {
     String authorId,
     String novelTitle,
     String likerName,
+    String novelId,
   ) async {
     try {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'like',
         'message':   '$likerName أعجب برواية "$novelTitle"',
+        'novelId':   novelId,
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -349,12 +351,14 @@ class NovelsProvider with ChangeNotifier {
     String authorId,
     String novelTitle,
     String commenterName,
+    String novelId,
   ) async {
     try {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'comment',
         'message':   '$commenterName علّق على "$novelTitle"',
+        'novelId':   novelId,
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -367,12 +371,16 @@ class NovelsProvider with ChangeNotifier {
     String novelTitle,
     String chapterTitle,
     String raterName,
+    String novelId,
+    String chapterId,
   ) async {
     try {
       await _db.collection('notifications').add({
         'userId':    authorId,
         'type':      'rating',
         'message':   '$raterName قيّم فصل "$chapterTitle" في "$novelTitle"',
+        'novelId':   novelId,
+        'chapterId': chapterId,
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -393,6 +401,7 @@ class NovelsProvider with ChangeNotifier {
         'userId': doc.id,
         'type': 'follow_post',
         'message': message,
+        'novelId': novelId,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -400,7 +409,7 @@ class NovelsProvider with ChangeNotifier {
   }
 
   // إشعار بالرد على تعليق
-  Future<void> notifyUserOfReply(String originalCommentId, String novelTitle, String replierName, String replyText) async {
+  Future<void> notifyUserOfReply(String originalCommentId, String novelTitle, String replierName, String replyText, String novelId) async {
     try {
       final commentSnap = await _db.collectionGroup('comments').where(FieldPath.documentId, isEqualTo: originalCommentId).get();
       if (commentSnap.docs.isEmpty) return;
@@ -412,6 +421,7 @@ class NovelsProvider with ChangeNotifier {
         'userId': originalAuthorId,
         'type': 'comment',
         'message': '$replierName رد على تعليقك في "$novelTitle": "${replyText.substring(0, replyText.length > 20 ? 20 : replyText.length)}..."',
+        'novelId': novelId,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -447,6 +457,7 @@ class NovelsProvider with ChangeNotifier {
         'userId': targetAuthorId,
         'type': 'follow',
         'message': 'لديك متابع جديد!',
+        'senderId': user.uid,
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });

@@ -102,7 +102,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   void dispose() {
     _autosaveTimer?.cancel();
     _timer24h?.cancel();
-    if (_wordCount >= 30) {
+    if (_contentController.text.isNotEmpty) {
       _saveDraft(silent: true);
     }
 

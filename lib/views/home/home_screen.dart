@@ -31,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery     = '';
   bool   _isSearching     = false;
   String _selectedCategory= 'الكل';
+  bool   _showBookmarkedOnly = false;
 
   final List<String> _categories = [
     'الكل', 'فانتازيا', 'رومانسية', 'رعب',
@@ -55,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
             'category':  novel.category,
             'description': novel.description,
             'content':   novel.content,
-            'rating':    novel.rating.toString(),
-            'likes':     novel.likes.toString(),
-            'readers':   novel.readers.toString(),
+            'rating':    novel.rating,
+            'likes':     novel.likes,
+            'readers':   novel.readers,
             'authorId':  novel.authorId,
             'coverUrl':  novel.coverUrl,
           },
@@ -166,116 +167,139 @@ class _HomeScreenState extends State<HomeScreen> {
                     .map((d) => Novel.fromFirestore(d))
                     .toList();
 
-                final searched = _searchQuery.isEmpty
-                    ? allNovels
-                    : allNovels.where((n) =>
-                        n.title.toLowerCase().contains(_searchQuery) ||
-                        n.author.toLowerCase().contains(_searchQuery)).toList();
+                return FutureBuilder<List<Novel>>(
+                  future: _showBookmarkedOnly 
+                      ? context.read<NovelsProvider>().getBookmarkedNovelsStream().first 
+                      : Future.value(allNovels),
+                  builder: (context, bookmarkSnap) {
+                    var listToFilter = allNovels;
+                    if (_showBookmarkedOnly) {
+                      final bookmarkedIds = (bookmarkSnap.data ?? []).map((e) => e.id).toSet();
+                      listToFilter = allNovels.where((n) => bookmarkedIds.contains(n.id)).toList();
+                    }
 
-                final filtered = _selectedCategory == 'الكل'
-                    ? searched
-                    : searched.where((n) => n.category == _selectedCategory).toList();
+                    final searched = _searchQuery.isEmpty
+                        ? listToFilter
+                        : listToFilter.where((n) =>
+                            n.title.toLowerCase().contains(_searchQuery) ||
+                            n.author.toLowerCase().contains(_searchQuery)).toList();
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 18),
+                    final filtered = _selectedCategory == 'الكل'
+                        ? searched
+                        : searched.where((n) => n.category == _selectedCategory).toList();
 
-                    // ── التصنيفات ─────────────────────────────────────────
-                    SizedBox(
-                      height: 38,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _categories.length,
-                        itemBuilder: (_, i) {
-                          final cat = _categories[i];
-                          final sel = cat == _selectedCategory;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedCategory = cat),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: sel ? _accent : _surface,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: sel ? _accent : _border,
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                cat,
-                                style: GoogleFonts.cairo(
-                                  fontSize: 12,
-                                  fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-                                  color: sel ? const Color(0xFF0D0F14) : _textSecondary,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 18),
 
-                    const SizedBox(height: 22),
+                        _buildCategoryBar(),
 
-                    // ── عنوان القسم ──────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 3,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: _accent,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isSearching && _searchQuery.isNotEmpty
-                                ? 'نتائج البحث (${filtered.length})'
-                                : _selectedCategory == 'الكل'
-                                    ? 'أحدث الروايات'
-                                    : _selectedCategory,
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        const SizedBox(height: 22),
+                        _buildSectionTitle(filtered.length),
+                        const SizedBox(height: 14),
 
-                    const SizedBox(height: 14),
+                        filtered.isEmpty
+                            ? _buildNoResults()
+                            : _isSearching && _searchQuery.isNotEmpty
+                                ? _buildSearchList(filtered)
+                                : _buildGrid(filtered),
 
-                    // ── الروايات ──────────────────────────────────────────
-                    filtered.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.all(40),
-                            child: Center(
-                              child: Text(
-                                'لا توجد نتائج',
-                                style: GoogleFonts.cairo(color: _textSecondary),
-                              ),
-                            ),
-                          )
-                        : _isSearching && _searchQuery.isNotEmpty
-                            ? _buildSearchList(filtered)
-                            : _buildGrid(filtered),
-
-                    const SizedBox(height: 30),
-                  ],
+                        const SizedBox(height: 30),
+                      ],
+                    );
+                  }
                 );
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryBar() {
+    return SizedBox(
+      height: 38,
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _categories.length,
+              itemBuilder: (_, i) {
+                final cat = _categories[i];
+                final sel = cat == _selectedCategory;
+                return GestureDetector(
+                  onTap: () => setState(() { _selectedCategory = cat; _showBookmarkedOnly = false; }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: (sel && !_showBookmarkedOnly) ? _accent : _surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: (sel && !_showBookmarkedOnly) ? _accent : _border),
+                    ),
+                    child: Text(
+                      cat,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: (sel && !_showBookmarkedOnly) ? FontWeight.w700 : FontWeight.w400,
+                        color: (sel && !_showBookmarkedOnly) ? const Color(0xFF0D0F14) : _textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: GestureDetector(
+              onTap: () => setState(() => _showBookmarkedOnly = !_showBookmarkedOnly),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _showBookmarkedOnly ? _gold : _surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _showBookmarkedOnly ? _gold : _border),
+                ),
+                child: Icon(
+                  _showBookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  size: 18,
+                  color: _showBookmarkedOnly ? const Color(0xFF0D0F14) : _textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(int count) {
+    String text = _selectedCategory == 'الكل' ? 'أحدث الروايات' : _selectedCategory;
+    if (_showBookmarkedOnly) text = 'المحفوظات';
+    if (_isSearching && _searchQuery.isNotEmpty) text = 'نتائج البحث ($count)';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Container(width: 3, height: 16, decoration: BoxDecoration(color: _accent, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(width: 8),
+          Text(text, style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w600, color: _textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Padding(
+      padding: const EdgeInsets.all(40),
+      child: Center(child: Text(_showBookmarkedOnly ? 'لا توجد روايات محفوظة' : 'لا توجد نتائج', style: GoogleFonts.cairo(color: _textSecondary))),
     );
   }
 

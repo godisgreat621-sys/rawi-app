@@ -8,6 +8,8 @@ import 'package:my_first_app/repositories/user_repository.dart';
 import 'admin_screen.dart';
 import 'package:my_first_app/views/author_screen.dart'; // Add this import
 import 'package:my_first_app/providers/novels_provider.dart';
+import 'package:my_first_app/models/novel_model.dart';
+import 'package:my_first_app/views/home/novel_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -535,9 +537,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _showEditNameDialog(name, userData),
                       ),
                       _menuTile(
+                        Icons.bookmark_outline_rounded,
+                        'المكتبة الخاصة',
+                        subtitle: 'الروايات التي حفظتها للقراءة لاحقاً',
+                        onTap: _showBookmarksSheet,
+                      ),
+                      _menuTile(
                         Icons.privacy_tip_outlined,
                         'الخصوصية',
-                        onTap: _showPrivacySettings,
+                        onTap: () => _showPrivacySettings(userData),
                       ),
                       if (role == 'admin')
                         _menuTile(
@@ -640,6 +648,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── عرض الروايات المحفوظة (المحفوظات) ──────────────────────────────────
+  void _showBookmarksSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _bg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.7,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('المحفوظات (للقراءة لاحقاً)', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent)),
+            ),
+            Expanded(
+              child: StreamBuilder<List<Novel>>(
+                stream: context.read<NovelsProvider>().getBookmarkedNovelsStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  final items = snapshot.data!;
+                  if (items.isEmpty) return Center(child: Text('لا توجد روايات محفوظة', style: GoogleFonts.cairo(color: _textSecondary)));
+                  return ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) => _buildNovelListTile(items[index]),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNovelListTile(Novel novel) {
+    return ListTile(
+      leading: Container(width: 40, height: 60, decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: _surfaceHigh, image: novel.coverUrl != null ? DecorationImage(image: NetworkImage(novel.coverUrl!), fit: BoxFit.cover) : null)),
+      title: Text(novel.title, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13)),
+      subtitle: Text(novel.author, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11)),
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': novel.id, 'title': novel.title, 'author': novel.author, 'coverUrl': novel.coverUrl}))),
+    );
+  }
+
   // ── عرض قوائم المتابعين والمتابعين ────────────────────────────────────────
   void _showUserList(String title, String collectionPath) {
     final user = FirebaseAuth.instance.currentUser;
@@ -673,6 +725,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return ListTile(
                             leading: CircleAvatar(backgroundImage: uData['profilePicture'] != null ? NetworkImage(uData['profilePicture']) : null),
                             title: Text(uData['displayName'] ?? 'مستخدم', style: GoogleFonts.cairo(color: _textPrimary)),
+                            trailing: collectionPath == 'following' 
+                              ? TextButton(onPressed: () => context.read<NovelsProvider>().toggleFollow(docs[i].id), child: Text('إلغاء المتابعة', style: GoogleFonts.cairo(color: Colors.redAccent, fontSize: 11)))
+                              : null,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => AuthorScreen(
@@ -692,19 +747,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showPrivacySettings() {
+  void _showPrivacySettings(Map<String, dynamic>? userData) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    bool showPoints = userData?['showPublicPoints'] ?? true;
+    bool showRatings = userData?['showPublicRatings'] ?? true;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: _surface,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('إعدادات الخصوصية', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary)),
-            SwitchListTile(title: Text('إظهار نقاطي للآخرين', style: GoogleFonts.cairo(color: _textSecondary)), value: true, onChanged: (v){}, activeColor: _accent),
-            SwitchListTile(title: Text('إظهار تقييماتي للآخرين', style: GoogleFonts.cairo(color: _textSecondary)), value: true, onChanged: (v){}, activeColor: _accent),
-          ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('إعدادات الخصوصية', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary)),
+              const SizedBox(height: 10),
+              SwitchListTile(
+                title: Text('إظهار نقاطي للآخرين', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14)),
+                value: showPoints,
+                activeColor: _accent,
+                onChanged: (v) async {
+                  setS(() => showPoints = v);
+                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'showPublicPoints': v});
+                },
+              ),
+              SwitchListTile(
+                title: Text('إظهار تقييمي العام للآخرين', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14)),
+                value: showRatings,
+                activeColor: _accent,
+                onChanged: (v) async {
+                  setS(() => showRatings = v);
+                  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({'showPublicRatings': v});
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

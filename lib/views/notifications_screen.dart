@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/views/author_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -185,11 +187,22 @@ class NotificationsScreen extends StatelessWidget {
                           final style   = _getStyle(type);
                           final message = data['message'] ?? '';
                           final time    = _formatTime(data['createdAt']);
+                          final novelId = data['novelId'];
+                          final senderId= data['senderId'];
 
                           return GestureDetector(
-                            onTap: () {
+                            onTap: () async {
                               if (!isRead) {
                                 doc.reference.update({'isRead': true});
+                              }
+                              if (type == 'follow' && senderId != null) {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => AuthorScreen(authorId: senderId, authorName: '')));
+                              } else if (novelId != null) {
+                                // جلب بيانات الرواية للذهاب إليها
+                                final nDoc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+                                if (nDoc.exists && context.mounted) {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': nDoc.id, ...nDoc.data() as Map<String, dynamic>})));
+                                }
                               }
                             },
                             child: AnimatedContainer(

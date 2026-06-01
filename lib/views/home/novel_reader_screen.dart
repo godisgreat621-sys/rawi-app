@@ -213,7 +213,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
           final name = (uDoc.data() as Map<String,dynamic>?)?['displayName']
               ?? user.email ?? 'قارئ';
           await context.read<NovelsProvider>().notifyAuthorOfLike(
-              aId, nd?['title'] ?? '', name);
+              aId, nd?['title'] ?? '', name, _novelId);
         }
       }
     } catch (_) {
@@ -255,7 +255,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     // إشعار صاحب الرد إذا كان هذا رداً
     if (replyToId != null) {
       await context.read<NovelsProvider>().notifyUserOfReply(
-          replyToId, widget.novel['title'] ?? '', name, text);
+          replyToId, widget.novel['title'] ?? '', name, text, _novelId);
     }
 
     // إشعار الكاتب
@@ -263,7 +263,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     final aId = nd?['authorId'] ?? '';
     if (aId.isNotEmpty && aId != user.uid) {
       await context.read<NovelsProvider>().notifyAuthorOfComment(
-          aId, widget.novel['title'] ?? '', name);
+          aId, widget.novel['title'] ?? '', name, _novelId);
     }
 
     _commentController.clear();
@@ -450,8 +450,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       }
       final nd = (await _novelRef.get()).data() as Map<String,dynamic>?;
       await context.read<NovelsProvider>().notifyAuthorOfRating(
-          authorId, nd?['title'] ?? '',
-          widget.novel['chapterTitle'] ?? '', name);
+          authorId, nd?['title'] ?? '', 
+          widget.novel['chapterTitle'] ?? '', name, _novelId, _chapterId);
     }
 
     // نقاط المُقيِّم

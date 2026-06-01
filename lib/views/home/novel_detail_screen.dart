@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/views/home/novel_reader_screen.dart';
 import 'package:my_first_app/views/writer/add_novel_screen.dart';
 import 'package:my_first_app/views/author_screen.dart';
@@ -62,20 +64,8 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     if (user.uid == authorId) return;
     setState(() => _isFollowLoading = true);
 
-    final followingRef = FirebaseFirestore.instance
-        .collection('users').doc(user.uid)
-        .collection('following').doc(authorId);
-    final followersRef = FirebaseFirestore.instance
-        .collection('users').doc(authorId)
-        .collection('followers').doc(user.uid);
-
-    if (_isFollowing) {
-      await followingRef.delete();
-      await followersRef.delete();
-    } else {
-      await followingRef.set({'followedAt': FieldValue.serverTimestamp()});
-      await followersRef.set({'followedAt': FieldValue.serverTimestamp()});
-    }
+    await context.read<NovelsProvider>().toggleFollow(authorId);
+    
     if (mounted) setState(() {
       _isFollowing = !_isFollowing;
       _isFollowLoading = false;
