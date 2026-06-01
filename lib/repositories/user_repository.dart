@@ -37,7 +37,7 @@ class UserRepository {
 
     if (streamed.statusCode != 200) {
       debugPrint('Cloudinary error: $body');
-      throw Exception('فشل رفع الصورة (${streamed.statusCode})');
+      throw Exception('فشل رفع الصورة: تأكد من أن الـ Preset في Cloudinary هو Unsigned');
     }
 
     final json = jsonDecode(body) as Map<String, dynamic>;
