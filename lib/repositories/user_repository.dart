@@ -16,15 +16,21 @@ class UserRepository {
     if (user == null) throw Exception('يجب تسجيل الدخول لرفع الصور.');
 
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 60);
+    // على الويب، قد يتسبب استخدام imageQuality في إبطال رابط الـ Blob الخاص بالمتصفح بشكل مفاجئ.
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery, 
+      imageQuality: kIsWeb ? null : 60,
+    );
+    
     if (image == null) throw Exception('لم يتم اختيار صورة.');
+
+    // قراءة البيانات فوراً بعد الاختيار لضمان عدم ضياع الرابط المؤقت (Blob URL) في المتصفح.
+    final Uint8List bytes = await image.readAsBytes();
 
     try {
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child(folder).child(fileName);
 
-      // استخدام Bytes بدلاً من File لضمان التوافق مع الويب والموبايل
-      final Uint8List bytes = await image.readAsBytes();
       await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
 
       return await ref.getDownloadURL();
