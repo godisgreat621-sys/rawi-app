@@ -46,7 +46,7 @@ jobs:
               - 'packages/flutter/test_fixes/cupertino/**'
 
       - name: Fail on frozen changes
-        if: steps.filter.outputs.frozen == 'true' && !contains(github.event.pull_request.labels.*.name, 'override: code freeze')
+        if: "${{ steps.filter.outputs.frozen == 'true' && !contains(github.event.pull_request.labels.*.name, 'override: code freeze') }}"
         run: |
           echo "Error: Code changes detected during the current code freeze."
           echo "The following paths are currently frozen:"
@@ -59,7 +59,7 @@ jobs:
           exit 1
 
       - name: Pass if overridden
-        if: steps.filter.outputs.frozen == 'true' && contains(github.event.pull_request.labels.*.name, 'override: code freeze')
+        if: "${{ steps.filter.outputs.frozen == 'true' && contains(github.event.pull_request.labels.*.name, 'override: code freeze') }}"
         run: echo 'Code freeze overridden by override: code freeze label.'
 
       - name: Pass if no frozen changes
