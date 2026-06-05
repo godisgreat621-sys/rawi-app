@@ -795,25 +795,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, i) {
-                    final data = docs[i].data() as Map<String, dynamic>;
+                    final doc  = docs[i];
+                    final data = doc.data() as Map<String, dynamic>;
+                    // novelId من مسار الوثيقة: novels/{novelId}/ratings/...
+                    final novelId = doc.reference.parent.parent?.id ?? '';
                     return ListTile(
+                      leading: const Icon(Icons.auto_stories_rounded, color: _accent, size: 18),
                       title: Text(
-                        data['comment'] ?? 'تقييم بدون تعليق',
-                        style: GoogleFonts.cairo(
-                          color: _textPrimary,
-                          fontSize: 13,
-                        ),
+                        data['novelTitle'] ?? data['comment'] ?? 'رواية',
+                        style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            data['rating'].toString(),
-                            style: GoogleFonts.cairo(color: _gold),
-                          ),
-                          const Icon(Icons.star, color: _gold, size: 14),
-                        ],
-                      ),
+                      subtitle: data['comment'] != null && data['comment'].toString().isNotEmpty
+                          ? Text(data['comment'], style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)
+                          : null,
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(data['rating'].toString(), style: GoogleFonts.cairo(color: _gold, fontWeight: FontWeight.w700)),
+                        const Icon(Icons.star_rounded, color: _gold, size: 14),
+                      ]),
+                      onTap: novelId.isEmpty ? null : () async {
+                        final nd = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+                        if (!nd.exists || !context.mounted) return;
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => NovelDetailScreen(novel: {'id': nd.id, ...nd.data()!}),
+                        ));
+                      },
                     );
                   },
                 );

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/repositories/novel_repository.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/views/author_screen.dart';
 
 class NovelReaderScreen extends StatefulWidget {
   final Map<String, dynamic> novel;
@@ -1030,28 +1031,34 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // الأفاتار
-          Builder(builder: (_) {
-            final pic = (data['authorProfilePicture'] as String?) ?? '';
-            if (pic.isNotEmpty) {
+          // الأفاتار — قابل للنقر للانتقال لصفحة الكاتب
+          GestureDetector(
+            onTap: authorId.isNotEmpty && !isOwn
+                ? () => Navigator.push(ctx, MaterialPageRoute(
+                    builder: (_) => AuthorScreen(authorId: authorId, authorName: name)))
+                : null,
+            child: Builder(builder: (_) {
+              final pic = (data['authorProfilePicture'] as String?) ?? '';
+              if (pic.isNotEmpty) {
+                return CircleAvatar(
+                  radius: isReply ? 14 : 18,
+                  backgroundImage: NetworkImage(pic),
+                  backgroundColor: _accent.withOpacity(0.15),
+                );
+              }
               return CircleAvatar(
                 radius: isReply ? 14 : 18,
-                backgroundImage: NetworkImage(pic),
                 backgroundColor: _accent.withOpacity(0.15),
+                child: Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : '؟',
+                  style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w700,
+                      color: _accent,
+                      fontSize: isReply ? 11 : 13),
+                ),
               );
-            }
-            return CircleAvatar(
-              radius: isReply ? 14 : 18,
-              backgroundColor: _accent.withOpacity(0.15),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w700,
-                    color: _accent,
-                    fontSize: isReply ? 11 : 13),
-              ),
-            );
-          }),
+            }),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -1072,11 +1079,19 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
-                          style: GoogleFonts.cairo(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: _accent)),
+                      GestureDetector(
+                        onTap: authorId.isNotEmpty && !isOwn
+                            ? () => Navigator.push(ctx, MaterialPageRoute(
+                                builder: (_) => AuthorScreen(authorId: authorId, authorName: name)))
+                            : null,
+                        child: Text(name,
+                            style: GoogleFonts.cairo(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: _accent,
+                                decoration: authorId.isNotEmpty && !isOwn ? TextDecoration.underline : null,
+                                decorationColor: _accent)),
+                      ),
                       if (replyTo != null) ...[
                         const SizedBox(height: 2),
                         Text('↩ رداً على $replyTo',
