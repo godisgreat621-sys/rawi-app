@@ -11,7 +11,7 @@ class UserRepository {
   static final _auth      = FirebaseAuth.instance;
 
   // ── Cloudinary config ────────────────────────────────────────────────────
-  static const _cloudName    = 'dkwnjmbz1';
+  static const _cloudName    = 'dkwnjmbzl';
   static const _uploadPreset = 'uy1hp02s';
   static const _uploadUrl    =
       'https://api.cloudinary.com/v1_1/$_cloudName/image/upload';
