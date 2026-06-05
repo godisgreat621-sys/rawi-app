@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'web_image_picker.dart'
+    if (dart.library.io) 'web_image_picker_stub.dart';
 
 class UserRepository {
   static final _firestore = FirebaseFirestore.instance;
@@ -54,11 +56,12 @@ class UserRepository {
 
   // ── اختر صورة فقط (بدون رفع) — استخدم قبل setState ──────────────────────
   static Future<Uint8List?> pickImageOnly() async {
+    if (kIsWeb) return pickImageForWeb();
     final XFile? image = await ImagePicker().pickImage(
       source:       ImageSource.gallery,
-      imageQuality: kIsWeb ? null : 72,
-      maxWidth:     kIsWeb ? null : 900,
-      maxHeight:    kIsWeb ? null : 900,
+      imageQuality: 72,
+      maxWidth:     900,
+      maxHeight:    900,
     );
     if (image == null) return null;
     final bytes = await image.readAsBytes();
