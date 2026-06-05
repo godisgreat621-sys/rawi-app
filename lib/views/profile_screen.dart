@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
 import 'package:my_first_app/repositories/user_repository.dart';
+import 'package:my_first_app/core/image_utils.dart';
 import 'admin_screen.dart';
 import 'package:my_first_app/views/author_screen.dart'; // Add this import
 import 'package:my_first_app/providers/novels_provider.dart';
@@ -416,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       // #2 خلفية ضبابية من صورة البروفايل
                       if (profilePic != null) ...[
-                        Image.network(profilePic, fit: BoxFit.cover),
+                        Image.network(optimizeImageUrl(profilePic, width: 400), fit: BoxFit.cover),
                         BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                           child: Container(color: _bg.withOpacity(0.82)),
@@ -447,7 +448,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 child: CircleAvatar(
                                   radius: 38,
                                   backgroundColor: _surface,
-                                  backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
+                                  backgroundImage: profilePic != null ? NetworkImage(optimizeImageUrl(profilePic, width: 150)) : null,
                                   child: profilePic == null
                                       ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
                                           style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.w700, color: _accent))
@@ -910,7 +911,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: _surfaceHigh,
           image: novel.coverUrl != null
               ? DecorationImage(
-                  image: NetworkImage(novel.coverUrl!),
+                  image: NetworkImage(optimizeImageUrl(novel.coverUrl, width: 120)),
                   fit: BoxFit.cover,
                 )
               : null,
@@ -999,7 +1000,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   leading: CircleAvatar(
                                     backgroundImage:
                                         uData['profilePicture'] != null
-                                        ? NetworkImage(uData['profilePicture'])
+                                        ? NetworkImage(optimizeImageUrl(uData['profilePicture'] as String, width: 80))
                                         : null,
                                   ),
                                   title: Text(
@@ -1401,7 +1402,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                               leading: CircleAvatar(
                                 radius: 20,
-                                backgroundImage: pic != null ? NetworkImage(pic) : null,
+                                backgroundImage: pic != null ? NetworkImage(optimizeImageUrl(pic, width: 80)) : null,
                                 backgroundColor: _surfaceHigh,
                                 child: pic == null ? Text(n.isNotEmpty ? n[0] : '؟',
                                     style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null,

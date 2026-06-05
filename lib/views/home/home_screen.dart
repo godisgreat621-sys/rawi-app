@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
 import '../../models/novel_model.dart';
+import '../../core/image_utils.dart';
 import 'novel_detail_screen.dart';
 import '../writer/drafts_list_screen.dart';
 
@@ -44,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool   _isListView      = false;
   // #18 شارة المجتمع
   String? _communityPickId;
+  // #35 تاريخ آخر قراءة لكل رواية
+  Map<String, DateTime> _lastReadMap = {};
 
   final List<String> _categories = [
     'الكل', 'فانتازيا', 'دراما', 'رعب',
@@ -56,6 +59,37 @@ class _HomeScreenState extends State<HomeScreen> {
     _getCommunityPickId().then((id) {
       if (mounted) setState(() => _communityPickId = id);
     });
+    _loadReadingDates(); // #35
+  }
+
+  // #35 تحميل تواريخ آخر قراءة للمستخدم دفعة واحدة
+  Future<void> _loadReadingDates() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('readingProgress')
+          .get();
+      final map = <String, DateTime>{};
+      for (final doc in snap.docs) {
+        final ts = doc.data()['updatedAt'] as Timestamp?;
+        if (ts != null) map[doc.id] = ts.toDate();
+      }
+      if (mounted) setState(() => _lastReadMap = map);
+    } catch (_) {}
+  }
+
+  // #35 تنسيق نسبي للتاريخ
+  String _relativeDate(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return 'منذ لحظات';
+    if (diff.inHours < 24)   return 'اليوم';
+    if (diff.inDays == 1)    return 'أمس';
+    if (diff.inDays < 7)     return 'منذ ${diff.inDays} أيام';
+    if (diff.inDays < 30)    return 'منذ ${diff.inDays ~/ 7} أسابيع';
+    return 'منذ ${diff.inDays ~/ 30} شهر';
   }
 
   @override
@@ -502,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ClipRRect(
                                                 borderRadius: BorderRadius.circular(8),
                                                 child: cover != null && cover.isNotEmpty
-                                                    ? Image.network(cover, width: 50, height: 65, fit: BoxFit.cover)
+                                                    ? Image.network(optimizeImageUrl(cover, width: 100), width: 50, height: 65, fit: BoxFit.cover)
                                                     : Container(width: 50, height: 65, color: _surfaceHigh,
                                                         child: const Icon(Icons.book, color: _accent, size: 22)),
                                               ),
@@ -561,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 child: ClipRRect(
                                                   borderRadius: BorderRadius.circular(10),
                                                   child: rec[i].coverUrl != null
-                                                      ? Image.network(rec[i].coverUrl!, fit: BoxFit.cover, width: double.infinity)
+                                                      ? Image.network(optimizeImageUrl(rec[i].coverUrl, width: 400), fit: BoxFit.cover, width: double.infinity)
                                                       : Container(color: _surfaceHigh,
                                                           child: Icon(Icons.auto_stories_rounded, color: _accent, size: 30)),
                                                 ),
@@ -657,15 +691,38 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
+          // زر مسح الفلاتر — يظهر فقط حين كلا الفلترين نشطان
+          if (_selectedCategory != 'الكل' && _filterMode != 'all' && !_showBookmarkedOnly)
+            GestureDetector(
+              onTap: () => setState(() {
+                _selectedCategory   = 'الكل';
+                _filterMode         = 'all';
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.close_rounded, size: 12, color: Colors.redAccent),
+                  const SizedBox(width: 4),
+                  Text('مسح', style: GoogleFonts.cairo(
+                      fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                ]),
+              ),
+            ),
           // التصنيفات أولاً
           ..._categories.map((cat) {
-            final sel = cat == _selectedCategory &&
-                !_showBookmarkedOnly && _filterMode == 'all';
+            final sel = cat == _selectedCategory && !_showBookmarkedOnly;
             return GestureDetector(
               onTap: () => setState(() {
                 _selectedCategory  = cat;
                 _showBookmarkedOnly = false;
-                _filterMode        = 'all';
+                // #34 لا نُعيد ضبط _filterMode عند اختيار تصنيف — يمكن الجمع
               }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -731,9 +788,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSectionTitle(int count) {
+    final modeLabels = {
+      'completed': 'مكتملة', 'today': 'اليوم', 'topRated': 'الأعلى',
+      'discussed': 'الأكثر', 'unread': 'جديدة',
+    };
     String text = _selectedCategory == 'الكل'
         ? (_sortByActivity ? 'الأكثر نشاطاً' : 'أحدث الروايات')
         : _selectedCategory;
+    // #34 عرض الفلترين معاً عند تفعيلهما
+    if (_filterMode != 'all' && _selectedCategory != 'الكل') {
+      text = '$_selectedCategory · ${modeLabels[_filterMode] ?? _filterMode}';
+    } else if (_filterMode != 'all') {
+      text = modeLabels[_filterMode] ?? _filterMode;
+    }
     if (_showBookmarkedOnly) text = 'المحفوظات';
     if (_isSearching && _searchQuery.isNotEmpty) text = 'نتائج البحث ($count)';
 
@@ -845,7 +912,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: n.coverUrl != null
-                      ? Image.network(n.coverUrl!, width: 50, height: 68, fit: BoxFit.cover)
+                      ? Image.network(optimizeImageUrl(n.coverUrl, width: 120), width: 50, height: 68, fit: BoxFit.cover)
                       : Container(width: 50, height: 68, color: _surfaceHigh,
                           child: Icon(Icons.auto_stories_rounded, color: _accent, size: 22)),
                 ),
@@ -868,6 +935,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(color: _accent.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
                         child: Text(n.category, style: GoogleFonts.cairo(fontSize: 9, color: _accent))),
                   ]),
+                  // #35 تاريخ آخر قراءة
+                  if (_lastReadMap.containsKey(n.id)) ...[
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      Icon(Icons.history_rounded, size: 11, color: _textSecondary),
+                      const SizedBox(width: 3),
+                      Text(_relativeDate(_lastReadMap[n.id]!),
+                          style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+                    ]),
+                  ],
                 ],
               )),
             ]),
@@ -938,7 +1015,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 border: Border.all(color: _border, width: 1),
                 image: novel.coverUrl != null
                     ? DecorationImage(
-                        image: NetworkImage(novel.coverUrl!),
+                        image: NetworkImage(optimizeImageUrl(novel.coverUrl)),
                         fit: BoxFit.cover,
                       )
                     : null,
@@ -1166,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     border: Border.all(color: _border),
                     image: n.coverUrl != null
                         ? DecorationImage(
-                            image: NetworkImage(n.coverUrl!),
+                            image: NetworkImage(optimizeImageUrl(n.coverUrl)),
                             fit: BoxFit.cover,
                           )
                         : null,

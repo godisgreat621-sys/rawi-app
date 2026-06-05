@@ -80,6 +80,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  // #36 تجميع الإشعارات المتشابهة (like/comment/follow/rating على نفس الرواية)
+  List<_GroupedNotif> _groupNotifs(List<QueryDocumentSnapshot> docs) {
+    const groupable = {'like', 'comment', 'follow', 'rating'};
+    final map = <String, List<QueryDocumentSnapshot>>{};
+    final order = <String>[];
+    for (final doc in docs) {
+      final d = doc.data() as Map<String, dynamic>;
+      final type    = d['type'] ?? '';
+      final novelId = d['novelId'] ?? '';
+      final key     = groupable.contains(type) ? '${type}_$novelId' : doc.id;
+      if (!map.containsKey(key)) order.add(key);
+      map.putIfAbsent(key, () => []).add(doc);
+    }
+    return order.map((key) {
+      final group  = map[key]!;
+      final first  = group.first.data() as Map<String, dynamic>;
+      final count  = group.length;
+      final type   = first['type'] ?? '';
+      final isRead = group.every((d) => (d.data() as Map)['isRead'] == true);
+      final time   = group.map((d) => (d.data() as Map)['createdAt'] as Timestamp?)
+                         .whereType<Timestamp>().fold<Timestamp?>(null,
+                             (prev, t) => prev == null || t.compareTo(prev) > 0 ? t : prev);
+      String message = first['message'] ?? '';
+      if (count > 1) {
+        final labels = {'like': 'أعجب', 'comment': 'علّق', 'follow': 'بدأ بمتابعتك', 'rating': 'قيّم'};
+        final verb = labels[type] ?? type;
+        if (type == 'follow') {
+          message = '$count شخص $verb';
+        } else {
+          final novelTitle = first['novelTitle'] ?? '';
+          message = '$count أشخاص $verb${novelTitle.isNotEmpty ? " على \"$novelTitle\"" : ""}';
+        }
+      }
+      return _GroupedNotif(
+        type:     type,
+        count:    count,
+        message:  message,
+        time:     time,
+        isRead:   isRead,
+        novelId:  first['novelId'],
+        senderId: first['senderId'],
+        docs:     group,
+      );
+    }).toList();
+  }
+
   // ── تنسيق الوقت ───────────────────────────────────────────────────────────
   String _formatTime(dynamic value) {
     if (value is! Timestamp) return '';
@@ -169,6 +215,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                   final unread =
                       docs.where((d) => (d.data() as Map)['isRead'] != true).length;
+                  final grouped = _groupNotifs(docs); // #36
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,27 +249,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 14),
-                        itemCount: docs.length,
+                        itemCount: grouped.length,
                         itemBuilder: (_, i) {
-                          final doc  = docs[i];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final isRead  = data['isRead'] == true;
-                          final type    = data['type']    ?? '';
+                          final g       = grouped[i];
+                          final isRead  = g.isRead;
+                          final type    = g.type;
                           final style   = _getStyle(type);
-                          final message = data['message'] ?? '';
-                          final time    = _formatTime(data['createdAt']);
-                          final novelId = data['novelId'];
-                          final senderId= data['senderId'];
+                          final message = g.message;
+                          final time    = _formatTime(g.time);
+                          final novelId = g.novelId;
+                          final senderId= g.senderId;
 
                           return GestureDetector(
                             onTap: () async {
                               if (!isRead) {
-                                doc.reference.update({'isRead': true});
+                                final batch = FirebaseFirestore.instance.batch();
+                                for (final d in g.docs) {
+                                  batch.update(d.reference, {'isRead': true});
+                                }
+                                batch.commit();
                               }
                               if (type == 'follow' && senderId != null) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AuthorScreen(authorId: senderId, authorName: '')));
                               } else if (novelId != null) {
-                                // جلب بيانات الرواية للذهاب إليها
                                 final nDoc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
                                 if (nDoc.exists && context.mounted) {
                                   Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': nDoc.id, ...nDoc.data() as Map<String, dynamic>})));
@@ -369,4 +418,25 @@ class _NotifStyle {
   final Color    color;
   final String   label;
   const _NotifStyle(this.icon, this.color, this.label);
+}
+
+class _GroupedNotif {
+  final String  type;
+  final int     count;
+  final String  message;
+  final Timestamp? time;
+  final bool    isRead;
+  final String? novelId;
+  final String? senderId;
+  final List<QueryDocumentSnapshot> docs;
+  const _GroupedNotif({
+    required this.type,
+    required this.count,
+    required this.message,
+    required this.time,
+    required this.isRead,
+    required this.novelId,
+    required this.senderId,
+    required this.docs,
+  });
 }

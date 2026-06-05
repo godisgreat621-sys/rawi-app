@@ -1,4 +1,7 @@
 import 'dart:ui';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js' as js;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +13,7 @@ import 'package:my_first_app/views/home/novel_reader_screen.dart';
 import 'package:my_first_app/views/writer/add_novel_screen.dart';
 import 'package:my_first_app/views/author_screen.dart';
 import 'package:my_first_app/repositories/user_repository.dart';
+import 'package:my_first_app/core/image_utils.dart';
 
 class NovelDetailScreen extends StatefulWidget {
   final Map<String, dynamic> novel;
@@ -119,8 +123,22 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _shareNovel(String title, String novelId) {
-    final text = 'اقرأ رواية "$title" على تطبيق راوي 📖\nرمز الرواية: $novelId';
+    final text = 'اقرأ رواية "$title" على منصة راوي 📖\nرمز الرواية: $novelId';
+    // Web Share API — يفتح ورقة المشاركة الأصلية في المتصفح/الجهاز
+    if (kIsWeb) {
+      try {
+        final navigator = js.context['navigator'] as js.JsObject?;
+        if (navigator != null && navigator.hasProperty('share')) {
+          navigator.callMethod('share', [
+            js.JsObject.jsify({'title': title, 'text': text}),
+          ]);
+          return;
+        }
+      } catch (_) {}
+    }
+    // Fallback: نسخ للحافظة
     Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('تم نسخ رابط المشاركة ✓', style: GoogleFonts.cairo()),
       backgroundColor: _accent,
@@ -307,7 +325,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                   radius: 18,
                   backgroundColor: _surfaceHigh,
                   backgroundImage: (r['profilePicture'] as String?) != null
-                      ? NetworkImage(r['profilePicture'])
+                      ? NetworkImage(optimizeImageUrl(r['profilePicture'] as String, width: 80))
                       : null,
                   child: (r['profilePicture'] as String?) == null
                       ? Text((r['displayName'] ?? '?')[0],
@@ -999,7 +1017,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 children: [
                   // خلفية ضبابية من الغلاف
                   if (coverUrl != null) ...[
-                    Image.network(coverUrl, fit: BoxFit.cover),
+                    Image.network(optimizeImageUrl(coverUrl, width: 400), fit: BoxFit.cover),
                     BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                       child: Container(color: _bg.withOpacity(0.78)),
@@ -1024,7 +1042,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                     insetPadding: const EdgeInsets.all(20),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Image.network(coverUrl, fit: BoxFit.contain),
+                                      child: Image.network(optimizeImageUrl(coverUrl), fit: BoxFit.contain),
                                     ),
                                   ),
                                 ),
@@ -1046,7 +1064,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                 ],
                                 image: coverUrl != null
                                     ? DecorationImage(
-                                        image: NetworkImage(coverUrl),
+                                        image: NetworkImage(optimizeImageUrl(coverUrl, width: 320)),
                                         fit: BoxFit.cover)
                                     : null,
                               ),

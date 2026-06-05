@@ -18,6 +18,20 @@ class UserRepository {
   static const _uploadUrl    =
       'https://api.cloudinary.com/v1_1/$_cloudName/image/upload';
 
+  // تُضيف تحويلات Cloudinary لتقليص حجم الصورة تلقائياً
+  // مثال: .../upload/v123/path.jpg → .../upload/f_auto,q_auto,w_800/v123/path.jpg
+  static String optimizeImageUrl(String url, {int width = 800}) {
+    if (url.isEmpty) return url;
+    const marker = '/upload/';
+    final idx = url.indexOf(marker);
+    if (idx == -1) return url;
+    final after = url.substring(idx + marker.length);
+    // لا نُكرر التحويلات لو كانت موجودة مسبقاً
+    if (after.startsWith('f_auto') || after.startsWith('q_auto')) return url;
+    return '${url.substring(0, idx)}$marker'
+        'f_auto,q_auto,w_$width/$after';
+  }
+
   // ── رفع bytes لـ Cloudinary ──────────────────────────────────────────────
   static Future<String> _uploadToCloudinary(
     Uint8List bytes,

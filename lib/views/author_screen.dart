@@ -8,6 +8,7 @@ import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/core/image_utils.dart';
 
 class AuthorScreen extends StatefulWidget {
   final String authorId;
@@ -189,7 +190,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 radius: 40,
                                 backgroundColor: _surface,
                                 backgroundImage: profilePic != null
-                                    ? NetworkImage(profilePic)
+                                    ? NetworkImage(optimizeImageUrl(profilePic, width: 160))
                                     : null,
                                 child: profilePic == null
                                     ? Text(
@@ -531,7 +532,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                 border: Border.all(color: _border),
                 image: novel.coverUrl != null
                     ? DecorationImage(
-                        image: NetworkImage(novel.coverUrl!),
+                        image: NetworkImage(optimizeImageUrl(novel.coverUrl, width: 120)),
                         fit: BoxFit.cover)
                     : null,
               ),
