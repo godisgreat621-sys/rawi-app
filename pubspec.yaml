@@ -1,0 +1,41 @@
+name: my_first_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
+  provider: ^6.1.2
+  google_fonts: ^8.1.0
+  font_awesome_flutter: ^11.0.0
+  image_picker: ^1.1.2
+  firebase_storage: ^12.3.2
+  rxdart: ^0.27.7
+  http: ^1.2.0
+  cached_network_image: ^3.4.1   # #45 تخزين مؤقت للصور
+  shared_preferences: ^2.3.2     # #47 وضع بدون إنترنت
+  connectivity_plus: ^6.1.4      # #48 إعادة تحميل عند عودة الاتصال
+  google_sign_in: ^6.2.1         # #41 تسجيل دخول Google
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+scripts:
+  deploy: flutter build web && cd build/web && npx vercel . --prod
