@@ -32,6 +32,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Color _textPrimary = const Color(0xFFECECEC);
   Color _textSecondary = const Color(0xFF6B7280);
 
+  // دور المستخدم — لإظهار زر الأدمن بدون الكشف للآخرين
+  String _myRole = 'user';
+
   bool _isUploading = false;
 
   Future<void> _pickAndUploadImage() async {
@@ -361,6 +364,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: _bg,
+      floatingActionButton: _myRole == 'admin'
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF1E2130),
+              elevation: 2,
+              tooltip: 'لوحة التحكم',
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AdminScreen())),
+              child: const Icon(Icons.shield_rounded, color: _accent, size: 22),
+            )
+          : null,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -379,6 +392,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final profilePic = userData?['profilePicture'] as String?;
           final points = userData?['points'] ?? 0;
           final role = userData?['role'] ?? 'user';
+          // تحديث الدور الداخلي بصمت (لزر الأدمن العائم)
+          if (_myRole != role) {
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => setState(() => _myRole = role));
+          }
           final ratingsGiven    = userData?['ratingsGiven']    ?? 0;
           final followersCount  = userData?['followersCount']  ?? 0;
           final followingCount  = userData?['followingCount']  ?? 0;
@@ -689,10 +707,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      if (role == 'admin')
-                        _menuTile(Icons.admin_panel_settings_outlined, 'لوحة الإدارة',
-                            onTap: () => Navigator.push(context,
-                                MaterialPageRoute(builder: (_) => const AdminScreen()))),
                       _menuTile(Icons.policy_outlined, 'سياسة الخصوصية',
                           onTap: () => Navigator.push(context,
                               MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
@@ -1697,12 +1711,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── مساعدات ───────────────────────────────────────────────────────────────
   // #3 شارة الدور
   Widget _roleChip(String role) {
+    // أدمن لا يظهر للآخرين — يُعرض كقارئ/كاتب حسب نشاطه
     final map = {
-      'admin':  ('أدمن',   const Color(0xFFE06B6B)),
       'writer': ('كاتب',   _accent),
       'user':   ('قارئ',   _textSecondary),
     };
-    final r = map[role] ?? ('قارئ', _textSecondary);
+    final r = map[role == 'admin' ? 'user' : role] ?? ('قارئ', _textSecondary);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(

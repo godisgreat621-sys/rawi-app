@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -10,9 +12,40 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   User? get currentUser => _auth.currentUser;
 
+  // ── معرّف الجهاز (يمنع إنشاء أكثر من حساب) ─────────────────────────────
+  Future<String> _getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString('device_id');
+    if (id == null) {
+      final rng = Random.secure();
+      id = List.generate(24, (_) => rng.nextInt(36).toRadixString(36)).join();
+      await prefs.setString('device_id', id);
+    }
+    return id;
+  }
+
+  Future<String?> _checkDeviceConflict() async {
+    final deviceId = await _getDeviceId();
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('deviceId', isEqualTo: deviceId)
+        .limit(1)
+        .get();
+    if (snap.docs.isNotEmpty) {
+      final existingEmail = snap.docs.first.data()['email'] ?? '';
+      return 'هذا الجهاز مسجّل بالفعل بالحساب: $existingEmail\nيرجى تسجيل الدخول بدلاً من إنشاء حساب جديد.';
+    }
+    return null;
+  }
+
   Future<String?> signUp(String email, String password, {String? displayName}) async {
     _setLoading(true);
+    // فحص تكرار الجهاز
+    final deviceConflict = await _checkDeviceConflict();
+    if (deviceConflict != null) { _setLoading(false); return deviceConflict; }
+
     try {
+      final deviceId = await _getDeviceId();
       final result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -33,6 +66,7 @@ class AuthViewModel extends ChangeNotifier {
         'followersCount': 0,
         'followingCount': 0,
         'lastChapterRatingsReceived': 0,
+        'deviceId': deviceId,
         'createdAt': FieldValue.serverTimestamp(),
       });
       _setLoading(false);
