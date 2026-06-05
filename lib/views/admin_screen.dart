@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
+import 'package:my_first_app/views/author_screen.dart';
+import 'package:my_first_app/views/home/novel_detail_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -230,14 +232,24 @@ class _AdminScreenState extends State<AdminScreen>
           side: BorderSide(color: isPerm ? Colors.red.shade900.withOpacity(0.5) : isBanned ? Colors.redAccent.withOpacity(0.3) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          CircleAvatar(radius: 18, backgroundColor: _accent.withOpacity(0.15),
-            backgroundImage: data['profilePicture'] != null ? NetworkImage(data['profilePicture']) : null,
-            child: data['profilePicture'] == null ? Text((data['displayName'] ?? '؟')[0], style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AuthorScreen(authorId: uid, authorName: data['displayName'] ?? ''))),
+            child: CircleAvatar(radius: 18, backgroundColor: _accent.withOpacity(0.15),
+              backgroundImage: data['profilePicture'] != null ? NetworkImage(data['profilePicture']) : null,
+              child: data['profilePicture'] == null ? Text((data['displayName'] ?? '؟')[0], style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null),
+          ),
           const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['displayName'] ?? data['email'] ?? 'مستخدم', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 13)),
-            Text(data['email'] ?? '', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-          ])),
+          Expanded(child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+                builder: (_) => AuthorScreen(authorId: uid, authorName: data['displayName'] ?? ''))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(data['displayName'] ?? data['email'] ?? 'مستخدم',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent, fontSize: 13,
+                      decoration: TextDecoration.underline, decorationColor: _accent)),
+              Text(data['email'] ?? '', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ]),
+          )),
           _roleBadge(role),
         ]),
         const SizedBox(height: 6),
@@ -364,13 +376,18 @@ class _AdminScreenState extends State<AdminScreen>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: isFeatured ? _gold.withOpacity(0.5) : isFrozen ? Colors.blueGrey.withOpacity(0.4) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(child: Text(data['title'] ?? '', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis)),
-          const SizedBox(width: 8),
-          if (isFeatured) _badge('⭐', _gold),
-          if (isFrozen)   _badge('❄️', Colors.blueGrey),
-          if (isCompleted && !isFrozen) _badge('✅', Colors.green),
-        ]),
+        GestureDetector(
+          onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => NovelDetailScreen(novel: {'id': id, ...data}))),
+          child: Row(children: [
+            Expanded(child: Text(data['title'] ?? '', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _accent, fontSize: 13,
+                decoration: TextDecoration.underline, decorationColor: _accent), maxLines: 2, overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 8),
+            if (isFeatured) _badge('⭐', _gold),
+            if (isFrozen)   _badge('❄️', Colors.blueGrey),
+            if (isCompleted && !isFrozen) _badge('✅', Colors.green),
+          ]),
+        ),
         const SizedBox(height: 4),
         Text('${data['authorName'] ?? '—'}', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
         const SizedBox(height: 6),
