@@ -15,6 +15,8 @@ import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/views/privacy_screen.dart';
+import 'package:my_first_app/views/leaderboard_screen.dart';
+import 'package:my_first_app/views/reading_lists_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -699,6 +701,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _gridAction(Icons.history_rounded,       'النقاط',      _gold,         _showPointsHistory),
                           _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   _gold,         _showLeaderboard),
+                          _gridAction(Icons.playlist_play_rounded, 'قوائمي',      _accent,       () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingListsScreen()))),
                           _gridAction(Icons.emoji_events_outlined, 'التحدي',      _accent,       _showWeeklyChallenge),
                           _gridAction(Icons.notifications_outlined,'الإشعارات',   _accent,       _showNotificationSettings),
                           _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
@@ -1324,115 +1327,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // #29 لوحة المتصدرين
+  // #21 لوحة المتصدرين — شاشة كاملة
   void _showLeaderboard() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.55,
-        maxChildSize: 0.85,
-        builder: (_, sc) => Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(width: 36, height: 4,
-                decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(children: [
-                const Icon(Icons.leaderboard_rounded, color: _gold, size: 18),
-                const SizedBox(width: 8),
-                Text('أعلى المتصدرين', style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w700, color: _textPrimary)),
-              ]),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: FutureBuilder<QuerySnapshot>(
-                future: FirebaseFirestore.instance.collection('users')
-                    .orderBy('points', descending: true).limit(50).get(),
-                builder: (_, snap) {
-                  if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: _accent, strokeWidth: 2));
-                  final docs    = snap.data!.docs;
-                  final myUid   = FirebaseAuth.instance.currentUser?.uid ?? '';
-                  // #46 ابحث عن رتبة المستخدم الحالي
-                  final myRank  = docs.indexWhere((d) => d.id == myUid) + 1;
-                  final show20  = docs.take(20).toList();
-                  return Column(children: [
-                    // #46 شريط رتبتي
-                    if (myRank > 0)
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _accent.withOpacity(0.25)),
-                        ),
-                        child: Row(children: [
-                          const Icon(Icons.person_rounded, color: _accent, size: 16),
-                          const SizedBox(width: 8),
-                          Text('رتبتك: #$myRank من أصل ${docs.length}',
-                              style: GoogleFonts.cairo(fontSize: 13, color: _accent, fontWeight: FontWeight.w700)),
-                        ]),
-                      ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: sc,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        itemCount: show20.length,
-                        itemBuilder: (_, i) {
-                          final d   = show20[i].data() as Map<String, dynamic>;
-                          final n   = (d['displayName'] as String?) ?? 'مجهول';
-                          final pts = (d['points'] as num?)?.toInt() ?? 0;
-                          final pic = d['profilePicture'] as String?;
-                          final isMe = show20[i].id == myUid;
-                          const medals = ['🥇','🥈','🥉'];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 6),
-                            decoration: BoxDecoration(
-                              color: isMe ? _accent.withOpacity(0.07) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              border: isMe ? Border.all(color: _accent.withOpacity(0.3)) : null,
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              leading: CircleAvatar(
-                                radius: 20,
-                                backgroundImage: pic != null ? NetworkImage(optimizeImageUrl(pic, width: 80)) : null,
-                                backgroundColor: _surfaceHigh,
-                                child: pic == null ? Text(n.isNotEmpty ? n[0] : '؟',
-                                    style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null,
-                              ),
-                              title: Row(children: [
-                                if (i < 3) Text('${medals[i]} ', style: const TextStyle(fontSize: 16)),
-                                Text(n, style: GoogleFonts.cairo(fontSize: 13,
-                                    color: isMe ? _accent : _textPrimary,
-                                    fontWeight: isMe ? FontWeight.w700 : FontWeight.normal)),
-                                if (isMe) ...[const SizedBox(width: 6),
-                                  Text('(أنت)', style: GoogleFonts.cairo(fontSize: 10, color: _accent))],
-                              ]),
-                              trailing: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(color: _gold.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                                child: Text('$pts نقطة', style: GoogleFonts.cairo(fontSize: 12, color: _gold, fontWeight: FontWeight.w700)),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ]);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
   }
 
   // #30 تحدي القراءة الأسبوعي

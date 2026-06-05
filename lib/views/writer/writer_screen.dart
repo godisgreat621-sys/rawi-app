@@ -8,6 +8,7 @@ import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/models/library_item.dart';
 import 'add_novel_screen.dart';
 import '../home/novel_detail_screen.dart';
+import 'writer_stats_screen.dart';
 
 class WriterScreen extends StatefulWidget {
   const WriterScreen({super.key});
@@ -321,6 +322,18 @@ class _WriterScreenState extends State<WriterScreen> {
                             ),
                           ],
                         ),
+                      ),
+                    ),
+
+                  // زر إحصائيات الرواية (#26)
+                  if (!isDraft)
+                    GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => WriterStatsScreen(
+                          novelId: item.id, novelTitle: item.title))),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 10),
+                        child: Icon(Icons.bar_chart_rounded, size: 18, color: _textSecondary),
                       ),
                     ),
 

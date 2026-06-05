@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_first_app/repositories/novel_repository.dart';
 import '../../providers/novels_provider.dart';
+import 'writer_onboarding_screen.dart';
 
 class AddNovelScreen extends StatefulWidget {
   /// novelId و novelTitle → وضع فصل جديد لرواية موجودة
@@ -328,16 +329,23 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       if (mounted) Navigator.pop(context);
       // #17 إشعار برفع الغلاف بعد النشر
       if (_isNewNovel && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم نشر روايتك! يمكنك الآن رفع صورة الغلاف من صفحة الرواية 🖼️',
-              style: GoogleFonts.cairo(),
+        // #40 شاشة استقبال الكاتب الجديد عند أول نشر
+        final shouldShow = await WriterOnboardingScreen.shouldShow();
+        if (shouldShow && mounted) {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const WriterOnboardingScreen()));
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'تم نشر روايتك! يمكنك الآن رفع صورة الغلاف من صفحة الرواية 🖼️',
+                style: GoogleFonts.cairo(),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 5),
             ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+          );
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
