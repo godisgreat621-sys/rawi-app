@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
+import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
 
@@ -24,13 +25,13 @@ class AuthorScreen extends StatefulWidget {
 
 class _AuthorScreenState extends State<AuthorScreen> {
   // ── ألوان ─────────────────────────────────────────────────────────────────
-  static const _bg           = Color(0xFF0D0F14);
-  static const _surface      = Color(0xFF161920);
-  static const _surfaceHigh  = Color(0xFF1E2130);
+  Color _bg           = const Color(0xFF0D0F14);
+  Color _surface      = const Color(0xFF161920);
+  Color _surfaceHigh  = const Color(0xFF1E2130);
   static const _accent       = Color(0xFF8BAF7C);
-  static const _border       = Color(0xFF252836);
-  static const _textPrimary  = Color(0xFFECECEC);
-  static const _textSecondary= Color(0xFF6B7280);
+  Color _border       = const Color(0xFF252836);
+  Color _textPrimary  = const Color(0xFFECECEC);
+  Color _textSecondary= const Color(0xFF6B7280);
   static const _gold         = Color(0xFFD4A843);
 
   bool _isFollowing     = false;
@@ -84,6 +85,13 @@ class _AuthorScreenState extends State<AuthorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    _bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
+    _surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
+    _surfaceHigh  = isDark ? const Color(0xFF1E2130) : const Color(0xFFEEEEF0);
+    _border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
+    _textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
     final currentUser = FirebaseAuth.instance.currentUser;
     final isMe = currentUser?.uid == widget.authorId;
 
@@ -119,7 +127,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                   child: CircleAvatar(
                     backgroundColor: _surface,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                      icon: Icon(Icons.arrow_back_ios_new_rounded,
                           color: _textPrimary, size: 16),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -128,7 +136,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                 // #44 زر مشاركة ملف الكاتب
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.share_outlined, color: _textSecondary, size: 20),
+                    icon: Icon(Icons.share_outlined, color: _textSecondary, size: 20),
                     tooltip: 'مشاركة',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(
@@ -146,7 +154,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                 expandedHeight: 230,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
-                    decoration: const BoxDecoration(color: _bg),
+                    decoration: BoxDecoration(color: _bg),
                     child: Stack(
                       children: [
                         // خلفية ضبابية
@@ -615,7 +623,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
               ),
             ),
 
-            const Icon(Icons.arrow_forward_ios_rounded,
+            Icon(Icons.arrow_forward_ios_rounded,
                 size: 14, color: _textSecondary),
           ],
         ),

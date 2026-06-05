@@ -337,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ── ميزة مبتكرة: متابعة القراءة الذكية ─────────────────────────────
+          // ── متابعة القراءة الذكية ──────────────────────────────────────────
           if (FirebaseAuth.instance.currentUser != null)
             SliverToBoxAdapter(
               child: StreamBuilder<QuerySnapshot>(
@@ -350,29 +350,48 @@ class _HomeScreenState extends State<HomeScreen> {
                     .snapshots(),
                 builder: (context, snap) {
                   if (!snap.hasData || snap.data!.docs.isEmpty) return const SizedBox();
-                  final novelId = snap.data!.docs.first.id;
-                  return GestureDetector(
-                    onTap: () async {
-                      final doc = await FirebaseFirestore.instance
-                          .collection('novels').doc(novelId).get();
-                      if (!doc.exists || !context.mounted) return;
-                      _navigateToDetail(Novel.fromFirestore(doc));
+                  final progressDoc = snap.data!.docs.first;
+                  final novelId = progressDoc.id;
+                  final readIds = List<String>.from(
+                      (progressDoc.data() as Map<String,dynamic>?)?['readChapterIds'] ?? []);
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance.collection('novels').doc(novelId).get(),
+                    builder: (context, novelSnap) {
+                      if (!novelSnap.hasData || !novelSnap.data!.exists) return const SizedBox();
+                      final novel = novelSnap.data!.data() as Map<String, dynamic>;
+                      final title = (novel['title'] as String?) ?? '';
+                      final chaptersCount = (novel['chaptersCount'] as int?) ?? 0;
+                      // لا تُظهر الـ widget إذا لم يقرأ شيئاً أو أكمل كل الفصول
+                      if (readIds.isEmpty) return const SizedBox();
+                      if (chaptersCount > 0 && readIds.length >= chaptersCount) return const SizedBox();
+                      return GestureDetector(
+                        onTap: () => _navigateToDetail(Novel.fromFirestore(novelSnap.data!)),
+                        child: Container(
+                          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _accent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _accent.withOpacity(0.3)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.play_circle_fill_rounded, color: _accent, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('استكمل قراءتك',
+                                    style: GoogleFonts.cairo(fontSize: 11, color: _accent, fontWeight: FontWeight.w700)),
+                                Text(title,
+                                    style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary, fontWeight: FontWeight.bold),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              ],
+                            )),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: _accent),
+                          ]),
+                        ),
+                      );
                     },
-                    child: Container(
-                      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _accent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _accent.withOpacity(0.3)),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.play_circle_fill_rounded, color: _accent, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text('عد للقراءة: استكمل ما بدأت به الآن', style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, fontWeight: FontWeight.bold))),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: _accent),
-                      ]),
-                    ),
                   );
                 },
               ),

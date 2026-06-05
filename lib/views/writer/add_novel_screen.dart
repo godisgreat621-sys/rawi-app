@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:my_first_app/providers/theme_provider.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -45,12 +46,12 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   final _noteController = TextEditingController();
 
   // ── ألوان المظهر الجديد ──────────────────────────────────────────────────
-  static const _bg            = Color(0xFF0D0F14);
-  static const _surface       = Color(0xFF161920);
+  Color _bg            = const Color(0xFF0D0F14);
+  Color _surface       = const Color(0xFF161920);
   static const _accent        = Color(0xFF8BAF7C);
-  static const _border        = Color(0xFF252836);
-  static const _textPrimary   = Color(0xFFECECEC);
-  static const _textSecondary = Color(0xFF6B7280);
+  Color _border        = const Color(0xFF252836);
+  Color _textPrimary   = const Color(0xFFECECEC);
+  Color _textSecondary = const Color(0xFF6B7280);
   static const _gold          = Color(0xFFD4A843);
 
   Timer? _autosaveTimer;
@@ -521,6 +522,12 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    _bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
+    _surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
+    _border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
+    _textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -602,7 +609,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                       style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
                 ]),
               ]),
-              const Divider(color: _border, height: 20),
+              Divider(color: _border, height: 20),
               _field(
                 controller: _novelTitleController,
                 hint: 'عنوان الرواية...',
@@ -668,7 +675,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 hint: 'اكتب ملخصاً قصيراً لجذب القراء...',
                 maxLines: 3,
               ),
-              const Divider(height: 28, color: _border),
+              Divider(height: 28, color: _border),
             ],
 
             // ── عنوان الفصل ──
@@ -678,7 +685,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               fontSize: 17,
               bold: true,
             ),
-            const Divider(height: 24, color: _border),
+            Divider(height: 24, color: _border),
 
             // ── محتوى الفصل ──
             _field(
@@ -698,7 +705,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  const Icon(Icons.cloud_done_outlined, size: 13, color: _textSecondary),
+                  Icon(Icons.cloud_done_outlined, size: 13, color: _textSecondary),
                   const SizedBox(width: 4),
                   Text(
                     'آخر حفظ: ${_lastAutoSaveTime!.hour.toString().padLeft(2,'0')}:${_lastAutoSaveTime!.minute.toString().padLeft(2,'0')}',
@@ -708,9 +715,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               ),
 
             // #18 ملاحظة خاصة بالكاتب (لا تُنشر للقراء)
-            const Divider(height: 24, color: _border),
+            Divider(height: 24, color: _border),
             Row(children: [
-              const Icon(Icons.lock_outline, size: 13, color: _textSecondary),
+              Icon(Icons.lock_outline, size: 13, color: _textSecondary),
               const SizedBox(width: 6),
               Text('ملاحظة خاصة (لك فقط)',
                   style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),

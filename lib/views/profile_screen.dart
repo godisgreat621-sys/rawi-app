@@ -1743,8 +1743,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Expanded(child: Container(height: 1, color: _border)),
     Container(
       margin: const EdgeInsets.symmetric(horizontal: 10),
-      width: 5, height: 5,
-      decoration: BoxDecoration(color: _border, shape: BoxShape.circle),
+      width: 6, height: 6,
+      decoration: BoxDecoration(color: _accent.withOpacity(0.45), shape: BoxShape.circle),
     ),
     Expanded(child: Container(height: 1, color: _border)),
   ]);

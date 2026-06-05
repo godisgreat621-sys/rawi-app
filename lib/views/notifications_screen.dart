@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
 import 'package:my_first_app/views/author_screen.dart';
 
@@ -13,13 +15,13 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  static const _bg            = Color(0xFF0D0F14);
-  static const _surface       = Color(0xFF161920);
-  static const _surfaceHigh   = Color(0xFF1E2130);
+  Color _bg            = const Color(0xFF0D0F14);
+  Color _surface       = const Color(0xFF161920);
+  Color _surfaceHigh   = const Color(0xFF1E2130);
   static const _accent        = Color(0xFF8BAF7C);
-  static const _border        = Color(0xFF252836);
-  static const _textPrimary   = Color(0xFFECECEC);
-  static const _textSecondary = Color(0xFF6B7280);
+  Color _border        = const Color(0xFF252836);
+  Color _textPrimary   = const Color(0xFFECECEC);
+  Color _textSecondary = const Color(0xFF6B7280);
   static const _gold          = Color(0xFFD4A843);
 
   @override
@@ -94,6 +96,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    _bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
+    _surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
+    _surfaceHigh  = isDark ? const Color(0xFF1E2130) : const Color(0xFFEEEEF0);
+    _border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
+    _textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(

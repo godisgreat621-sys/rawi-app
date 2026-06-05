@@ -171,10 +171,28 @@ class _AuthScreenState extends State<AuthScreen>
                             fontWeight: FontWeight.w400,
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _accentDim,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _accent.withOpacity(0.25)),
+                          ),
+                          child: Text(
+                            'راوي منصة حصرية لكتابة وقراءة الروايات العربية — كل ما تقرأه فيها من إبداع أعضائها فقط، لا ذكاء اصطناعي ولا منقول.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              color: _accent,
+                              height: 1.7,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
 
-                    const SizedBox(height: 44),
+                    const SizedBox(height: 32),
 
                     // ── تبديل تسجيل / إنشاء ──────────────────────────────
                     Container(

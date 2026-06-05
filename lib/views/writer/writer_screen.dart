@@ -3,8 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:my_first_app/providers/novels_provider.dart'; // Keep this
-import 'package:my_first_app/models/library_item.dart'; // New import
+import 'package:my_first_app/providers/novels_provider.dart';
+import 'package:my_first_app/providers/theme_provider.dart';
+import 'package:my_first_app/models/library_item.dart';
 import 'add_novel_screen.dart';
 import '../home/novel_detail_screen.dart';
 
@@ -17,18 +18,24 @@ class WriterScreen extends StatefulWidget {
 
 class _WriterScreenState extends State<WriterScreen> {
 
-  static const _bg          = Color(0xFF0D0F14);
-  static const _surface     = Color(0xFF161920);
-  static const _surfaceHigh = Color(0xFF1E2130);
+  Color _bg          = const Color(0xFF0D0F14);
+  Color _surface     = const Color(0xFF161920);
+  Color _surfaceHigh = const Color(0xFF1E2130);
   static const _accent      = Color(0xFF8BAF7C);
-  static const _border      = Color(0xFF252836);
-  static const _textPrimary = Color(0xFFECECEC);
-  static const _textSecondary = Color(0xFF6B7280);
+  Color _border      = const Color(0xFF252836);
+  Color _textPrimary = const Color(0xFFECECEC);
+  Color _textSecondary = const Color(0xFF6B7280);
   static const _gold        = Color(0xFFD4A843);
 
   @override
   Widget build(BuildContext context) {
-    // تم حذف TabController واستخدام عرض قائمة أعمالي مباشرة
+    final isDark = context.watch<ThemeProvider>().isDarkMode;
+    _bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
+    _surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
+    _surfaceHigh  = isDark ? const Color(0xFF1E2130) : const Color(0xFFEEEEF0);
+    _border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
+    _textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
 
     return Scaffold(
       backgroundColor: _bg,
@@ -321,8 +328,8 @@ class _WriterScreenState extends State<WriterScreen> {
                   if (!isDraft)
                     GestureDetector(
                       onTap: () => _exportNovel(context, item),
-                      child: const Padding(
-                        padding: EdgeInsets.only(left: 10),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 10),
                         child: Icon(Icons.ios_share_rounded, size: 18, color: _textSecondary),
                       ),
                     ),
@@ -330,7 +337,7 @@ class _WriterScreenState extends State<WriterScreen> {
                   // زر حذف
                   GestureDetector(
                     onTap: () => _confirmDelete(context, item),
-                    child: const Icon(
+                    child: Icon(
                       Icons.delete_outline_rounded,
                       size: 18,
                       color: _textSecondary,
