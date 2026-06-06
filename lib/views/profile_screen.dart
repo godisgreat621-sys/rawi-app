@@ -1,5 +1,4 @@
-﻿import 'dart:ui';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -56,6 +55,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
       (_profileThemesData[t ?? 'default']?['accent'] as Color?) ?? _accent;
   Color _tGradFor(String? t) =>
       (_profileThemesData[t ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1A2E1A);
+
+  // ألوان تدرج إطار الصورة الشخصية — فريد لكل ثيم
+  static List<Color> _ringColors(String? theme) {
+    switch (theme) {
+      case 'sakura':   return [Color(0xFFE891B2), Color(0xFFFFD6EC), Color(0xFFE26BA0)];
+      case 'ocean':    return [Color(0xFF5BAFD6), Color(0xFF38D9C8), Color(0xFF2C7EA8)];
+      case 'sunset':   return [Color(0xFFE8945B), Color(0xFFFFD166), Color(0xFFE06030)];
+      case 'galaxy':   return [Color(0xFFAA7DE8), Color(0xFFD4A8FF), Color(0xFF6A3FB0)];
+      case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
+      case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
+      case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
+      default:         return [Color(0xFF8BAF7C), Color(0xFFBEE0A8), Color(0xFF4A7A35)];
+    }
+  }
+
+  static double _ringGlow(String? theme) {
+    switch (theme) {
+      case 'galaxy': return 0.55;
+      case 'sunset': case 'desert': return 0.45;
+      case 'sakura': return 0.42;
+      default: return 0.35;
+    }
+  }
 
   Future<void> _pickAndUploadImage() async {
     if (_isUploading) return;
@@ -438,39 +460,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // خلفية: صورة مموهة + overlay لوني بالتيم
-                      if (profilePic != null) ...[
-                        Image.network(profilePic, fit: BoxFit.cover),
-                        BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  tGrad.withValues(alpha: 0.75),
-                                  tAccent.withValues(alpha: 0.25),
-                                  _bg.withValues(alpha: 0.85),
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
+                      // خلفية: صورة خفيفة (0.28) + overlay لوني بالتيم — بدون ضبابية
+                      if (profilePic != null)
+                        Opacity(
+                          opacity: 0.28,
+                          child: Image.network(profilePic, fit: BoxFit.cover,
+                              errorBuilder: (context, e, s) => const SizedBox()),
+                        )
+                      else
+                        Container(color: _bg),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              tGrad.withValues(alpha: 0.92),
+                              tAccent.withValues(alpha: 0.50),
+                              _bg.withValues(alpha: 0.95),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
                         ),
-                      ] else
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                tGrad.withValues(alpha: 0.9),
-                                tAccent.withValues(alpha: 0.2),
-                                _bg,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                        ),
+                      ),
                       // زر معاينة ملفك كما يراه الآخرون
                       Positioned(
                         top: 8, left: 8,
@@ -503,22 +514,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Stack(clipBehavior: Clip.none, children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: tAccent, width: 2.5),
-                                  boxShadow: [BoxShadow(color: tAccent.withValues(alpha: 0.3), blurRadius: 12)],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 38,
-                                  backgroundColor: _surface,
-                                  backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
-                                  child: profilePic == null
-                                      ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                                          style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.w700, color: tAccent))
-                                      : null,
-                                ),
-                              ),
+                              // إطار مزخرف متدرج اللون بحسب الثيم
+                              Builder(builder: (_) {
+                                final rc = _ringColors(profileTheme);
+                                final glow = _ringGlow(profileTheme);
+                                final isDoubleRing = profileTheme == 'galaxy' || profileTheme == 'desert';
+                                Widget frame = Container(
+                                  padding: const EdgeInsets.all(2.5),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: rc,
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 16, spreadRadius: isDoubleRing ? 1 : 0)],
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(shape: BoxShape.circle, color: _bg),
+                                    child: CircleAvatar(
+                                      radius: 36,
+                                      backgroundColor: _surface,
+                                      backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
+                                      child: profilePic == null
+                                          ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
+                                              style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.w700, color: tAccent))
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                                if (isDoubleRing) {
+                                  frame = Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: tAccent.withValues(alpha: 0.35), width: 1),
+                                    ),
+                                    child: frame,
+                                  );
+                                }
+                                return frame;
+                              }),
                               if (_isUploading)
                                 Positioned.fill(
                                   child: Container(
@@ -599,10 +636,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(child: _statBox(Icons.person_add_outlined, followingCount.toString(), 'أتابع', tAccent,
                             onTap: () => _showUserList('أتابعهم', 'following'))),
                         const SizedBox(width: 6),
-                        Expanded(child: _statBox(Icons.stars_rounded, points.toString(), 'نقطة', _gold,
+                        Expanded(child: _statBox(Icons.stars_rounded, points.toString(), 'نقطة', tAccent,
                             onTap: _showPointsInfoDialog)),
                         const SizedBox(width: 6),
-                        Expanded(child: _statBox(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم', _textSecondary,
+                        Expanded(child: _statBox(Icons.rate_review_rounded, ratingsGiven.toString(), 'تقييم', tAccent,
                             onTap: _showRatedNovels)),
                       ]),
                       const SizedBox(height: 16),
@@ -762,15 +799,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisSpacing: 8,
                         childAspectRatio: 0.9,
                         children: [
-                          _gridAction(Icons.history_rounded,       'النقاط',      _gold,         _showPointsHistory),
-                          _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   _gold,         _showLeaderboard),
-                          _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent,       _showWeeklyChallenge),
-                          _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent,       _showNotificationSettings),
-                          _gridAction(Icons.palette_outlined,       'المظهر',      tAccent,       () => _showThemePicker(userData)),
-                          _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
-                          _gridAction(Icons.security_rounded,      'الأمان',      _textSecondary, _showSecuritySessions),
-                          _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
-                          _gridAction(Icons.info_outline_rounded,  'عن راوي',    _textSecondary, _showAboutPlatformDialog),
+                          _gridAction(Icons.history_rounded,       'النقاط',      tAccent, _showPointsHistory),
+                          _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   tAccent, _showLeaderboard),
+                          _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent, _showWeeklyChallenge),
+                          _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent, _showNotificationSettings),
+                          _gridAction(Icons.palette_outlined,       'المظهر',     tAccent, () => _showThemePicker(userData)),
+                          _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   tAccent, () => _showPrivacySettings(userData)),
+                          _gridAction(Icons.security_rounded,      'الأمان',      tAccent, _showSecuritySessions),
+                          _gridAction(Icons.help_outline_rounded,  'الدعم',       tAccent, _showSupportDialog),
+                          _gridAction(Icons.info_outline_rounded,  'عن راوي',    tAccent, _showAboutPlatformDialog),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -2099,13 +2136,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: _surface,
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _border),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 5),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 6),
           Text(label,
               style: GoogleFonts.cairo(fontSize: 10, color: _textPrimary,
                   fontWeight: FontWeight.w600),

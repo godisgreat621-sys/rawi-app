@@ -100,6 +100,28 @@ class _AuthorScreenState extends State<AuthorScreen> {
   Color _themeGrad(String? theme) =>
       (profileThemes[theme ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1A2E1A);
 
+  static List<Color> _ringColors(String? theme) {
+    switch (theme) {
+      case 'sakura':   return [Color(0xFFE891B2), Color(0xFFFFD6EC), Color(0xFFE26BA0)];
+      case 'ocean':    return [Color(0xFF5BAFD6), Color(0xFF38D9C8), Color(0xFF2C7EA8)];
+      case 'sunset':   return [Color(0xFFE8945B), Color(0xFFFFD166), Color(0xFFE06030)];
+      case 'galaxy':   return [Color(0xFFAA7DE8), Color(0xFFD4A8FF), Color(0xFF6A3FB0)];
+      case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
+      case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
+      case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
+      default:         return [Color(0xFF8BAF7C), Color(0xFFBEE0A8), Color(0xFF4A7A35)];
+    }
+  }
+
+  static double _ringGlow(String? theme) {
+    switch (theme) {
+      case 'galaxy': return 0.55;
+      case 'sunset': case 'desert': return 0.45;
+      case 'sakura': return 0.42;
+      default: return 0.35;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
@@ -235,34 +257,50 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const SizedBox(height: 50),
-                            // الصورة الشخصية
-                            Container(
-                              width: 82,
-                              height: 82,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: tAccent, width: 2),
-                              ),
-                              child: CircleAvatar(
-                                radius: 40,
-                                backgroundColor: _surface,
-                                backgroundImage: profilePic != null
-                                    ? NetworkImage(profilePic)
-                                    : null,
-                                child: profilePic == null
-                                    ? Text(
-                                        displayName.isNotEmpty
-                                            ? displayName[0].toUpperCase()
-                                            : '؟',
-                                        style: GoogleFonts.cairo(
-                                          fontSize: 30,
-                                          fontWeight: FontWeight.w700,
-                                          color: tAccent,
-                                        ),
-                                      )
-                                    : null,
-                              ),
-                            ),
+                            // الصورة الشخصية — إطار مزخرف متدرج بحسب الثيم
+                            Builder(builder: (_) {
+                              final rc = _ringColors(profileTheme);
+                              final glow = _ringGlow(profileTheme);
+                              final isDoubleRing = profileTheme == 'galaxy' || profileTheme == 'desert';
+                              Widget frame = Container(
+                                padding: const EdgeInsets.all(2.5),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: rc,
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 18, spreadRadius: isDoubleRing ? 2 : 0)],
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(shape: BoxShape.circle, color: _bg),
+                                  child: CircleAvatar(
+                                    radius: 38,
+                                    backgroundColor: _surface,
+                                    backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
+                                    child: profilePic == null
+                                        ? Text(
+                                            displayName.isNotEmpty ? displayName[0].toUpperCase() : '؟',
+                                            style: GoogleFonts.cairo(fontSize: 28, fontWeight: FontWeight.w700, color: tAccent),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              );
+                              if (isDoubleRing) {
+                                frame = Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: tAccent.withValues(alpha: 0.35), width: 1),
+                                  ),
+                                  child: frame,
+                                );
+                              }
+                              return frame;
+                            }),
                             const SizedBox(height: 12),
                             // #35 اسم الكاتب + شارة التوثيق
                             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -511,7 +549,59 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             ],
                           ),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
+
+                          // ── النبذة الشخصية ───────────────────────────────
+                          Builder(builder: (_) {
+                            final bio = (userData['bio'] as String?)?.trim() ?? '';
+                            if (bio.isEmpty) return const SizedBox.shrink();
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: tAccent.withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: tAccent.withValues(alpha: 0.25)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 32, height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: tAccent.withValues(alpha: 0.15),
+                                    ),
+                                    child: Icon(Icons.format_quote_rounded, color: tAccent, size: 18),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('عن الكاتب',
+                                            style: GoogleFonts.cairo(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: tAccent,
+                                              letterSpacing: 0.5,
+                                            )),
+                                        const SizedBox(height: 5),
+                                        Text(bio,
+                                            style: GoogleFonts.cairo(
+                                              fontSize: 13,
+                                              color: _textPrimary,
+                                              height: 1.7,
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+
+                          const SizedBox(height: 8),
 
                           // ── روايات الكاتب ────────────────────────────────
                           Row(
