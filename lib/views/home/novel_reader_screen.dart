@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -887,7 +887,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                 decoration: BoxDecoration(
                                   border: Border(
                                     right: BorderSide(
-                                      color: _accent.withOpacity(0.35),
+                                      color: _accent.withValues(alpha: 0.35),
                                       width: 2,
                                     ),
                                   ),
@@ -933,7 +933,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: _accent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                         child: Row(children: [
                           const Icon(Icons.reply, size: 14, color: _accent),
                           const SizedBox(width: 8),
@@ -1043,12 +1043,12 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 return CircleAvatar(
                   radius: isReply ? 14 : 18,
                   backgroundImage: NetworkImage(pic),
-                  backgroundColor: _accent.withOpacity(0.15),
+                  backgroundColor: _accent.withValues(alpha: 0.15),
                 );
               }
               return CircleAvatar(
                 radius: isReply ? 14 : 18,
-                backgroundColor: _accent.withOpacity(0.15),
+                backgroundColor: _accent.withValues(alpha: 0.15),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : '؟',
                   style: GoogleFonts.cairo(
@@ -1068,12 +1068,12 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isOwn
-                        ? _accent.withOpacity(0.08)
+                        ? _accent.withValues(alpha: 0.08)
                         : _surfaceHigh,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                         color: isOwn
-                            ? _accent.withOpacity(0.2)
+                            ? _accent.withValues(alpha: 0.2)
                             : _border),
                   ),
                   child: Column(
@@ -1168,7 +1168,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 4, right: 4),
                       child: Text('بلاغ',
-                          style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary.withOpacity(0.5))),
+                          style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary.withValues(alpha: 0.5))),
                     ),
                   ),
                 ]),
@@ -1180,19 +1180,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     );
   }
 
-  // ── بلاغ على تعليق ────────────────────────────────────────────────────────
-  Future<void> _reportComment(String commentId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    await FirebaseFirestore.instance.collection('reports').add({
-      'type':       'comment',
-      'commentId':  commentId,
-      'novelId':    _novelId,
-      'reportedBy': user.uid,
-      'createdAt':  FieldValue.serverTimestamp(),
-    });
-    _showSnack('تم إرسال البلاغ ✅', Colors.green);
-  }
+
 
   void _showReportCommentDialog(String commentId) {
     String? selectedReason;
@@ -1359,13 +1347,15 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                             await FirebaseFirestore.instance
                                 .collection('reports')
                                 .add({
-                              'novelId':   _novelId,
-                              'chapterId': _chapterId,
-                              'reportedBy': user.uid,
-                              'reason':    selectedReason,
-                              'details':   detailsCtrl.text.trim(),
-                              'createdAt':
-                                  FieldValue.serverTimestamp(),
+                              'type':        'chapter',
+                              'novelId':     _novelId,
+                              'chapterId':   _chapterId,
+                              'reportedBy':  user.uid,
+                              'reportedUser': widget.novel['authorId'] ?? '',
+                              'reason':      selectedReason,
+                              'details':     detailsCtrl.text.trim(),
+                              'status':      'pending',
+                              'createdAt':   FieldValue.serverTimestamp(),
                             });
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
@@ -1463,9 +1453,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                   margin: const EdgeInsets.only(top: 4, bottom: 4),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
+                                    color: Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                                   ),
                                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                                     const Icon(Icons.wifi_off_rounded, size: 12, color: Colors.orange),
@@ -1480,9 +1470,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                   margin: const EdgeInsets.only(bottom: 12),
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: _accent.withOpacity(0.07),
+                                    color: _accent.withValues(alpha: 0.07),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: _accent.withOpacity(0.2)),
+                                    border: Border.all(color: _accent.withValues(alpha: 0.2)),
                                   ),
                                   child: Text(
                                     'استُعيد موضع قراءتك عند ${(_savedPagePercent * 100).toInt()}٪',
@@ -1531,9 +1521,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.08),
+                                      color: Colors.green.withValues(alpha: 0.08),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.green.withOpacity(0.2)),
+                                      border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                                     ),
                                     child: Row(children: [
                                       const Icon(Icons.check_circle, color: Colors.green, size: 18),
@@ -1561,7 +1551,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                           icon: const Icon(Icons.chevron_right_rounded, size: 16),
                                           label: Text('السابق', style: GoogleFonts.cairo(fontSize: 12)),
                                           style: OutlinedButton.styleFrom(foregroundColor: _accent,
-                                              side: BorderSide(color: _accent.withOpacity(0.4))),
+                                              side: BorderSide(color: _accent.withValues(alpha: 0.4))),
                                         )
                                       else const SizedBox.shrink(),
                                       if (curIdx < chaptersList.length - 1)
@@ -1570,7 +1560,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                           icon: const Icon(Icons.chevron_left_rounded, size: 16),
                                           label: Text('التالي', style: GoogleFonts.cairo(fontSize: 12)),
                                           style: OutlinedButton.styleFrom(foregroundColor: _accent,
-                                              side: BorderSide(color: _accent.withOpacity(0.4))),
+                                              side: BorderSide(color: _accent.withValues(alpha: 0.4))),
                                         )
                                       else const SizedBox.shrink(),
                                     ],
@@ -1590,7 +1580,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
               child: IgnorePointer(
                 ignoring: !_showControls,
                 child: Container(
-                  color: _readerBg.withOpacity(0.95),
+                  color: _readerBg.withValues(alpha: 0.95),
                   child: SafeArea(
                     bottom: false,
                     child: Column(
@@ -1712,7 +1702,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF13151C).withOpacity(0.97),
+                          color: const Color(0xFF13151C).withValues(alpha: 0.97),
                           border: const Border(top: BorderSide(color: _border)),
                         ),
                         child: SafeArea(
@@ -1980,9 +1970,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _gold.withOpacity(0.06),
+        color: _gold.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _gold.withOpacity(0.2)),
+        border: Border.all(color: _gold.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
