@@ -30,6 +30,7 @@ class _AdminScreenState extends State<AdminScreen>
   String _userSearch   = '';
   String _novelSearch  = '';
   String _novelFilter  = 'all';
+  String _reportFilter = 'pending';
   String _broadcastTarget = 'all';
   late TabController _tab;
 
@@ -427,60 +428,235 @@ class _AdminScreenState extends State<AdminScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // ④ البلاغات
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildReportsTab() => StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('reports').orderBy('createdAt', descending: true).limit(50).snapshots(),
-    builder: (_, snap) {
-      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
-      final docs = snap.data?.docs ?? [];
-      if (docs.isEmpty) return Center(child: Text('لا توجد بلاغات', style: GoogleFonts.cairo(color: _textSecondary)));
-      final freq = <String,int>{};
-      for (final d in docs) { final uid = (d.data() as Map<String,dynamic>)['reportedUser'] as String? ?? ''; if (uid.isNotEmpty) freq[uid] = (freq[uid] ?? 0) + 1; }
-      return ListView.builder(
-        padding: const EdgeInsets.all(16), itemCount: docs.length,
-        itemBuilder: (_, i) {
-          final doc  = docs[i];
-          final data = doc.data() as Map<String,dynamic>;
-          final rUid = data['reportedUser'] as String? ?? '';
-          final cnt  = freq[rUid] ?? 1;
-          final dismissed = data['status'] == 'dismissed';
-          final ts   = (data['createdAt'] as Timestamp?)?.toDate();
-          return Card(
-            color: dismissed ? _surfaceHigh : _surface, margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withValues(alpha:0.4) : _border)),
-            child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(child: Text('بلاغ: ${data['reason'] ?? data['type'] ?? 'مخالفة'}', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: dismissed ? _textSecondary : _textPrimary))),
-                if (cnt >= 3) _badge('$cnt بلاغات', Colors.redAccent),
-                if (dismissed) _badge('مُتجاهل', _textSecondary),
-              ]),
-              if (data['content'] != null) ...[
-                const SizedBox(height: 6),
-                Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: _surfaceHigh, borderRadius: BorderRadius.circular(8)),
-                  child: Text('${data['content']}', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary), maxLines: 3, overflow: TextOverflow.ellipsis)),
+  Widget _buildReportsTab() => Column(children: [
+    SizedBox(height: 48, child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      children: [
+        _reportFilterChip('قيد الانتظار', 'pending'),
+        _reportFilterChip('الكل', 'all'),
+        _reportFilterChip('محلولة ✓', 'resolved'),
+        _reportFilterChip('مُتجاهلة', 'dismissed'),
+      ],
+    )),
+    Expanded(child: StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('reports').orderBy('createdAt', descending: true).limit(100).snapshots(),
+      builder: (_, snap) {
+        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
+        final allDocs = snap.data?.docs ?? [];
+        final docs = allDocs.where((d) {
+          final status = (d.data() as Map)['status'] as String? ?? 'pending';
+          if (_reportFilter == 'pending')   return status != 'dismissed' && status != 'resolved';
+          if (_reportFilter == 'dismissed') return status == 'dismissed';
+          if (_reportFilter == 'resolved')  return status == 'resolved';
+          return true;
+        }).toList();
+        if (docs.isEmpty) return Center(child: Text('لا توجد بلاغات', style: GoogleFonts.cairo(color: _textSecondary)));
+        final freq = <String,int>{};
+        for (final d in allDocs) {
+          final uid = (d.data() as Map<String,dynamic>)['reportedUser'] as String? ?? '';
+          if (uid.isNotEmpty) freq[uid] = (freq[uid] ?? 0) + 1;
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16), itemCount: docs.length,
+          itemBuilder: (_, i) => _reportCard(docs[i], freq),
+        );
+      },
+    )),
+  ]);
+
+  Widget _reportFilterChip(String label, String val) {
+    final sel = _reportFilter == val;
+    return GestureDetector(
+      onTap: () => setState(() => _reportFilter = val),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? Colors.redAccent : _surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: sel ? Colors.redAccent : _border),
+        ),
+        child: Text(label, style: GoogleFonts.cairo(fontSize: 12, color: sel ? Colors.white : _textSecondary, fontWeight: sel ? FontWeight.w700 : FontWeight.w400)),
+      ),
+    );
+  }
+
+  Widget _reportCard(DocumentSnapshot doc, Map<String,int> freq) {
+    final data      = doc.data() as Map<String,dynamic>;
+    final rUid      = data['reportedUser'] as String? ?? '';
+    final byUid     = data['reportedBy']   as String? ?? '';
+    final novelId   = data['novelId']      as String? ?? '';
+    final commentId = data['commentId']    as String? ?? '';
+    final chapterId = data['chapterId']    as String? ?? '';
+    final cnt       = freq[rUid] ?? 1;
+    final status    = data['status'] as String? ?? 'pending';
+    final isDone    = status == 'dismissed' || status == 'resolved';
+    final ts        = (data['createdAt'] as Timestamp?)?.toDate();
+    final type      = data['type'] as String? ?? (commentId.isNotEmpty ? 'comment' : 'chapter');
+    final previewText = (data['details'] ?? data['content'] ?? '') as String;
+
+    return Card(
+      color: isDone ? _surfaceHigh : _surface,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withValues(alpha: 0.6) : _border, width: cnt >= 3 ? 1.5 : 1),
+      ),
+      child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── رأس: النوع + الشارات ───────────────────────────────────────────
+        Row(children: [
+          _badge(type == 'comment' ? '💬 تعليق' : '📖 فصل', type == 'comment' ? Colors.blueGrey : _accent),
+          const SizedBox(width: 6),
+          if (cnt >= 3) _badge('🚨 $cnt بلاغات', Colors.redAccent),
+          const Spacer(),
+          if (status == 'dismissed') _badge('متجاهل', _textSecondary),
+          if (status == 'resolved')  _badge('محلول ✓', Colors.green),
+        ]),
+        const SizedBox(height: 8),
+
+        // ── سبب البلاغ ────────────────────────────────────────────────────
+        Text('السبب: ${data['reason'] ?? 'مخالفة'}',
+          style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: isDone ? _textSecondary : _textPrimary)),
+
+        if (previewText.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: _border)),
+            child: Text(previewText, style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary, height: 1.5), maxLines: 3, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+
+        const SizedBox(height: 10),
+        Divider(color: _border, height: 1),
+        const SizedBox(height: 10),
+
+        // ── معلومات الأطراف والموقع ───────────────────────────────────────
+        FutureBuilder<List<Map<String,dynamic>?>>(
+          future: Future.wait([
+            byUid.isNotEmpty
+                ? FirebaseFirestore.instance.collection('users').doc(byUid).get().then((d) => d.data())
+                : Future.value(null),
+            rUid.isNotEmpty
+                ? FirebaseFirestore.instance.collection('users').doc(rUid).get().then((d) => d.data())
+                : Future.value(null),
+            novelId.isNotEmpty
+                ? FirebaseFirestore.instance.collection('novels').doc(novelId).get().then((d) => d.data())
+                : Future.value(null),
+          ]),
+          builder: (_, infoSnap) {
+            final reporter = infoSnap.data?[0];
+            final reported = infoSnap.data?[1];
+            final novel    = infoSnap.data?[2];
+            final reporterName = reporter?['displayName'] ?? reporter?['email'] ?? (byUid.length >= 8 ? byUid.substring(0, 8) : byUid);
+            final reportedName = reported?['displayName'] ?? reported?['email'] ?? (rUid.length >= 8 ? rUid.substring(0, 8) : rUid);
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _infoRow(Icons.person_outline_rounded,    'رافع البلاغ',  reporterName,                Colors.blueGrey),
+              if (rUid.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.flag_rounded,            'المُبلَّغ عنه', reportedName,                Colors.redAccent),
               ],
-              if (ts != null) ...[const SizedBox(height: 4), Text('${ts.day}/${ts.month}/${ts.year}', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary))],
-              if (!dismissed) ...[
-                const SizedBox(height: 10),
-                Wrap(spacing: 6, runSpacing: 6, children: [
-                  if (rUid.isNotEmpty) _actionBtn(label: 'حظر 24h', color: Colors.orange, onTap: () async {
-                    if (!await _confirm('حظر المُبلَّغ عنه 24h؟')) return;
-                    await FirebaseFirestore.instance.collection('users').doc(rUid).update({'bannedUntil': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1)))});
-                    await _log('ban_from_report', extra: {'targetUid': rUid});
-                    _snack('تم الحظر', Colors.orange);
-                  }),
-                  _actionBtn(label: 'تجاهل', color: _textSecondary, onTap: () async {
-                    await FirebaseFirestore.instance.collection('reports').doc(doc.id).update({'status': 'dismissed'});
-                    await _log('dismiss_report', extra: {'reportId': doc.id});
-                    _snack('تم التجاهل', _textSecondary);
-                  }),
-                ]),
+              if (novel != null) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.auto_stories_rounded,    'الرواية',       novel['title'] ?? '—',       _accent),
               ],
-            ])),
-          );
-        },
-      );
-    },
-  );
+              if (commentId.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.comment_outlined,        'معرّف التعليق', '#${commentId.length >= 8 ? commentId.substring(0, 8) : commentId}…', _textSecondary),
+              ] else if (chapterId.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.menu_book_rounded,       'معرّف الفصل',   '#${chapterId.length >= 8 ? chapterId.substring(0, 8) : chapterId}…', _textSecondary),
+              ],
+            ]);
+          },
+        ),
+
+        if (ts != null) ...[
+          const SizedBox(height: 4),
+          _infoRow(Icons.access_time_rounded, 'التاريخ',
+            '${ts.day}/${ts.month}/${ts.year}  ${ts.hour.toString().padLeft(2,'0')}:${ts.minute.toString().padLeft(2,'0')}',
+            _textSecondary),
+        ],
+
+        // ── أزرار الإجراءات ───────────────────────────────────────────────
+        if (!isDone) ...[
+          const SizedBox(height: 12),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            if (rUid.isNotEmpty) ...[
+              _actionBtn(label: 'حظر 24h',    color: Colors.orange,         onTap: () => _banFromReport(doc.id, rUid, 1,  '24 ساعة')),
+              _actionBtn(label: 'حظر أسبوع',  color: Colors.deepOrange,     onTap: () => _banFromReport(doc.id, rUid, 7,  'أسبوع')),
+              _actionBtn(label: 'حظر دائم',   color: Colors.red.shade900,   onTap: () => _banFromReportPermanent(doc.id, rUid)),
+              _actionBtn(label: '⚠ تحذير',    color: Colors.amber.shade700, onTap: () => _warnFromReport(doc.id, rUid)),
+            ],
+            if (commentId.isNotEmpty && novelId.isNotEmpty)
+              _actionBtn(label: 'حذف التعليق', color: Colors.redAccent, onTap: () => _deleteReportedComment(doc.id, novelId, commentId)),
+            _actionBtn(label: 'قبول البلاغ ✓', color: _accent,         onTap: () => _resolveReport(doc.id, 'resolved')),
+            _actionBtn(label: 'تجاهل',          color: _textSecondary,  onTap: () => _resolveReport(doc.id, 'dismissed')),
+          ]),
+        ],
+
+      ])),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value, Color color) => Row(children: [
+    Icon(icon, size: 12, color: color),
+    const SizedBox(width: 4),
+    Text('$label: ', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+    Expanded(child: Text(value, style: GoogleFonts.cairo(fontSize: 11, color: _textPrimary, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+  ]);
+
+  Future<void> _resolveReport(String reportId, String status) async {
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': status, 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('${status}_report', extra: {'reportId': reportId});
+    _snack(status == 'resolved' ? 'تم قبول البلاغ ✅' : 'تم التجاهل', status == 'resolved' ? _accent : _textSecondary);
+  }
+
+  Future<void> _banFromReport(String reportId, String uid, int days, String label) async {
+    if (!await _confirm('حظر المُبلَّغ عنه $label بسبب البلاغ؟')) return;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'bannedUntil': Timestamp.fromDate(DateTime.now().add(Duration(days: days))),
+      'isPermanentBan': false,
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('ban_from_report', extra: {'targetUid': uid, 'days': days, 'reportId': reportId});
+    _snack('تم الحظر $label ✅', Colors.orange);
+  }
+
+  Future<void> _banFromReportPermanent(String reportId, String uid) async {
+    if (!await _confirm('حظر دائم بسبب البلاغ؟ لا يمكن التراجع إلا يدوياً.')) return;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'bannedUntil': Timestamp.fromDate(DateTime(2099)),
+      'isPermanentBan': true,
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('ban_permanent_from_report', extra: {'targetUid': uid, 'reportId': reportId});
+    _snack('تم الحظر الدائم', Colors.red.shade900);
+  }
+
+  Future<void> _warnFromReport(String reportId, String uid) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': uid,
+      'type': 'admin_warning',
+      'isRead': false,
+      'body': 'تحذير من الإدارة: تم رفع بلاغ بحقك. يُرجى الالتزام بقواعد المجتمع. تكرار المخالفات قد يؤدي إلى تعليق حسابك.',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('warn_from_report', extra: {'targetUid': uid, 'reportId': reportId});
+    _snack('تم إرسال التحذير ✅', Colors.amber);
+  }
+
+  Future<void> _deleteReportedComment(String reportId, String novelId, String commentId) async {
+    if (!await _confirm('حذف التعليق المُبلَّغ عنه نهائياً؟')) return;
+    await FirebaseFirestore.instance.collection('novels').doc(novelId).collection('comments').doc(commentId).delete();
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('delete_reported_comment', extra: {'novelId': novelId, 'commentId': commentId, 'reportId': reportId});
+    _snack('تم حذف التعليق ✅', Colors.green);
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // ⑤ الدعم الفني
