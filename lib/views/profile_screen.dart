@@ -929,10 +929,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         MaterialPageRoute(
           builder: (_) => NovelDetailScreen(
             novel: {
-              'id': novel.id,
-              'title': novel.title,
-              'author': novel.author,
-              'coverUrl': novel.coverUrl,
+              'id':           novel.id,
+              'title':        novel.title,
+              'author':       novel.author,
+              'authorName':   novel.author,
+              'authorId':     novel.authorId,
+              'category':     novel.category,
+              'description':  novel.description,
+              'coverUrl':     novel.coverUrl,
+              'rating':       novel.rating,
+              'likes':        novel.likes,
+              'readers':      novel.readers,
+              'chaptersCount': novel.chaptersCount,
             },
           ),
         ),

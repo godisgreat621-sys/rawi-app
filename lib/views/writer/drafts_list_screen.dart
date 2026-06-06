@@ -103,6 +103,25 @@ class DraftsListScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, NovelsProvider provider, String id) {
-    provider.deleteDraft(id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
+    final textPrimary = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
+    final textSecondary = isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text('حذف المسودة', style: GoogleFonts.cairo(color: textPrimary, fontWeight: FontWeight.w700)),
+        content: Text('هل أنت متأكد من حذف هذه المسودة؟ لا يمكن التراجع عن هذا الإجراء.', style: GoogleFonts.cairo(color: textSecondary, height: 1.6)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: textSecondary))),
+          TextButton(
+            onPressed: () { Navigator.pop(ctx); provider.deleteDraft(id); },
+            child: Text('حذف', style: GoogleFonts.cairo(color: Colors.redAccent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 }

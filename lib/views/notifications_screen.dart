@@ -228,10 +228,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               if (type == 'follow' && senderId != null) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AuthorScreen(authorId: senderId, authorName: '')));
                               } else if (novelId != null) {
-                                // جلب بيانات الرواية للذهاب إليها
                                 final nDoc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
-                                if (nDoc.exists && context.mounted) {
+                                if (!context.mounted) return;
+                                if (nDoc.exists) {
                                   Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': nDoc.id, ...nDoc.data() as Map<String, dynamic>})));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: Text('هذه الرواية لم تعد متاحة', style: GoogleFonts.cairo()),
+                                    backgroundColor: _textSecondary, behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ));
                                 }
                               }
                             },
