@@ -201,28 +201,37 @@ class _AuthorScreenState extends State<AuthorScreen> {
                 ],
                 expandedHeight: 230,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: BoxDecoration(color: _bg),
-                    child: Stack(
-                      children: [
-                        // خلفية ضبابية
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  tGrad.withValues(alpha: 0.8),
-                                  tAccent.withValues(alpha: 0.06),
-                                  _bg,
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // صورة الكاتب في الخلفية — ظهور خفيف بدون ضبابية
+                      if (profilePic != null)
+                        Opacity(
+                          opacity: 0.28,
+                          child: Image.network(
+                            profilePic,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox(),
+                          ),
+                        )
+                      else
+                        Container(color: _bg),
+                      // طبقة لون التيم فوق الصورة
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              tGrad.withValues(alpha: 0.92),
+                              tAccent.withValues(alpha: 0.50),
+                              _bg.withValues(alpha: 0.95),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
                         ),
-                        // المحتوى
-                        Column(
+                      ),
+                      // المحتوى
+                      Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const SizedBox(height: 50),
@@ -314,7 +323,6 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       ],
                     ),
                   ),
-                ),
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(1),
                   child: Container(height: 1, color: _border),
