@@ -10,7 +10,7 @@ class DraftsListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.read<NovelsProvider>();
+    final provider = context.watch<NovelsProvider>();
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     final bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
     final surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);

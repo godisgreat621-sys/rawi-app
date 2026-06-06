@@ -392,8 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final role = userData?['role'] ?? 'user';
           // تحديث الدور الداخلي بصمت (لزر الأدمن العائم)
           if (_myRole != role) {
-            WidgetsBinding.instance.addPostFrameCallback(
-                (_) => setState(() => _myRole = role));
+            Future.microtask(() { if (mounted) setState(() => _myRole = role); });
           }
           final ratingsGiven    = userData?['ratingsGiven']    ?? 0;
           final followersCount  = userData?['followersCount']  ?? 0;
@@ -1365,7 +1364,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final myUid   = FirebaseAuth.instance.currentUser?.uid ?? '';
                   // #46 ابحث عن رتبة المستخدم الحالي
                   final myRank  = docs.indexWhere((d) => d.id == myUid) + 1;
-                  final show20  = docs.take(20).toList();
                   return Column(children: [
                     // #46 شريط رتبتي
                     if (myRank > 0)
@@ -1388,13 +1386,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: ListView.builder(
                         controller: sc,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        itemCount: show20.length,
+                        itemCount: docs.length,
                         itemBuilder: (_, i) {
-                          final d   = show20[i].data() as Map<String, dynamic>;
+                          final d   = docs[i].data() as Map<String, dynamic>;
                           final n   = (d['displayName'] as String?) ?? 'مجهول';
                           final pts = (d['points'] as num?)?.toInt() ?? 0;
                           final pic = d['profilePicture'] as String?;
-                          final isMe = show20[i].id == myUid;
+                          final isMe = docs[i].id == myUid;
                           const medals = ['🥇','🥈','🥉'];
                           return Container(
                             margin: const EdgeInsets.only(bottom: 6),

@@ -201,7 +201,7 @@ class _AdminScreenState extends State<AdminScreen>
     Padding(padding: const EdgeInsets.fromLTRB(16,12,16,8),
       child: _searchField('ابحث بالاسم أو البريد...', (v) => setState(() => _userSearch = v.trim().toLowerCase()))),
     Expanded(child: StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').orderBy('createdAt', descending: true).limit(200).snapshots(),
       builder: (_, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
         final all = snap.data?.docs ?? [];

@@ -87,10 +87,10 @@ class Chapter {
       novelId: novelId,
       title: data['title'] ?? '',
       content: data['content'] ?? '',
-      wordCount: (data['wordCount'] ?? 0) as int,
-      chapterNumber: (data['chapterNumber'] ?? 0) as int,
+      wordCount: (data['wordCount'] ?? 0).toInt(),
+      chapterNumber: (data['chapterNumber'] ?? 0).toInt(),
       rating: (data['rating'] ?? 0.0).toDouble(),
-      ratingsCount: (data['ratingsCount'] ?? 0) as int,
+      ratingsCount: (data['ratingsCount'] ?? 0).toInt(),
       isDraft: data['isDraft'] ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
