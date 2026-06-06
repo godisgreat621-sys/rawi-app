@@ -168,7 +168,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('ch_$_chapterId', content);
-    } catch (_) {}
+    } catch (e) { debugPrint('[Reader] $e'); }
   }
 
   // #47 تحميل من الكاش إذا كان المحتوى فارغاً (وضع بدون إنترنت)
@@ -182,7 +182,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
         _contentCache[_chapterId] = cached;
         setState(() => _isOfflineCached = true);
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[Reader] $e'); }
   }
 
   // #8 تحميل حجم الخط العالمي + #1 نوع الخط من Firestore
@@ -372,7 +372,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
             .set({'weeklyReadingSeconds': FieldValue.increment(_secondsRead)},
                 SetOptions(merge: true));
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[Reader] $e'); }
   }
 
   double get _readProgress => _requiredSeconds == 0

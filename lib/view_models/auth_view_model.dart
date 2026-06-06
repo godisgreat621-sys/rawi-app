@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:math';
 
 class AuthViewModel extends ChangeNotifier {
@@ -12,15 +14,39 @@ class AuthViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   User? get currentUser => _auth.currentUser;
 
-  // ── معرّف الجهاز (يمنع إنشاء أكثر من حساب) ─────────────────────────────
+  // ── معرّف الجهاز (#8) ───────────────────────────────────────────────────
+  // يستخدم device_info_plus للحصول على معرّف حقيقي حيثما أمكن
   Future<String> _getDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
-    var id = prefs.getString('device_id');
-    if (id == null) {
+    // إذا كان مُخزَّناً مسبقاً نعيده مباشرة
+    final cached = prefs.getString('device_id');
+    if (cached != null && cached.isNotEmpty) return cached;
+
+    String id;
+    try {
+      final info = DeviceInfoPlugin();
+      if (kIsWeb) {
+        final web = await info.webBrowserInfo;
+        id = '${web.platform}_${web.userAgent?.hashCode ?? 0}';
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        final android = await info.androidInfo;
+        id = android.id;
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final ios = await info.iosInfo;
+        id = ios.identifierForVendor ?? '';
+      } else {
+        id = '';
+      }
+    } catch (_) {
+      id = '';
+    }
+
+    // fallback: معرّف عشوائي إذا لم نحصل على معرّف حقيقي
+    if (id.isEmpty) {
       final rng = Random.secure();
       id = List.generate(24, (_) => rng.nextInt(36).toRadixString(36)).join();
-      await prefs.setString('device_id', id);
     }
+    await prefs.setString('device_id', id);
     return id;
   }
 

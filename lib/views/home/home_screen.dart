@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (ts != null) map[doc.id] = ts.toDate();
       }
       if (mounted) setState(() => _lastReadMap = map);
-    } catch (_) {}
+    } catch (e) { debugPrint('[Home] $e'); }
   }
 
   // #35 تنسيق نسبي للتاريخ

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -44,7 +45,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 8, vsync: this);
+    _tab = TabController(length: 9, vsync: this);
     _loadSettings();
   }
 
@@ -910,6 +911,7 @@ class _AdminScreenState extends State<AdminScreen>
             Tab(icon: Icon(Icons.campaign_rounded,        size: 14), text: 'الإعلانات'),
             Tab(icon: Icon(Icons.settings_rounded,        size: 14), text: 'الإعدادات'),
             Tab(icon: Icon(Icons.history_rounded,         size: 14), text: 'السجل'),
+            Tab(icon: Icon(Icons.tune_rounded,             size: 14), text: 'Remote Config'),
           ],
         ),
       ),
@@ -935,9 +937,124 @@ class _AdminScreenState extends State<AdminScreen>
                   _buildAnnouncementsTab(),
                   _buildSettingsTab(),
                   _buildAuditTab(),
+                  _buildRemoteConfigTab(),
                 ]);
               },
             ),
     );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ⑨ Remote Config (#48)
+  // ══════════════════════════════════════════════════════════════════════════
+  Widget _buildRemoteConfigTab() {
+    // المفاتيح الافتراضية التي نديرها
+    final defaults = {
+      'min_words_per_chapter': '300',
+      'max_words_per_chapter': '10000',
+      'points_per_novel':      '15',
+      'points_per_chapter':    '10',
+      'idle_penalty_days':     '3',
+      'idle_penalty_points':   '10',
+      'community_pick_days':   '7',
+      'maintenance_mode':      'false',
+      'app_version_required':  '1.0.0',
+    };
+
+    return FutureBuilder<void>(
+      future: _fetchRemoteConfig(),
+      builder: (context, snap) {
+        final rc = FirebaseRemoteConfig.instance;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Remote Config',
+                style: GoogleFonts.cairo(
+                    fontSize: 16, fontWeight: FontWeight.w700, color: _textPrimary)),
+            const SizedBox(height: 4),
+            Text('القيم المحدّثة تؤثر فوراً دون تحديث التطبيق',
+                style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+            const SizedBox(height: 16),
+
+            if (snap.connectionState == ConnectionState.waiting)
+              const Center(child: CircularProgressIndicator(color: _accent, strokeWidth: 2))
+            else
+              ...defaults.entries.map((e) {
+                final key = e.key;
+                final live = rc.getString(key).isEmpty ? e.value : rc.getString(key);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(key,
+                            style: GoogleFonts.cairo(
+                                fontSize: 11, color: _textSecondary, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(live,
+                            style: GoogleFonts.cairo(
+                                fontSize: 14, color: _textPrimary, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_rounded, size: 16, color: _accent),
+                      tooltip: 'نسخ القيمة',
+                      onPressed: () => Clipboard.setData(ClipboardData(text: live)),
+                    ),
+                  ]),
+                );
+              }),
+
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: Text('تحديث القيم', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _accent,
+                  foregroundColor: const Color(0xFF0D0F14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await _fetchRemoteConfig(forceRefresh: true);
+                  if (mounted) setState(() {});
+                  messenger.showSnackBar(SnackBar(
+                    content: Text('تم تحديث القيم ✓', style: GoogleFonts.cairo()),
+                    backgroundColor: _accent,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('لتغيير القيم: افتح Firebase Console → Remote Config → أضف/عدّل المفاتيح ثم اضغط نشر.',
+                style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary, height: 1.6)),
+          ]),
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchRemoteConfig({bool forceRefresh = false}) async {
+    try {
+      final rc = FirebaseRemoteConfig.instance;
+      await rc.setConfigSettings(RemoteConfigSettings(
+        fetchTimeout:       const Duration(seconds: 10),
+        minimumFetchInterval: forceRefresh
+            ? Duration.zero
+            : const Duration(hours: 1),
+      ));
+      await rc.fetchAndActivate();
+    } catch (e) { debugPrint('[RemoteConfig] $e'); }
   }
 }

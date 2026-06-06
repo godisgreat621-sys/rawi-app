@@ -42,18 +42,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     const ProfileScreen(),
   ];
 
-  // إيميلات الأدمن — أي حساب بهذا الإيميل يُرقَّى تلقائياً
-  static const _adminEmails = {'god.is.great.621@gmail.com', 'm7nmri@gmail.com'};
-
+  // يقرأ قائمة الأدمن من Firestore (system_settings/admin_config)
+  // لإضافة أدمن: أضف إيميله في Firestore > system_settings > admin_config > adminEmails (array)
   Future<void> _ensureAdminRole() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    if (!_adminEmails.contains(user.email?.toLowerCase())) return;
-    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final snap = await ref.get();
-    if ((snap.data()?['role'] as String?) != 'admin') {
-      await ref.set({'role': 'admin'}, SetOptions(merge: true));
-    }
+    try {
+      final configDoc = await FirebaseFirestore.instance
+          .collection('system_settings')
+          .doc('admin_config')
+          .get();
+      final adminEmails = List<String>.from(
+          (configDoc.data()?['adminEmails'] as List<dynamic>?) ?? []);
+      final userEmail = user.email?.toLowerCase() ?? '';
+      if (!adminEmails.contains(userEmail)) return;
+      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final snap = await ref.get();
+      if ((snap.data()?['role'] as String?) != 'admin') {
+        await ref.set({'role': 'admin'}, SetOptions(merge: true));
+      }
+    } catch (e) { debugPrint('[Nav] $e'); }
   }
 
   @override
@@ -134,7 +142,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
           'device': 'Android / iOS',
         }]),
       }, SetOptions(merge: true));
-    } catch (_) {}
+    } catch (e) { debugPrint('[Nav] $e'); }
   }
 
   // #34 خروج تلقائي بعد 30 يوماً عدم نشاط
@@ -338,7 +346,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                       horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? _accent.withOpacity(0.12)
+                        ? _accent.withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(30),
                   ),

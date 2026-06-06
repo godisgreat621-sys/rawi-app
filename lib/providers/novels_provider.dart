@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,14 @@ import 'package:rxdart/rxdart.dart'; // New import for combining streams
 
 class NovelsProvider with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // ── التحقق من أن المستخدم الحالي أدمن ─────────────────────────────────────
+  Future<bool> _isCurrentUserAdmin() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    final doc = await _db.collection('users').doc(user.uid).get();
+    return (doc.data()?['role'] as String?) == 'admin';
+  }
 
   // ── جلب اسم المستخدم من Firestore ──────────────────────────────────────────
   Future<String> _getDisplayName(String uid) async {
@@ -32,22 +41,28 @@ class NovelsProvider with ChangeNotifier {
     required String chapterContent,
     String? coverUrl,
     required int wordCount,
-    String status = 'ongoing', // #13
+    String status = 'ongoing',
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return 'يجب تسجيل الدخول أولاً';
 
-      // ← جلب الاسم الحقيقي أولاً
       final authorName = await _getDisplayName(user.uid);
 
-      final novelRef = await _db.collection('novels').add({
+      // pre-generate IDs للـ batch
+      final novelRef   = _db.collection('novels').doc();
+      final chapterRef = novelRef.collection('chapters').doc();
+      final userRef    = _db.collection('users').doc(user.uid);
+
+      final batch = _db.batch();
+
+      batch.set(novelRef, {
         'title':       title,
         'description': description,
         'category':    category,
         'coverUrl':    coverUrl,
         'authorId':    user.uid,
-        'authorName':  authorName,        // ← الاسم الحقيقي
+        'authorName':  authorName,
         'authorEmail': user.email ?? '',
         'rating':      0.0,
         'likes':       0,
@@ -57,7 +72,7 @@ class NovelsProvider with ChangeNotifier {
         'createdAt':   FieldValue.serverTimestamp(),
       });
 
-      await novelRef.collection('chapters').add({
+      batch.set(chapterRef, {
         'title':         chapterTitle.isEmpty ? 'الفصل الأول' : chapterTitle,
         'content':       chapterContent,
         'chapterNumber': 1,
@@ -68,26 +83,26 @@ class NovelsProvider with ChangeNotifier {
         'createdAt':     FieldValue.serverTimestamp(),
       });
 
-      // ← تحديث lastPublished + منح 15 نقطة + تحديث النشاط
-      await _db.collection('users').doc(user.uid).set({
+      batch.set(userRef, {
         'lastPublished':              FieldValue.serverTimestamp(),
         'lastChapterRatingsReceived': 0,
-        'lastChapterId':              novelRef.id,
+        'lastChapterId':              chapterRef.id,
         'points':                     FieldValue.increment(15),
         'lastActivity':               FieldValue.serverTimestamp(),
         'appliedIdlePeriods':         0,
       }, SetOptions(merge: true));
 
-      // إشعار المتابعين
+      await batch.commit();
+
+      // إشعارات بعد النجاح (لا تؤثر على الـ atomic write)
       _notifyFollowers(user.uid, title, authorName, isNew: true);
       _logPoints(user.uid, 15, 'نشر رواية جديدة: $title');
-      // #15
       _checkAndAwardBadges(user.uid);
 
       notifyListeners();
       return null;
     } catch (e) {
-      return 'حدث خطأ: $e';
+      return 'حدث خطأ أثناء النشر: $e';
     }
   }
 
@@ -106,7 +121,13 @@ class NovelsProvider with ChangeNotifier {
       final chaptersSnap = await novelRef.collection('chapters').get();
       final nextNumber   = chaptersSnap.docs.length + 1;
 
-      final chapterRef = await novelRef.collection('chapters').add({
+      // pre-generate IDs للـ batch
+      final chapterRef = novelRef.collection('chapters').doc();
+      final userRef    = _db.collection('users').doc(user.uid);
+
+      final batch = _db.batch();
+
+      batch.set(chapterRef, {
         'title':         chapterTitle.isEmpty ? 'الفصل $nextNumber' : chapterTitle,
         'content':       chapterContent,
         'chapterNumber': nextNumber,
@@ -117,13 +138,12 @@ class NovelsProvider with ChangeNotifier {
         'createdAt':     FieldValue.serverTimestamp(),
       });
 
-      await novelRef.update({
+      batch.update(novelRef, {
         'chaptersCount':  nextNumber,
-        'lastActivityAt': FieldValue.serverTimestamp(), // #28
+        'lastActivityAt': FieldValue.serverTimestamp(),
       });
 
-      // ← تحديث lastPublished + منح 15 نقطة + تحديث النشاط
-      await _db.collection('users').doc(user.uid).set({
+      batch.set(userRef, {
         'lastPublished':              FieldValue.serverTimestamp(),
         'lastChapterRatingsReceived': 0,
         'lastChapterId':              chapterRef.id,
@@ -132,18 +152,18 @@ class NovelsProvider with ChangeNotifier {
         'appliedIdlePeriods':         0,
       }, SetOptions(merge: true));
 
-      // #30 إشعار متابعي الرواية تحديداً
+      await batch.commit();
+
+      // إشعارات بعد النجاح
       _notifyNovelFollowers(novelId, chapterRef.id);
-      // إشعار متابعي الكاتب
       _notifyFollowers(user.uid, '', '', novelId: novelId);
       _logPoints(user.uid, 15, 'نشر فصل جديد رقم $nextNumber');
-      // #15 فحص الشارات
       _checkAndAwardBadges(user.uid);
 
       notifyListeners();
       return null;
     } catch (e) {
-      return 'حدث خطأ: $e';
+      return 'حدث خطأ أثناء نشر الفصل: $e';
     }
   }
 
@@ -316,11 +336,12 @@ class NovelsProvider with ChangeNotifier {
           });
         }
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // ── تغيير دور مستخدم ───────────────────────────────────────────────────────
   Future<String?> setUserRole(String userId, String role) async {
+    if (!await _isCurrentUserAdmin()) return 'غير مصرح: تحتاج صلاحيات أدمن';
     try {
       await _db.collection('users').doc(userId).update({'role': role});
       return null;
@@ -331,6 +352,7 @@ class NovelsProvider with ChangeNotifier {
 
   // ── تفعيل/تعطيل حساب مستخدم ────────────────────────────────────────────────
   Future<String?> setUserActive(String userId, bool isActive) async {
+    if (!await _isCurrentUserAdmin()) return 'غير مصرح: تحتاج صلاحيات أدمن';
     try {
       await _db.collection('users').doc(userId).update({'isActive': isActive});
       return null;
@@ -381,6 +403,7 @@ class NovelsProvider with ChangeNotifier {
     String adminId,
     String adminName,
   ) async {
+    if (!await _isCurrentUserAdmin()) return 'غير مصرح: تحتاج صلاحيات أدمن';
     try {
       await _db.collection('support_requests').doc(requestId).update({
         'status':          status,
@@ -411,7 +434,7 @@ class NovelsProvider with ChangeNotifier {
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // ── إشعار المؤلف بتعليق ────────────────────────────────────────────────────
@@ -430,7 +453,7 @@ class NovelsProvider with ChangeNotifier {
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // ── إشعار المؤلف بتقييم ────────────────────────────────────────────────────
@@ -452,7 +475,7 @@ class NovelsProvider with ChangeNotifier {
         'isRead':    false,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // #30 إشعار متابعي الرواية المحددة
@@ -473,7 +496,7 @@ class NovelsProvider with ChangeNotifier {
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // كتابة سجل نقاط
@@ -485,7 +508,7 @@ class NovelsProvider with ChangeNotifier {
         'reason':    reason,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // #15 فحص شارات الإنجاز بعد تحديث النقاط
@@ -507,7 +530,7 @@ class NovelsProvider with ChangeNotifier {
       if (earned.isEmpty) return;
       await _db.collection('users').doc(uid)
           .set({'badges': earned}, SetOptions(merge: true));
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // إشعار المتابعين بنشر جديد
@@ -548,7 +571,7 @@ class NovelsProvider with ChangeNotifier {
         'isRead': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
-    } catch (_) {}
+    } catch (e) { debugPrint('[NovelsProvider] $e'); }
   }
 
   // ── نظام المتابعة مع التحديث التلقائي للعدادات ──────────────────────────────

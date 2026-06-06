@@ -26,6 +26,10 @@ dependencies:
   shared_preferences: ^2.3.2     # #47 وضع بدون إنترنت
   connectivity_plus: ^6.1.4      # #48 إعادة تحميل عند عودة الاتصال
   google_sign_in: ^6.2.1         # #41 تسجيل دخول Google
+  device_info_plus: ^10.1.0      # #8  معلومات الجهاز الحقيقية
+  firebase_analytics: ^11.0.0    # #46 تتبع الأحداث
+  firebase_crashlytics: ^4.0.0   # #47 تتبع الأعطال
+  firebase_remote_config: ^5.0.0 # #48 إعدادات بعيدة للأدمن
 
   cupertino_icons: ^1.0.8
 

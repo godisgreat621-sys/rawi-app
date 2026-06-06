@@ -134,7 +134,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           ]);
           return;
         }
-      } catch (_) {}
+      } catch (e) { debugPrint('[Detail] $e'); }
     }
     // Fallback: نسخ للحافظة
     Clipboard.setData(ClipboardData(text: text));
