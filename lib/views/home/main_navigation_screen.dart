@@ -31,8 +31,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   Color _border  = const Color(0xFF252836);
   Color _textDim = const Color(0xFF4B5263);
 
+  // لون أيقونة الملف الشخصي — يتغير بحسب التيم المختار
+  Color _profileAccent = const Color(0xFF8BAF7C);
+
   // #48
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
+  StreamSubscription<DocumentSnapshot>? _themeSub;
   bool _wasOffline = false;
 
   final List<Widget> _screens = [
@@ -68,12 +72,43 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     _checkWriterReminder(); // #38
     _listenConnectivity();  // #48
     _checkOnboarding();     // #36
+    _listenProfileTheme();
   }
 
   @override
   void dispose() {
     _connectSub?.cancel();
+    _themeSub?.cancel();
     super.dispose();
+  }
+
+  static Color _resolveThemeAccent(String? theme) {
+    const map = <String, Color>{
+      'default':  Color(0xFF8BAF7C),
+      'sakura':   Color(0xFFE891B2),
+      'ocean':    Color(0xFF5BAFD6),
+      'sunset':   Color(0xFFE8945B),
+      'galaxy':   Color(0xFFAA7DE8),
+      'desert':   Color(0xFFD4A843),
+      'midnight': Color(0xFF4A90D9),
+      'forest':   Color(0xFF5BBF7C),
+    };
+    return map[theme ?? 'default'] ?? const Color(0xFF8BAF7C);
+  }
+
+  void _listenProfileTheme() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    _themeSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted) return;
+      final theme = (snap.data()?['profileTheme'] as String?);
+      final color = _resolveThemeAccent(theme);
+      if (_profileAccent != color) setState(() => _profileAccent = color);
+    });
   }
 
   // #36 عرض Onboarding للمستخدمين الجدد
@@ -323,6 +358,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     int badgeCount = 0,
   }) {
     final isActive = _selectedIndex == index;
+    // أيقونة "حسابي" (index 3) تستخدم لون التيم المختار
+    final activeColor = index == 3 ? _profileAccent : _accent;
 
     return Expanded(
       child: GestureDetector(
@@ -341,14 +378,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                       horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? _accent.withValues(alpha: 0.12)
+                        ? activeColor.withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: Icon(
                     isActive ? activeIcon : icon,
                     size: 22,
-                    color: isActive ? _accent : _textDim,
+                    color: isActive ? activeColor : _textDim,
                   ),
                 ),
                 // عداد الإشعارات
@@ -382,7 +419,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
               style: GoogleFonts.cairo(
                 fontSize:   11,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                color:      isActive ? _accent : _textDim,
+                color:      isActive ? activeColor : _textDim,
               ),
               child: Text(label),
             ),

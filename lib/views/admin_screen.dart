@@ -1024,16 +1024,21 @@ class _AdminScreenState extends State<AdminScreen>
             child: ListTile(
               dense: true,
               leading: Icon(_auditIcon(action), color: _auditColor(action), size: 18),
-              title: Text(action, style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, fontWeight: FontWeight.w600)),
-              subtitle: Text(data['adminEmail'] ?? '', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+              title: Text(_auditLabel(action), style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, fontWeight: FontWeight.w600)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_auditExtra(data).isNotEmpty)
+                    Text(_auditExtra(data), style: GoogleFonts.cairo(fontSize: 10, color: _auditColor(action).withValues(alpha: 0.8))),
+                  Text(data['adminEmail'] ?? '', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+                ],
+              ),
+              isThreeLine: _auditExtra(data).isNotEmpty,
               trailing: ts != null ? Text(
                 '${ts.day}/${ts.month}\n${ts.hour.toString().padLeft(2,'0')}:${ts.minute.toString().padLeft(2,'0')}',
                 style: GoogleFonts.cairo(fontSize: 9, color: _textSecondary), textAlign: TextAlign.end,
               ) : null,
-              onTap: () {
-                final extra = data.entries.where((e) => !['action','adminEmail','adminUid','at'].contains(e.key)).map((e) => '${e.key}: ${e.value}').join('\n');
-                if (extra.isNotEmpty) { Clipboard.setData(ClipboardData(text: extra)); _snack('تم النسخ', _textSecondary); }
-              },
+              onTap: () {},
             ),
           );
         },
@@ -1041,23 +1046,65 @@ class _AdminScreenState extends State<AdminScreen>
     },
   );
 
+  String _auditLabel(String a) {
+    const labels = <String, String>{
+      'toggle_role':       'تغيير صلاحية مستخدم (أدمن/عادي)',
+      'ban_24h':           'حظر مستخدم لمدة 24 ساعة',
+      'ban_week':          'حظر مستخدم لمدة أسبوع',
+      'ban_permanent':     'حظر دائم لمستخدم',
+      'unban':             'رفع الحظر عن مستخدم',
+      'grant_points':      'منح نقاط لمستخدم',
+      'reset_points':      'تصفير نقاط مستخدم',
+      'feature':           'تمييز رواية ⭐',
+      'unfeature':         'إلغاء تمييز رواية',
+      'freeze':            'تجميد رواية',
+      'unfreeze':          'رفع تجميد عن رواية',
+      'delete_novel':      'حذف رواية',
+      'broadcast':         'إرسال إشعار جماعي',
+      'banner_update':     'تحديث بانر الإعلانات',
+      'banner_toggle':     'تفعيل / إيقاف البانر',
+      'warn':              'إرسال تحذير لمستخدم',
+      'dismiss_report':    'رفض بلاغ',
+      'resolve_report':    'حل بلاغ',
+      'delete_chapter':    'حذف فصل',
+    };
+    if (labels.containsKey(a)) return labels[a]!;
+    // fallback: استبدل underscores بمسافات وترجم ما أمكن
+    return a.replaceAll('_', ' ');
+  }
+
+  String _auditExtra(Map<String, dynamic> data) {
+    final parts = <String>[];
+    if (data['targetUid'] != null) parts.add('المستخدم: ${(data['targetUid'] as String).substring(0, 8)}…');
+    if (data['novelId']   != null) parts.add('الرواية: ${data['title'] ?? (data['novelId'] as String).substring(0, 8)}…');
+    if (data['points']    != null) parts.add('النقاط: ${data['points']}');
+    return parts.join('  •  ');
+  }
+
   IconData _auditIcon(String a) {
-    if (a.contains('ban'))     return Icons.block_rounded;
-    if (a.contains('delete'))  return Icons.delete_outline_rounded;
-    if (a.contains('grant'))   return Icons.star_rounded;
-    if (a.contains('feature')) return Icons.star_rounded;
-    if (a.contains('freeze'))  return Icons.ac_unit_rounded;
-    if (a.contains('role'))    return Icons.admin_panel_settings_rounded;
+    if (a.contains('ban'))      return Icons.block_rounded;
+    if (a.contains('unban'))    return Icons.check_circle_outline_rounded;
+    if (a.contains('delete'))   return Icons.delete_outline_rounded;
+    if (a.contains('grant'))    return Icons.stars_rounded;
+    if (a.contains('reset'))    return Icons.restart_alt_rounded;
+    if (a.contains('feature'))  return Icons.star_rounded;
+    if (a.contains('freeze'))   return Icons.ac_unit_rounded;
+    if (a.contains('unfreeze')) return Icons.wb_sunny_outlined;
+    if (a.contains('role'))     return Icons.admin_panel_settings_rounded;
     if (a.contains('broadcast') || a.contains('message')) return Icons.send_rounded;
-    if (a.contains('banner'))  return Icons.campaign_rounded;
+    if (a.contains('banner'))   return Icons.campaign_rounded;
+    if (a.contains('warn'))     return Icons.warning_amber_rounded;
+    if (a.contains('report'))   return Icons.flag_rounded;
     return Icons.history_rounded;
   }
 
   Color _auditColor(String a) {
-    if (a.contains('ban') || a.contains('delete'))   return Colors.redAccent;
-    if (a.contains('unban') || a.contains('unfreeze')) return Colors.green;
+    if (a == 'unban' || a.contains('unfreeze') || a == 'resolve_report') return Colors.green;
+    if (a.contains('ban') || a.contains('delete') || a.contains('permanent')) return Colors.redAccent;
+    if (a.contains('warn'))    return Colors.amber;
     if (a.contains('feature') || a.contains('grant')) return _gold;
     if (a.contains('broadcast') || a.contains('banner') || a.contains('message')) return _accent;
+    if (a.contains('role'))    return Colors.blueAccent;
     return _textSecondary;
   }
 

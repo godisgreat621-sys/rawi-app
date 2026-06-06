@@ -37,6 +37,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _isUploading = false;
 
+  // ── بيانات التيمات المتاحة ─────────────────────────────────────────────────
+  static const Map<String, Map<String, dynamic>> _profileThemesData = {
+    'default':  {'label': 'الافتراضي',   'accent': Color(0xFF8BAF7C), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
+    'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
+    'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
+    'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
+    'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
+    'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
+    'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
+    'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+  };
+
+  Color _tAccentFor(String? t) =>
+      (_profileThemesData[t ?? 'default']?['accent'] as Color?) ?? _accent;
+  Color _tGradFor(String? t) =>
+      (_profileThemesData[t ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1A2E1A);
+
   Future<void> _pickAndUploadImage() async {
     if (_isUploading) return;
     try {
@@ -397,6 +414,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final ratingsGiven    = userData?['ratingsGiven']    ?? 0;
           final followersCount  = userData?['followersCount']  ?? 0;
           final followingCount  = userData?['followingCount']  ?? 0;
+          final profileTheme    = userData?['profileTheme']    as String?;
+          final tAccent = _tAccentFor(profileTheme);
+          final tGrad   = _tGradFor(profileTheme);
 
           return CustomScrollView(
             slivers: [
@@ -405,30 +425,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 pinned: true,
                 backgroundColor: _bg,
                 elevation: 0,
-                expandedHeight: 120,
+                expandedHeight: 150,
                 toolbarHeight: 0,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // #2 خلفية ضبابية من صورة البروفايل
+                      // خلفية: صورة مموهة + overlay لوني بالتيم
                       if (profilePic != null) ...[
                         Image.network(profilePic, fit: BoxFit.cover),
                         BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                          child: Container(color: _bg.withValues(alpha: 0.82)),
+                          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  tGrad.withValues(alpha: 0.75),
+                                  tAccent.withValues(alpha: 0.25),
+                                  _bg.withValues(alpha: 0.85),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                          ),
                         ),
                       ] else
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [_accent.withValues(alpha: 0.08), _bg],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
+                              colors: [
+                                tGrad.withValues(alpha: 0.9),
+                                tAccent.withValues(alpha: 0.2),
+                                _bg,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
                         ),
-                      // #1 تخطيط مضغوط: صورة يساراً + معلومات يميناً
+                      // زر معاينة ملفك كما يراه الآخرون
+                      Positioned(
+                        top: 8, left: 8,
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => AuthorScreen(authorId: user.uid, authorName: name),
+                          )),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _bg.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: tAccent.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.remove_red_eye_outlined, color: tAccent, size: 14),
+                                const SizedBox(width: 4),
+                                Text('معاينة', style: GoogleFonts.cairo(color: tAccent, fontSize: 11, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // المحتوى: صورة يساراً + معلومات يميناً
                       Positioned(
                         bottom: 16, left: 16, right: 16,
                         child: Row(
@@ -438,8 +499,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: _accent, width: 2.5),
-                                  boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 12)],
+                                  border: Border.all(color: tAccent, width: 2.5),
+                                  boxShadow: [BoxShadow(color: tAccent.withValues(alpha: 0.3), blurRadius: 12)],
                                 ),
                                 child: CircleAvatar(
                                   radius: 38,
@@ -447,7 +508,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
                                   child: profilePic == null
                                       ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                                          style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.w700, color: _accent))
+                                          style: GoogleFonts.cairo(fontSize: 26, fontWeight: FontWeight.w700, color: tAccent))
                                       : null,
                                 ),
                               ),
@@ -465,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   child: Container(
                                     width: 26, height: 26,
                                     decoration: BoxDecoration(
-                                      color: _accent, shape: BoxShape.circle,
+                                      color: tAccent, shape: BoxShape.circle,
                                       border: Border.all(color: _bg, width: 2),
                                     ),
                                     child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF0D0F14), size: 13),
@@ -1194,18 +1255,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    String selected = (userData?['profileTheme'] as String?) ?? 'default';
-
-    const themes = {
-      'default':  {'label': 'راوي الليل',   'accent': Color(0xFF8BAF7C), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
-      'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
-      'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
-      'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
-      'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
-      'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
-      'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
-      'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
-    };
+    final originalTheme = (userData?['profileTheme'] as String?) ?? 'default';
+    String selected = originalTheme;
 
     showModalBottomSheet(
       context: context,
@@ -1216,12 +1267,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
-          final accent = (themes[selected]?['accent'] as Color?) ?? _accent;
-          final grad   = (themes[selected]?['grad1']  as Color?) ?? const Color(0xFF1A2E1A);
+          final accent = _tAccentFor(selected);
+          final grad   = _tGradFor(selected);
+          final displayName = userData?['displayName'] as String? ?? '';
+          final initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'أ';
           return DraggableScrollableSheet(
             expand: false,
-            initialChildSize: 0.7,
-            maxChildSize: 0.92,
+            initialChildSize: 0.75,
+            maxChildSize: 0.95,
             builder: (_, sc) => Column(
               children: [
                 const SizedBox(height: 12),
@@ -1231,28 +1284,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text('مظهر الملف الشخصي',
                     style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
                 const SizedBox(height: 12),
-                // معاينة
-                Container(
+                // ── معاينة حية ──────────────────────────────────────────
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 20),
-                  height: 90,
+                  height: 100,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
-                      colors: [grad.withValues(alpha: 0.9), accent.withValues(alpha: 0.15), _surface],
+                      colors: [grad.withValues(alpha: 0.9), accent.withValues(alpha: 0.3), _surface],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     border: Border.all(color: accent, width: 1.5),
+                    boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 12)],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: _bg,
-                        child: Text(
-                          (FirebaseAuth.instance.currentUser?.displayName ?? 'أ')[0].toUpperCase(),
-                          style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent),
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: accent, width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 26,
+                          backgroundColor: _bg,
+                          child: Text(initials,
+                              style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1260,13 +1319,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            FirebaseAuth.instance.currentUser?.displayName ?? 'اسمك هنا',
-                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 14),
-                          ),
-                          Text(
-                            '${themes[selected]?['icon'] as String? ?? ''}  ${themes[selected]?['label'] as String? ?? ''}',
-                            style: GoogleFonts.cairo(color: accent, fontSize: 12),
+                          Text(displayName.isNotEmpty ? displayName : 'اسمك',
+                              style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 14)),
+                          const SizedBox(height: 2),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: Text(
+                              '${_profileThemesData[selected]?['icon'] as String? ?? ''}  ${_profileThemesData[selected]?['label'] as String? ?? ''}',
+                              key: ValueKey(selected),
+                              style: GoogleFonts.cairo(color: accent, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ],
                       ),
@@ -1278,68 +1340,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: GridView.builder(
                     controller: sc,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
-                      childAspectRatio: 0.75,
+                      childAspectRatio: 0.72,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
-                    itemCount: themes.length,
+                    itemCount: _profileThemesData.length,
                     itemBuilder: (_, i) {
-                      final key = themes.keys.elementAt(i);
-                      final t   = themes[key]!;
+                      final key = _profileThemesData.keys.elementAt(i);
+                      final t   = _profileThemesData[key]!;
                       final tc  = t['accent'] as Color;
                       final tg  = t['grad1']  as Color;
                       final isSel = selected == key;
                       return GestureDetector(
-                        onTap: () async {
-                          setS(() => selected = key);
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .update({'profileTheme': key});
-                        },
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [tg, tc],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                        onTap: () => setS(() => selected = key),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          child: Column(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: isSel ? 60 : 52,
+                                height: isSel ? 60 : 52,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [tg, tc],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  border: Border.all(
+                                    color: isSel ? tc : Colors.transparent,
+                                    width: 2.5,
+                                  ),
+                                  boxShadow: isSel
+                                      ? [BoxShadow(color: tc.withValues(alpha: 0.6), blurRadius: 10)]
+                                      : [],
                                 ),
-                                border: Border.all(
-                                  color: isSel ? tc : Colors.transparent,
-                                  width: 2.5,
+                                child: Center(
+                                  child: Text(t['icon'] as String, style: const TextStyle(fontSize: 22)),
                                 ),
-                                boxShadow: isSel
-                                    ? [BoxShadow(color: tc.withValues(alpha: 0.5), blurRadius: 8)]
-                                    : [],
                               ),
-                              child: Center(
-                                child: Text(t['icon'] as String, style: const TextStyle(fontSize: 22)),
+                              const SizedBox(height: 4),
+                              Text(
+                                t['label'] as String,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 10,
+                                  color: isSel ? tc : _textSecondary,
+                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.normal,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              t['label'] as String,
-                              style: GoogleFonts.cairo(
-                                fontSize: 10,
-                                color: isSel ? tc : _textSecondary,
-                                fontWeight: isSel ? FontWeight.w700 : FontWeight.normal,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
+                  ),
+                ),
+                // ── أزرار حفظ / إلغاء ──────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _textSecondary,
+                            side: BorderSide(color: _border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('إلغاء', style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .update({'profileTheme': selected});
+                          },
+                          child: Text('حفظ المظهر', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
