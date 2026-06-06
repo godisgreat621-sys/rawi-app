@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -189,7 +189,7 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
         decoration: BoxDecoration(
           color: selected
               ? theme.colorScheme.primary
-              : Colors.grey.withOpacity(0.15),
+              : Colors.grey.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? theme.colorScheme.primary : Colors.transparent,

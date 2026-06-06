@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -89,9 +89,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'يمكنك تغيير اسمك مرة كل 30 يوماً.\nباقي $daysLeft يوم للتغيير القادم.',
@@ -103,9 +103,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.07),
+                  color: _accent.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _accent.withOpacity(0.2)),
+                  border: Border.all(color: _accent.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   'تنبيه: يرى القراء اسمك على تعليقاتك وتقييماتك.\nاختر اسماً ثابتاً حتى لا يضيع القراء.',
@@ -416,13 +416,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Image.network(profilePic, fit: BoxFit.cover),
                         BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                          child: Container(color: _bg.withOpacity(0.82)),
+                          child: Container(color: _bg.withValues(alpha: 0.82)),
                         ),
                       ] else
                         Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [_accent.withOpacity(0.08), _bg],
+                              colors: [_accent.withValues(alpha: 0.08), _bg],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                             ),
@@ -570,9 +570,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 final color = bd.$2;
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: color.withOpacity(0.08),
+                                    color: color.withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: color.withOpacity(0.3)),
+                                    border: Border.all(color: color.withValues(alpha: 0.3)),
                                   ),
                                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                                     Icon(bd.$1, size: 14, color: color),
@@ -627,9 +627,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: _accent.withOpacity(0.07),
+                            color: _accent.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _accent.withOpacity(0.18)),
+                            border: Border.all(color: _accent.withValues(alpha: 0.18)),
                           ),
                           child: Row(children: [
                             const Icon(Icons.auto_stories_outlined, size: 18, color: _accent),
@@ -717,14 +717,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () =>
                               context.read<AuthViewModel>().logout(),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withOpacity(0.08),
+                            backgroundColor: Colors.redAccent.withValues(alpha: 0.08),
                             foregroundColor: Colors.redAccent,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
-                                color: Colors.redAccent.withOpacity(0.2),
+                                color: Colors.redAccent.withValues(alpha: 0.2),
                               ),
                             ),
                           ),
@@ -1182,7 +1182,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
+                              color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('$sign$delta',
@@ -1371,9 +1371,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.08),
+                          color: _accent.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _accent.withOpacity(0.25)),
+                          border: Border.all(color: _accent.withValues(alpha: 0.25)),
                         ),
                         child: Row(children: [
                           const Icon(Icons.person_rounded, color: _accent, size: 16),
@@ -1397,9 +1397,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             decoration: BoxDecoration(
-                              color: isMe ? _accent.withOpacity(0.07) : Colors.transparent,
+                              color: isMe ? _accent.withValues(alpha: 0.07) : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
-                              border: isMe ? Border.all(color: _accent.withOpacity(0.3)) : null,
+                              border: isMe ? Border.all(color: _accent.withValues(alpha: 0.3)) : null,
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1420,7 +1420,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ]),
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(color: _gold.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                                decoration: BoxDecoration(color: _gold.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                                 child: Text('$pts نقطة', style: GoogleFonts.cairo(fontSize: 12, color: _gold, fontWeight: FontWeight.w700)),
                               ),
                             ),
@@ -1488,9 +1488,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _gold.withOpacity(0.1),
+                    decoration: BoxDecoration(color: _gold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _gold.withOpacity(0.3))),
+                        border: Border.all(color: _gold.withValues(alpha: 0.3))),
                     child: Row(children: [
                       const Icon(Icons.check_circle, color: _gold, size: 18),
                       const SizedBox(width: 8),
@@ -1730,9 +1730,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: r.$2.withOpacity(0.12),
+        color: r.$2.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: r.$2.withOpacity(0.35)),
+        border: Border.all(color: r.$2.withValues(alpha: 0.35)),
       ),
       child: Text(r.$1,
           style: GoogleFonts.cairo(fontSize: 9, color: r.$2, fontWeight: FontWeight.w700)),
@@ -1768,7 +1768,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Container(
       margin: const EdgeInsets.symmetric(horizontal: 10),
       width: 6, height: 6,
-      decoration: BoxDecoration(color: _accent.withOpacity(0.45), shape: BoxShape.circle),
+      decoration: BoxDecoration(color: _accent.withValues(alpha: 0.45), shape: BoxShape.circle),
     ),
     Expanded(child: Container(height: 1, color: _border)),
   ]);
@@ -1781,9 +1781,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(children: [
           Icon(icon, color: color, size: 20),

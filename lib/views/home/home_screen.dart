@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -372,9 +372,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: _accent.withOpacity(0.1),
+                            color: _accent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _accent.withOpacity(0.3)),
+                            border: Border.all(color: _accent.withValues(alpha: 0.3)),
                           ),
                           child: Row(children: [
                             const Icon(Icons.play_circle_fill_rounded, color: _accent, size: 20),
@@ -754,9 +754,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _sortByActivity ? _accent.withOpacity(0.12) : _surface,
+                  color: _sortByActivity ? _accent.withValues(alpha: 0.12) : _surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _sortByActivity ? _accent.withOpacity(0.4) : _border),
+                  border: Border.all(color: _sortByActivity ? _accent.withValues(alpha: 0.4) : _border),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.local_fire_department_rounded,
@@ -800,7 +800,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Icon(
                 Icons.auto_stories_outlined,
                 size: 38,
-                color: _accent.withOpacity(0.5),
+                color: _accent.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 20),
@@ -869,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(n.rating.toStringAsFixed(1), style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
                     const SizedBox(width: 10),
                     Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: _accent.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                        decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                         child: Text(n.category, style: GoogleFonts.cairo(fontSize: 9, color: _accent))),
                   ]),
                 ],
@@ -957,7 +957,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Icon(
                             Icons.auto_stories_rounded,
                             size: 80,
-                            color: Colors.white.withOpacity(0.04),
+                            color: Colors.white.withValues(alpha: 0.04),
                           ),
                         ),
                         // محتوى الغلاف
@@ -972,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _accent.withOpacity(0.15),
+                                  color: _accent.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -991,7 +991,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.auto_stories_rounded,
                                     size: 24,
-                                    color: _accent.withOpacity(0.4),
+                                    color: _accent.withValues(alpha: 0.4),
                                   ),
                                   StreamBuilder<bool>(
                                     stream: context.read<NovelsProvider>().isBookmarked(novel.id),
@@ -1028,7 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         bottom: 8, left: 8,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: _bg.withOpacity(0.8), borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(color: _bg.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(4)),
                           child: Row(children: [
                             Icon(Icons.check_circle, size: 10, color: _accent),
                             const SizedBox(width: 4),
@@ -1176,7 +1176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         : null,
                   ),
                   child: n.coverUrl == null
-                      ? Icon(Icons.auto_stories_rounded, color: _accent.withOpacity(0.5), size: 22)
+                      ? Icon(Icons.auto_stories_rounded, color: _accent.withValues(alpha: 0.5), size: 22)
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -1206,7 +1206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.1),
+                          color: _accent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Text(

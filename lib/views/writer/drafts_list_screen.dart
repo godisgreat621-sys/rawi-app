@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/novels_provider.dart';
@@ -39,7 +39,7 @@ class DraftsListScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.note_alt_outlined, size: 64, color: textSecondary.withOpacity(0.3)),
+                  Icon(Icons.note_alt_outlined, size: 64, color: textSecondary.withValues(alpha: 0.3)),
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد مسودات محفوظة حالياً',

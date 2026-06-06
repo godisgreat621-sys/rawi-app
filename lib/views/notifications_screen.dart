@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -203,10 +203,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _accent.withOpacity(0.12),
+                                color: _accent.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                    color: _accent.withOpacity(0.3)),
+                                    color: _accent.withValues(alpha: 0.3)),
                               ),
                               child: Text('$unread غير مقروء',
                                   style: GoogleFonts.cairo(
@@ -266,7 +266,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 border: Border.all(
                                   color: isRead
                                       ? _border
-                                      : style.color.withOpacity(0.25),
+                                      : style.color.withValues(alpha: 0.25),
                                   width: isRead ? 1 : 1.5,
                                 ),
                               ),
@@ -278,7 +278,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     width:  40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: style.color.withOpacity(0.12),
+                                      color: style.color.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(style.icon,
@@ -369,7 +369,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 border: Border.all(color: _border),
               ),
               child: Icon(Icons.notifications_none_rounded,
-                  size: 38, color: _accent.withOpacity(0.4)),
+                  size: 38, color: _accent.withValues(alpha: 0.4)),
             ),
             const SizedBox(height: 20),
             Text('لا توجد إشعارات بعد',

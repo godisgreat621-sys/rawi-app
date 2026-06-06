@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
@@ -368,7 +368,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: _gold.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _gold.withOpacity(0.3))),
+      decoration: BoxDecoration(color: _gold.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _gold.withValues(alpha: 0.3))),
       child: Row(
         children: [
           const Icon(Icons.timer_outlined, color: _gold, size: 18),
@@ -578,9 +578,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.08),
+                  color: _accent.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _accent.withOpacity(0.2)),
+                  border: Border.all(color: _accent.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   'تحرير مسودة محفوظة',
@@ -622,9 +622,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.06),
+                  color: _accent.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _accent.withOpacity(0.18)),
+                  border: Border.all(color: _accent.withValues(alpha: 0.18)),
                 ),
                 child: Row(children: [
                   const Icon(Icons.info_outline, size: 14, color: _accent),

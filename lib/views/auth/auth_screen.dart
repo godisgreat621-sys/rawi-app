@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen>
                           decoration: BoxDecoration(
                             color: _accentDim,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _accent.withOpacity(0.25)),
+                            border: Border.all(color: _accent.withValues(alpha: 0.25)),
                           ),
                           child: Text(
                             'راوي منصة حصرية لكتابة وقراءة الروايات العربية — كل ما تقرأه فيها من إبداع أعضائها فقط، لا ذكاء اصطناعي ولا منقول.',

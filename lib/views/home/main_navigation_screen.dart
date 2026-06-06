@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -341,7 +341,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                       horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? _accent.withOpacity(0.12)
+                        ? _accent.withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(30),
                   ),
