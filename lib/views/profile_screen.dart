@@ -697,6 +697,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   _gold,         _showLeaderboard),
                           _gridAction(Icons.emoji_events_outlined, 'التحدي',      _accent,       _showWeeklyChallenge),
                           _gridAction(Icons.notifications_outlined,'الإشعارات',   _accent,       _showNotificationSettings),
+                          _gridAction(Icons.palette_outlined,       'المظهر',      _accent,       () => _showThemePicker(userData)),
                           _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
                           _gridAction(Icons.security_rounded,      'الأمان',      _textSecondary, _showSecuritySessions),
                           _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
@@ -1053,59 +1054,298 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    bool showPoints = userData?['showPublicPoints'] ?? true;
-    bool showRatings = userData?['showPublicRatings'] ?? true;
+    bool showPoints       = userData?['showPublicPoints']    ?? true;
+    bool showRatings      = userData?['showPublicRatings']   ?? true;
+    bool showFollowers    = userData?['showFollowers']        ?? true;
+    bool showFollowing    = userData?['showFollowing']        ?? true;
+    bool showReadingList  = userData?['showReadingList']      ?? true;
+    bool showReadingStats = userData?['showReadingStats']     ?? true;
+    bool allowDMs         = userData?['allowDirectMessages']  ?? true;
+    // profileVisibility: public | followers | private
+    String profileVisibility = (userData?['profileVisibility'] as String?) ?? 'public';
+
+    Future<void> save(Map<String, dynamic> updates) async {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update(updates);
+    }
 
     showModalBottomSheet(
       context: context,
       backgroundColor: _surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'إعدادات الخصوصية',
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.bold,
-                  color: _textPrimary,
+        builder: (ctx, setS) {
+          Widget toggle(String label, String subtitle, bool val, Future<void> Function(bool) onChange) =>
+            SwitchListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              title: Text(label, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: Text(subtitle, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12)),
+              value: val,
+              activeThumbColor: _accent,
+              activeTrackColor: _accent.withValues(alpha: 0.4),
+              onChanged: (v) async { setS(() {}); await onChange(v); },
+            );
+
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.75,
+            maxChildSize: 0.95,
+            builder: (_, sc) => Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 36, height: 4,
+                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 12),
+                Text('إعدادات الخصوصية',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
+                const SizedBox(height: 4),
+                Divider(color: _border),
+                Expanded(
+                  child: ListView(
+                    controller: sc,
+                    children: [
+                      // ── رؤية الملف الشخصي ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Text('من يمكنه رؤية ملفي الشخصي',
+                            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                      _visibilityOption(ctx, setS, profileVisibility, 'public',    Icons.public_rounded,          'الجميع',      'يمكن لأي شخص رؤية ملفك',
+                          (v) { profileVisibility = v; save({'profileVisibility': v}); }),
+                      _visibilityOption(ctx, setS, profileVisibility, 'followers', Icons.group_rounded,            'المتابعون فقط', 'يراه فقط من يتابعونك',
+                          (v) { profileVisibility = v; save({'profileVisibility': v}); }),
+                      _visibilityOption(ctx, setS, profileVisibility, 'private',   Icons.lock_outline_rounded,     'خاص',         'لا يراه أحد سواك',
+                          (v) { profileVisibility = v; save({'profileVisibility': v}); }),
+                      Divider(color: _border),
+                      // ── ما يُظهر ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Text('ما يظهر في ملفي العام',
+                            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                      toggle('النقاط',         'إظهار رصيد نقاطي للآخرين',       showPoints,
+                          (v) async { showPoints = v; await save({'showPublicPoints': v}); }),
+                      toggle('التقييم العام',  'إظهار معدل تقييمي للقراء',       showRatings,
+                          (v) async { showRatings = v; await save({'showPublicRatings': v}); }),
+                      toggle('المتابعون',      'إظهار قائمة متابعيّ',            showFollowers,
+                          (v) async { showFollowers = v; await save({'showFollowers': v}); }),
+                      toggle('المتابَعون',     'إظهار من أتابعهم',               showFollowing,
+                          (v) async { showFollowing = v; await save({'showFollowing': v}); }),
+                      toggle('قائمة القراءة', 'إظهار الروايات المحفوظة',        showReadingList,
+                          (v) async { showReadingList = v; await save({'showReadingList': v}); }),
+                      toggle('إحصائيات القراءة', 'إظهار عدد الفصول والكلمات المقروءة', showReadingStats,
+                          (v) async { showReadingStats = v; await save({'showReadingStats': v}); }),
+                      Divider(color: _border),
+                      // ── التواصل ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Text('التواصل',
+                            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ),
+                      toggle('الرسائل المباشرة', 'السماح للآخرين بمراسلتي', allowDMs,
+                          (v) async { allowDMs = v; await save({'allowDirectMessages': v}); }),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              SwitchListTile(
-                title: Text(
-                  'إظهار نقاطي للآخرين',
-                  style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _visibilityOption(
+    BuildContext ctx,
+    StateSetter setS,
+    String current,
+    String value,
+    IconData icon,
+    String label,
+    String subtitle,
+    void Function(String) onSelect,
+  ) {
+    final selected = current == value;
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      leading: Icon(icon, color: selected ? _accent : _textSecondary, size: 20),
+      title: Text(label,
+          style: GoogleFonts.cairo(
+              color: selected ? _accent : _textPrimary,
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+      subtitle: Text(subtitle, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12)),
+      trailing: selected
+          ? Icon(Icons.check_circle_rounded, color: _accent, size: 18)
+          : Icon(Icons.circle_outlined, color: _border, size: 18),
+      onTap: () => setS(() => onSelect(value)),
+    );
+  }
+
+  void _showThemePicker(Map<String, dynamic>? userData) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String selected = (userData?['profileTheme'] as String?) ?? 'default';
+
+    const themes = {
+      'default':  {'label': 'راوي الليل',   'accent': Color(0xFF8BAF7C), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
+      'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
+      'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
+      'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
+      'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
+      'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
+      'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
+      'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+    };
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final accent = (themes[selected]?['accent'] as Color?) ?? _accent;
+          final grad   = (themes[selected]?['grad1']  as Color?) ?? const Color(0xFF1A2E1A);
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            maxChildSize: 0.92,
+            builder: (_, sc) => Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 36, height: 4,
+                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 12),
+                Text('مظهر الملف الشخصي',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
+                const SizedBox(height: 12),
+                // معاينة
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  height: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: LinearGradient(
+                      colors: [grad.withValues(alpha: 0.9), accent.withValues(alpha: 0.15), _surface],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: accent, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: _bg,
+                        child: Text(
+                          (FirebaseAuth.instance.currentUser?.displayName ?? 'أ')[0].toUpperCase(),
+                          style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            FirebaseAuth.instance.currentUser?.displayName ?? 'اسمك هنا',
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 14),
+                          ),
+                          Text(
+                            '${themes[selected]?['icon'] as String? ?? ''}  ${themes[selected]?['label'] as String? ?? ''}',
+                            style: GoogleFonts.cairo(color: accent, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                value: showPoints,
-                activeColor: _accent,
-                onChanged: (v) async {
-                  setS(() => showPoints = v);
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user.uid)
-                      .update({'showPublicPoints': v});
-                },
-              ),
-              SwitchListTile(
-                title: Text(
-                  'إظهار تقييمي العام للآخرين',
-                  style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+                const SizedBox(height: 12),
+                Divider(color: _border),
+                Expanded(
+                  child: GridView.builder(
+                    controller: sc,
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 0.75,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                    ),
+                    itemCount: themes.length,
+                    itemBuilder: (_, i) {
+                      final key = themes.keys.elementAt(i);
+                      final t   = themes[key]!;
+                      final tc  = t['accent'] as Color;
+                      final tg  = t['grad1']  as Color;
+                      final isSel = selected == key;
+                      return GestureDetector(
+                        onTap: () async {
+                          setS(() => selected = key);
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .update({'profileTheme': key});
+                        },
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [tg, tc],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                border: Border.all(
+                                  color: isSel ? tc : Colors.transparent,
+                                  width: 2.5,
+                                ),
+                                boxShadow: isSel
+                                    ? [BoxShadow(color: tc.withValues(alpha: 0.5), blurRadius: 8)]
+                                    : [],
+                              ),
+                              child: Center(
+                                child: Text(t['icon'] as String, style: const TextStyle(fontSize: 22)),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              t['label'] as String,
+                              style: GoogleFonts.cairo(
+                                fontSize: 10,
+                                color: isSel ? tc : _textSecondary,
+                                fontWeight: isSel ? FontWeight.w700 : FontWeight.normal,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                value: showRatings,
-                activeColor: _accent,
-                onChanged: (v) async {
-                  setS(() => showRatings = v);
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user.uid)
-                      .update({'showPublicRatings': v});
-                },
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

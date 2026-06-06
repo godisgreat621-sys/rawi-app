@@ -83,6 +83,23 @@ class _AuthorScreenState extends State<AuthorScreen> {
     return _textSecondary;
   }
 
+  // التيمات المتاحة لصفحة الكاتب
+  static const Map<String, Map<String, dynamic>> profileThemes = {
+    'default':  {'label': 'راوي الليل',   'accent': Color(0xFF8BAF7C), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
+    'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
+    'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
+    'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
+    'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
+    'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
+    'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
+    'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+  };
+
+  Color _themeAccent(String? theme) =>
+      (profileThemes[theme ?? 'default']?['accent'] as Color?) ?? const Color(0xFF8BAF7C);
+  Color _themeGrad(String? theme) =>
+      (profileThemes[theme ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1A2E1A);
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
@@ -111,9 +128,31 @@ class _AuthorScreenState extends State<AuthorScreen> {
           final displayName   = userData['displayName']    ?? widget.authorName;
           final profilePic    = userData['profilePicture'] as String?;
           final points        = userData['points']         ?? 0;
-          final showPoints    = userData['showPublicPoints'] ?? true;
+          final showPoints    = userData['showPublicPoints']   ?? true;
+          final showRatings   = userData['showPublicRatings']  ?? true;
+          final showFollowers = userData['showFollowers']       ?? true;
+          final showFollowing = userData['showFollowing']       ?? true;
+          final showReadingStats = userData['showReadingStats'] ?? true;
+          final profileVisibility = (userData['profileVisibility'] as String?) ?? 'public';
+          final profileTheme  = userData['profileTheme']       as String?;
+          final tAccent = _themeAccent(profileTheme);
+          final tGrad   = _themeGrad(profileTheme);
           final joinedAt      = (userData['createdAt'] as Timestamp?)?.toDate();
           final joinYear      = joinedAt?.year.toString() ?? '';
+
+          // إذا كان الملف خاصاً وليس صاحبه
+          if (!isMe && profileVisibility == 'private') {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock_rounded, size: 48, color: _textSecondary),
+                  const SizedBox(height: 12),
+                  Text('هذا الحساب خاص', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 15)),
+                ],
+              ),
+            );
+          }
 
           return CustomScrollView(
             slivers: [
@@ -169,7 +208,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  _accent.withValues(alpha: 0.06),
+                                  tGrad.withValues(alpha: 0.8),
+                                  tAccent.withValues(alpha: 0.06),
                                   _bg,
                                 ],
                                 begin: Alignment.topCenter,
@@ -189,7 +229,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                               height: 82,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: _accent, width: 2),
+                                border: Border.all(color: tAccent, width: 2),
                               ),
                               child: CircleAvatar(
                                 radius: 40,
@@ -205,7 +245,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                         style: GoogleFonts.cairo(
                                           fontSize: 30,
                                           fontWeight: FontWeight.w700,
-                                          color: _accent,
+                                          color: tAccent,
                                         ),
                                       )
                                     : null,
@@ -300,6 +340,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                         ? 0.0
                         : novels.fold(0.0, (s, n) => s + n.rating) /
                             novels.length;
+                    final followersCount = (userData['followersCount'] as num?)?.toInt() ?? 0;
+                    final followingCount = (userData['followingCount'] as num?)?.toInt() ?? 0;
 
                     return Padding(
                       padding: const EdgeInsets.all(16),
@@ -323,15 +365,29 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 _stat(novels.length.toString(), 'رواية',
                                     Icons.auto_stories_rounded, _accent),
                                 _vDivider(),
-                                _stat(totalReaders.toString(), 'قارئ',
-                                    Icons.remove_red_eye_rounded,
-                                    Colors.blueGrey),
-                                _vDivider(),
-                                _stat(totalLikes.toString(), 'إعجاب',
-                                    Icons.favorite_rounded, Colors.redAccent),
-                                _vDivider(),
-                                _stat(avgRating.toStringAsFixed(1), 'تقييم',
-                                    Icons.star_rounded, _gold),
+                                if (showReadingStats) ...[
+                                  _stat(totalReaders.toString(), 'قارئ',
+                                      Icons.remove_red_eye_rounded, Colors.blueGrey),
+                                  _vDivider(),
+                                  _stat(totalLikes.toString(), 'إعجاب',
+                                      Icons.favorite_rounded, Colors.redAccent),
+                                  _vDivider(),
+                                ],
+                                if (showRatings)
+                                  _stat(avgRating.toStringAsFixed(1), 'تقييم',
+                                      Icons.star_rounded, _gold)
+                                else
+                                  _stat('—', 'تقييم', Icons.star_rounded, _textSecondary),
+                                if (showFollowers) ...[
+                                  _vDivider(),
+                                  _stat(followersCount.toString(), 'متابع',
+                                      Icons.group_rounded, _accent),
+                                ],
+                                if (showFollowing) ...[
+                                  _vDivider(),
+                                  _stat(followingCount.toString(), 'يتابع',
+                                      Icons.person_rounded, _accent.withValues(alpha: 0.6)),
+                                ],
                               ],
                             ),
                           ),
