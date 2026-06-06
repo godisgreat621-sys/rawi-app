@@ -234,10 +234,11 @@ class _AuthScreenState extends State<AuthScreen>
                       hint: 'example@email.com',
                       icon: Icons.alternate_email_rounded,
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) =>
-                          v == null || !v.contains('@')
-                              ? 'بريد إلكتروني غير صحيح'
-                              : null,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'بريد إلكتروني غير صحيح';
+                        final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                        return emailRegex.hasMatch(v.trim()) ? null : 'بريد إلكتروني غير صحيح';
+                      },
                     ),
                     const SizedBox(height: 14),
 

@@ -471,7 +471,18 @@ class _WriterScreenState extends State<WriterScreen> {
         buf.writeln('\n');
       }
 
-      await Clipboard.setData(ClipboardData(text: buf.toString()));
+      final exportText = buf.toString();
+      if (exportText.length > 500000) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('الرواية كبيرة جداً للنسخ (${(exportText.length / 1000).toStringAsFixed(0)} ألف حرف). حاول تصدير فصول محددة.',
+                style: GoogleFonts.cairo(fontSize: 13)),
+            backgroundColor: Colors.orange,
+          ));
+        }
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: exportText));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('تم نسخ الرواية كاملةً للحافظة ✅ (${chaptersSnap.docs.length} فصول)',

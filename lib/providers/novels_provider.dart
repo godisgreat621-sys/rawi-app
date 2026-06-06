@@ -32,7 +32,7 @@ class NovelsProvider with ChangeNotifier {
     required String chapterContent,
     String? coverUrl,
     required int wordCount,
-    String status = 'ongoing', // #13
+    String status = 'active',
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -41,20 +41,22 @@ class NovelsProvider with ChangeNotifier {
       // ← جلب الاسم الحقيقي أولاً
       final authorName = await _getDisplayName(user.uid);
 
+      final cSampleLen = chapterContent.length >= 300 ? 300 : chapterContent.length;
       final novelRef = await _db.collection('novels').add({
-        'title':       title,
-        'description': description,
-        'category':    category,
-        'coverUrl':    coverUrl,
-        'authorId':    user.uid,
-        'authorName':  authorName,        // ← الاسم الحقيقي
-        'authorEmail': user.email ?? '',
-        'rating':      0.0,
-        'likes':       0,
-        'readers':     0,
+        'title':         title,
+        'description':   description,
+        'category':      category,
+        'coverUrl':      coverUrl,
+        'authorId':      user.uid,
+        'authorName':    authorName,
+        'authorEmail':   user.email ?? '',
+        'rating':        0.0,
+        'likes':         0,
+        'readers':       0,
         'chaptersCount': 1,
-        'status':      status,
-        'createdAt':   FieldValue.serverTimestamp(),
+        'status':        status,
+        'contentSample': chapterContent.substring(0, cSampleLen),
+        'createdAt':     FieldValue.serverTimestamp(),
       });
 
       await novelRef.collection('chapters').add({
@@ -343,6 +345,7 @@ class NovelsProvider with ChangeNotifier {
   Future<String?> deleteDraft(String draftId) async {
     try {
       await _db.collection('drafts').doc(draftId).delete();
+      notifyListeners();
       return null;
     } catch (e) {
       return 'حدث خطأ: $e';
@@ -571,8 +574,8 @@ class NovelsProvider with ChangeNotifier {
       // ضمان عدم النزول تحت الصفر عبر جلب القيمة الحالية
       final mySnap = await myDocRef.get();
       final tarSnap = await targetDocRef.get();
-      final myCount = (mySnap.data()?['followingCount'] ?? 0) as int;
-      final tarCount = (tarSnap.data()?['followersCount'] ?? 0) as int;
+      final myCount  = (mySnap.data()?['followingCount']  ?? 0).toInt();
+      final tarCount = (tarSnap.data()?['followersCount'] ?? 0).toInt();
 
       batch.set(myDocRef, {'followingCount': (myCount - 1).clamp(0, 999999)}, SetOptions(merge: true));
       batch.set(targetDocRef, {'followersCount': (tarCount - 1).clamp(0, 999999)}, SetOptions(merge: true));
@@ -626,10 +629,16 @@ class NovelsProvider with ChangeNotifier {
     if (user == null) return Stream.value([]);
 
     return _db.collection('users').doc(user.uid).collection('bookmarks').snapshots().asyncMap((snap) async {
-      List<Novel> bookmarked = [];
-      for (var doc in snap.docs) {
-        final novelDoc = await _db.collection('novels').doc(doc.id).get();
-        if (novelDoc.exists) bookmarked.add(Novel.fromFirestore(novelDoc));
+      if (snap.docs.isEmpty) return <Novel>[];
+      final ids = snap.docs.map((d) => d.id).toList();
+      // batch fetch in groups of 10 (Firestore whereIn limit)
+      final List<Novel> bookmarked = [];
+      for (int i = 0; i < ids.length; i += 10) {
+        final chunk = ids.skip(i).take(10).toList();
+        final novelSnap = await _db.collection('novels')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        bookmarked.addAll(novelSnap.docs.map((d) => Novel.fromFirestore(d)));
       }
       return bookmarked;
     });

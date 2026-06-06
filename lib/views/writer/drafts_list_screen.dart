@@ -117,7 +117,7 @@ class DraftsListScreen extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: textSecondary))),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); provider.deleteDraft(id); },
+            onPressed: () async { Navigator.pop(ctx); await provider.deleteDraft(id); },
             child: Text('حذف', style: GoogleFonts.cairo(color: Colors.redAccent, fontWeight: FontWeight.w700)),
           ),
         ],

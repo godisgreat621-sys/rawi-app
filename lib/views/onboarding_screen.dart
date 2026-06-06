@@ -47,14 +47,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'preferredCategories': _selectedCategories.toList(),
-        'readingGoal':         _readingGoal,
-        'onboardingDone':      true,
-      }, SetOptions(merge: true));
-    }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'preferredCategories': _selectedCategories.toList(),
+          'readingGoal':         _readingGoal,
+          'onboardingDone':      true,
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {}
     await OnboardingScreen.markDone();
     if (mounted) widget.onDone();
   }

@@ -200,6 +200,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         chapterContent: _contentController.text.trim(),
         coverUrl: null,
         wordCount: _wordCount,
+        privateNote: _noteController.text.trim(),
       );
 
       if (id != null) {
@@ -218,8 +219,8 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         );
       }
     } catch (e) {
-      if (mounted && !silent) setState(() => _isSavingDraft = false);
-      if (!silent) _showError('خطأ أثناء حفظ المسودة. حاول لاحقاً.');
+      if (mounted) setState(() => _isSavingDraft = false);
+      if (!silent && mounted) _showError('خطأ أثناء حفظ المسودة: ${e.toString().replaceFirst('Exception: ', '')}');
     }
   }
 

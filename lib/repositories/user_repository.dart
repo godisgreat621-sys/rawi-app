@@ -47,7 +47,9 @@ class UserRepository {
 
     final json = jsonDecode(body) as Map<String, dynamic>;
     if (json.containsKey('error')) {
-      throw Exception('خطأ Cloudinary: ${json['error']['message']}');
+      final errMap = json['error'];
+      final errMsg = errMap is Map ? (errMap['message'] ?? errMap.toString()) : errMap.toString();
+      throw Exception('خطأ Cloudinary: $errMsg');
     }
     
     final url  = json['secure_url'] as String?;

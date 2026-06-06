@@ -1019,20 +1019,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context, snap) {
                       if (!snap.hasData || !snap.data!.exists) return const SizedBox();
                       final data = snap.data!.data() as Map<String, dynamic>;
-                      final lastReadChapter = data['chapterId'] ?? '';
-                      
-                      // هل هناك فصول جديدة؟ (بسيطة: قارن عدد الفصول)
-                      bool hasNew = (novel.chaptersCount > 1); // تبسيط للمثال
-                      
+                      final readCount = (data['readChapterIds'] as List?)?.length ?? 0;
+                      final bool hasNew = readCount < novel.chaptersCount;
+
                       return Positioned(
                         bottom: 8, left: 8,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: _bg.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(4)),
+                          decoration: BoxDecoration(
+                            color: hasNew ? _accent.withValues(alpha: 0.9) : _bg.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           child: Row(children: [
-                            Icon(Icons.check_circle, size: 10, color: _accent),
+                            Icon(hasNew ? Icons.fiber_new_rounded : Icons.check_circle,
+                                size: 10, color: hasNew ? Colors.black : _accent),
                             const SizedBox(width: 4),
-                            Text('مقروءة', style: GoogleFonts.cairo(fontSize: 8, color: _textPrimary)),
+                            Text(hasNew ? 'جديد' : 'مقروءة',
+                                style: GoogleFonts.cairo(fontSize: 8,
+                                    color: hasNew ? Colors.black : _textPrimary)),
                           ]),
                         ),
                       );

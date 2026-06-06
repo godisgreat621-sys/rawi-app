@@ -415,9 +415,13 @@ class _AdminScreenState extends State<AdminScreen>
           }),
           _actionBtn(label: 'حذف', color: Colors.redAccent, onTap: () async {
             if (!await _confirm('حذف "${data['title']}" نهائياً؟')) return;
-            await FirebaseFirestore.instance.collection('novels').doc(id).delete();
-            await _log('delete_novel', extra: {'novelId': id, 'title': data['title']});
-            _snack('تم الحذف ✅', Colors.green);
+            try {
+              await FirebaseFirestore.instance.collection('novels').doc(id).delete();
+              await _log('delete_novel', extra: {'novelId': id, 'title': data['title']});
+              _snack('تم الحذف ✅', Colors.green);
+            } catch (e) {
+              _snack('فشل الحذف: $e', Colors.redAccent);
+            }
           }),
         ]),
       ])),

@@ -53,9 +53,11 @@ class AuthViewModel extends ChangeNotifier {
       if (displayName != null && displayName.isNotEmpty) {
         await result.user?.updateDisplayName(displayName);
       }
+      final uid = result.user?.uid;
+      if (uid == null) { _setLoading(false); return 'فشل إنشاء الحساب'; }
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(result.user!.uid)
+          .doc(uid)
           .set({
         'email': email,
         'displayName': displayName ?? '',
@@ -123,6 +125,7 @@ class AuthViewModel extends ChangeNotifier {
       final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
       final snap = await ref.get();
       if (!snap.exists) {
+        final deviceId = await _getDeviceId();
         await ref.set({
           'email':        user.email ?? '',
           'displayName':  user.displayName ?? googleUser.displayName ?? '',
@@ -134,6 +137,7 @@ class AuthViewModel extends ChangeNotifier {
           'followersCount': 0,
           'followingCount': 0,
           'lastChapterRatingsReceived': 0,
+          'deviceId':     deviceId,
           'createdAt':    FieldValue.serverTimestamp(),
         });
       }

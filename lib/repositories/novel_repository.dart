@@ -40,6 +40,7 @@ class NovelRepository {
     required int wordCount,
     required String category,
     String? coverUrl,
+    String? privateNote,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -55,6 +56,7 @@ class NovelRepository {
       'wordCount': wordCount,
       'category': category,
       'coverUrl': coverUrl,
+      if (privateNote != null && privateNote.isNotEmpty) 'privateNote': privateNote,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 

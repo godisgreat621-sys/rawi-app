@@ -284,6 +284,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                   stream: FirebaseFirestore.instance
                       .collection('novels')
                       .where('authorId', isEqualTo: widget.authorId)
+                      .orderBy('createdAt', descending: true)
+                      .limit(20)
                       .snapshots(),
                   builder: (_, novelsSnap) {
                     final novels = novelsSnap.hasData

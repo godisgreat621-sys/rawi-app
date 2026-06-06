@@ -1,6 +1,6 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -89,7 +89,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       _contentCache[_chapterId] = widget.novel['content'];
     }
     _pageController = PageController();
-    if (!kIsWeb) { /* FLAG_SECURE — Android only, skipped on web */ }
+
     _scrollController.addListener(() {
       final show = _scrollController.hasClients && _scrollController.offset > 400;
       if (show != _showBackToTop) setState(() => _showBackToTop = show);
@@ -1400,7 +1400,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     final isOwner      = currentUser?.uid == authorId;
 
     final words      = content.split(RegExp(r'\s+')).length;
-    final totalPages = (words / 500).ceil().clamp(1, 9999);
+    final totalPages = (words / 350).ceil().clamp(1, 9999);
     final curPage    = ((_scrollProgress * totalPages)).ceil().clamp(1, totalPages);
 
     final chaptersList = List<Map<String,dynamic>>.from(widget.novel['chaptersList'] ?? []);
@@ -1885,7 +1885,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
           .collection('novels')
           .where('category', isEqualTo: category)
           .orderBy('rating', descending: true)
-          .limit(6)
+          .limit(7)
           .get(),
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();

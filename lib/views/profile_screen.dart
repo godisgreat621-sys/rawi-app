@@ -65,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ?.toDate();
     final now = DateTime.now();
     final canChange =
-        lastChanged == null || now.difference(lastChanged).inDays >= 30;
+        lastChanged == null || now.difference(lastChanged) >= const Duration(days: 30);
     final daysLeft = canChange ? 0 : 30 - now.difference(lastChanged!).inDays;
 
     showDialog(
@@ -1251,7 +1251,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   .collection('users').doc(user.uid).get(),
               builder: (_, snap) {
                 final d = snap.data?.data() as Map<String, dynamic>?;
-                final sessions = List<dynamic>.from(d?['loginSessions'] ?? []);
+                final rawSessions = d?['loginSessions'];
+                final sessions = rawSessions is List ? List<dynamic>.from(rawSessions) : <dynamic>[];
                 if (sessions.isEmpty) {
                   return Text('لا توجد بيانات جلسات محفوظة',
                       style: GoogleFonts.cairo(color: _textSecondary));
