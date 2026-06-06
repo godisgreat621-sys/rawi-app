@@ -122,18 +122,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     });
   }
 
-  // #38 تسجيل جلسة الدخول
+  // #38 تسجيل جلسة الدخول — مع تقليم للحد الأقصى 50 جلسة
   Future<void> _logLoginSession() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid)
-          .set({
-        'loginSessions': FieldValue.arrayUnion([{
-          'at': Timestamp.now(),
-          'device': 'Android / iOS',
-        }]),
-      }, SetOptions(merge: true));
+      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final doc = await tx.get(ref);
+        final raw = doc.data()?['loginSessions'];
+        final sessions = raw is List ? List<Map<String,dynamic>>.from(raw) : <Map<String,dynamic>>[];
+        sessions.add({'at': Timestamp.now(), 'device': 'mobile'});
+        if (sessions.length > 50) sessions.removeRange(0, sessions.length - 50);
+        tx.set(ref, {'loginSessions': sessions}, SetOptions(merge: true));
+      });
     } catch (_) {}
   }
 

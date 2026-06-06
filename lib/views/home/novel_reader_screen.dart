@@ -1241,21 +1241,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       'createdAt': FieldValue.serverTimestamp(),
                     });
 
-                    // #49 حظر تلقائي يوم إذا وصل 5 بلاغات
-                    if (reportedUid != null && reportedUid.isNotEmpty) {
-                      final since = DateTime.now().subtract(const Duration(hours: 24));
-                      final reportsSnap = await FirebaseFirestore.instance
-                          .collection('reports')
-                          .where('reportedUser', isEqualTo: reportedUid)
-                          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
-                          .get();
-                      if (reportsSnap.docs.length >= 5) {
-                        final bannedUntil = DateTime.now().add(const Duration(hours: 24));
-                        await FirebaseFirestore.instance
-                            .collection('users').doc(reportedUid)
-                            .update({'bannedUntil': Timestamp.fromDate(bannedUntil)});
-                      }
-                    }
+                    // الحظر التلقائي محذوف: يجب أن يكون قرار الحظر من الأدمن فقط
                   }
                 },
                 child: Text('إرسال البلاغ', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),

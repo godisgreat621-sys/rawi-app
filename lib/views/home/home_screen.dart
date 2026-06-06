@@ -492,9 +492,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         final friend   = item['friendName'] as String;
                                         final novelId  = item['novelId'] as String;
                                         return GestureDetector(
-                                          onTap: () => _navigateToDetail(
-                                            allNovels.firstWhere((n) => n.id == novelId,
-                                                orElse: () => allNovels.first)),
+                                          onTap: () {
+                                            final match = allNovels.cast<dynamic>().firstWhere(
+                                              (n) => n.id == novelId, orElse: () => null);
+                                            if (match != null) _navigateToDetail(match);
+                                          },
                                           child: Container(
                                             width: 65,
                                             margin: const EdgeInsets.only(left: 10),

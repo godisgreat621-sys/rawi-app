@@ -534,10 +534,10 @@ class NovelsProvider with ChangeNotifier {
   // إشعار بالرد على تعليق
   Future<void> notifyUserOfReply(String originalCommentId, String novelTitle, String replierName, String replyText, String novelId) async {
     try {
-      final commentSnap = await _db.collectionGroup('comments').where(FieldPath.documentId, isEqualTo: originalCommentId).get();
-      if (commentSnap.docs.isEmpty) return;
-      
-      final originalAuthorId = commentSnap.docs.first.data()['authorId'];
+      final commentDoc = await _db.collection('novels').doc(novelId).collection('comments').doc(originalCommentId).get();
+      if (!commentDoc.exists) return;
+
+      final originalAuthorId = commentDoc.data()?['authorId'];
       if (originalAuthorId == FirebaseAuth.instance.currentUser?.uid) return;
 
       await _db.collection('notifications').add({
