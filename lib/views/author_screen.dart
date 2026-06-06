@@ -70,6 +70,90 @@ class _AuthorScreenState extends State<AuthorScreen> {
     }
   }
 
+  void _showProfileReportDialog(String displayName) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    String? selectedReason;
+    final detailsCtrl = TextEditingController();
+    const reasons = [
+      'اسم مستخدم مسيء أو مضلل',
+      'صورة شخصية غير لائقة',
+      'انتحال شخصية شخص آخر',
+      'محتوى مسيء في الملف الشخصي',
+      'حساب مزيف أو مزدوج',
+      'أخرى',
+    ];
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 16),
+          decoration: BoxDecoration(color: _surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('بلاغ عن الملف الشخصي', style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.redAccent)),
+                IconButton(icon: Icon(Icons.close, color: _textSecondary), onPressed: () => Navigator.pop(ctx)),
+              ]),
+              Text(displayName, style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+              const SizedBox(height: 8),
+              ...reasons.map((r) => RadioListTile<String>(
+                value: r, groupValue: selectedReason,
+                onChanged: (v) => setS(() => selectedReason = v),
+                title: Text(r, style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
+                activeColor: Colors.redAccent, dense: true, contentPadding: EdgeInsets.zero,
+              )),
+              const SizedBox(height: 8),
+              TextField(
+                controller: detailsCtrl, maxLines: 2,
+                style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'تفاصيل إضافية (اختياري)',
+                  hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
+                  filled: true, fillColor: _surfaceHigh,
+                  contentPadding: const EdgeInsets.all(10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(width: double.infinity, child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent, foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14), elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: selectedReason == null ? null : () async {
+                  Navigator.pop(ctx);
+                  await FirebaseFirestore.instance.collection('reports').add({
+                    'type':              'profile',
+                    'reason':            selectedReason,
+                    'details':           detailsCtrl.text.trim(),
+                    'reportedUser':      widget.authorId,
+                    'reportedUserName':  displayName,
+                    'reportedBy':        user.uid,
+                    'createdAt':         FieldValue.serverTimestamp(),
+                  });
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('تم إرسال البلاغ ✅ سيتم مراجعته', style: GoogleFonts.cairo()),
+                    backgroundColor: Colors.green, behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                },
+                child: Text('إرسال البلاغ', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+              )),
+              const SizedBox(height: 8),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _getWriterRank(int points) {
     if (points >= 2000) return 'عميد الرواة';
     if (points >= 1000) return 'أديب متألق';
@@ -145,6 +229,13 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       ));
                     },
                   ),
+                  // بلاغ عن الملف الشخصي — للآخرين فقط
+                  if (!isMe)
+                    IconButton(
+                      icon: Icon(Icons.flag_outlined, color: _textSecondary, size: 20),
+                      tooltip: 'إبلاغ عن الملف الشخصي',
+                      onPressed: () => _showProfileReportDialog(displayName),
+                    ),
                 ],
                 expandedHeight: 230,
                 flexibleSpace: FlexibleSpaceBar(

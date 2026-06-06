@@ -546,11 +546,16 @@ class _AdminScreenState extends State<AdminScreen>
             novelId.isNotEmpty
                 ? FirebaseFirestore.instance.collection('novels').doc(novelId).get().then((d) => d.data())
                 : Future.value(null),
+            (commentId.isNotEmpty && novelId.isNotEmpty)
+                ? FirebaseFirestore.instance.collection('novels').doc(novelId).collection('comments').doc(commentId).get().then((d) => d.data())
+                : Future.value(null),
           ]),
           builder: (_, infoSnap) {
-            final reporter = infoSnap.data?[0];
-            final reported = infoSnap.data?[1];
-            final novel    = infoSnap.data?[2];
+            final reporter    = infoSnap.data?[0];
+            final reported    = infoSnap.data?[1];
+            final novel       = infoSnap.data?[2];
+            final commentDoc  = infoSnap.data?[3];
+            final commentText = commentDoc?['text'] as String? ?? commentDoc?['content'] as String? ?? '';
             final reporterName = reporter?['displayName'] ?? reporter?['email'] ?? (byUid.length >= 8 ? byUid.substring(0, 8) : byUid);
             final reportedName = reported?['displayName'] ?? reported?['email'] ?? (rUid.length >= 8 ? rUid.substring(0, 8) : rUid);
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -565,7 +570,24 @@ class _AdminScreenState extends State<AdminScreen>
               ],
               if (commentId.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                _infoRow(Icons.comment_outlined,        'معرّف التعليق', '#${commentId.length >= 8 ? commentId.substring(0, 8) : commentId}…', _textSecondary),
+                _infoRow(Icons.comment_outlined, 'معرّف التعليق', '#${commentId.length >= 8 ? commentId.substring(0, 8) : commentId}…', _textSecondary),
+                if (commentText.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('نص التعليق المُبلَّغ عنه:', style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(commentText, style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, height: 1.5), maxLines: 5, overflow: TextOverflow.ellipsis),
+                    ]),
+                  ),
+                ],
               ] else if (chapterId.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 _infoRow(Icons.menu_book_rounded,       'معرّف الفصل',   '#${chapterId.length >= 8 ? chapterId.substring(0, 8) : chapterId}…', _textSecondary),
