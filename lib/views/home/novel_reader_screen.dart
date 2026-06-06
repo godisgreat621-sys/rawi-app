@@ -1234,6 +1234,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                     await FirebaseFirestore.instance.collection('reports').add({
                       'type': 'comment',
                       'commentId': commentId,
+                      'novelId': _novelId,
                       'reason': selectedReason,
                       'reportedBy': user.uid,
                       'reportedUser': reportedUid,

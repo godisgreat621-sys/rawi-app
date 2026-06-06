@@ -75,6 +75,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return _NotifStyle(Icons.admin_panel_settings_rounded, Colors.purpleAccent, 'رسالة من الإدارة');
       case 'friend_recommendation': // #23
         return _NotifStyle(Icons.recommend_rounded, const Color(0xFF8BAF7C), 'ترشيح رواية من صديق');
+      case 'admin_warning':
+        return _NotifStyle(Icons.warning_amber_rounded, Colors.orange, 'تحذير من الإدارة');
+      case 'admin_action':
+        return _NotifStyle(Icons.admin_panel_settings_rounded, Colors.redAccent, 'إجراء إداري');
+      case 'report_update':
+        return _NotifStyle(Icons.flag_rounded, Colors.blueGrey, 'تحديث البلاغ');
       default:
         return _NotifStyle(Icons.notifications_rounded, _textSecondary, 'إشعار');
     }
@@ -209,7 +215,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           final isRead  = data['isRead'] == true;
                           final type    = data['type']    ?? '';
                           final style   = _getStyle(type);
-                          final message = data['message'] ?? '';
+                          final message = (data['message'] ?? data['body'] ?? '') as String;
                           final time    = _formatTime(data['createdAt']);
                           final novelId = data['novelId'];
                           final senderId= data['senderId'];

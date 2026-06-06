@@ -8,6 +8,7 @@ import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/views/author_screen.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/views/home/novel_reader_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -568,25 +569,44 @@ class _AdminScreenState extends State<AdminScreen>
                 _infoRow(Icons.auto_stories_rounded, 'الرواية', novel['title'] ?? '—', _accent),
               ],
               if (commentId.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                _infoRow(Icons.comment_outlined, 'معرّف التعليق', '#${commentId.length >= 8 ? commentId.substring(0, 8) : commentId}…', _textSecondary),
-                if (commentText.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
-                    ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('نص التعليق المُبلَّغ عنه:', style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 4),
-                      Text(commentText, style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, height: 1.5), maxLines: 5, overflow: TextOverflow.ellipsis),
-                    ]),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: commentText.isNotEmpty
+                        ? Colors.redAccent.withValues(alpha: 0.06)
+                        : _surfaceHigh,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: commentText.isNotEmpty
+                        ? Colors.redAccent.withValues(alpha: 0.25)
+                        : _border),
                   ),
-                ],
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Text('نص التعليق المُبلَّغ عنه:',
+                          style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      if (novelId.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => _openCommentInReader(
+                              novelId, (commentDoc?['chapterId'] as String?) ?? ''),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text('فتح الفصل', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
+                            const SizedBox(width: 2),
+                            Icon(Icons.open_in_new_rounded, size: 11, color: _accent),
+                          ]),
+                        ),
+                    ]),
+                    const SizedBox(height: 4),
+                    commentText.isNotEmpty
+                        ? Text(commentText,
+                            style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, height: 1.5),
+                            maxLines: 5, overflow: TextOverflow.ellipsis)
+                        : Text('تعذّر جلب نص التعليق',
+                            style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+                  ]),
+                ),
               ] else if (chapterId.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 _infoRow(Icons.menu_book_rounded, 'معرّف الفصل', '#${chapterId.length >= 8 ? chapterId.substring(0, 8) : chapterId}…', _textSecondary),
@@ -700,6 +720,30 @@ class _AdminScreenState extends State<AdminScreen>
       reportedBody: 'تم حذف أحد تعليقاتك من قِبل الإدارة لمخالفته قواعد المجتمع.');
     await _log('delete_reported_comment', extra: {'novelId': novelId, 'commentId': commentId, 'reportId': reportId});
     _snack('تم حذف التعليق ✅', Colors.green);
+  }
+
+  Future<void> _openCommentInReader(String novelId, String chapterId) async {
+    final db = FirebaseFirestore.instance;
+    final novelDoc = await db.collection('novels').doc(novelId).get();
+    if (!novelDoc.exists || !mounted) return;
+    final novelData = {'id': novelDoc.id, ...novelDoc.data()!};
+    if (chapterId.isEmpty) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => NovelDetailScreen(novel: novelData)));
+      return;
+    }
+    final chapDoc = await db.collection('novels').doc(novelId)
+        .collection('chapters').doc(chapterId).get();
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => NovelReaderScreen(novel: {
+        ...novelData,
+        'chapterId':    chapterId,
+        'chapterTitle': chapDoc.data()?['title'] ?? '',
+        'content':      chapDoc.data()?['content'] ?? '',
+        'chapterNumber': chapDoc.data()?['chapterNumber'] ?? 1,
+      }),
+    ));
   }
 
   // ══════════════════════════════════════════════════════════════════════════
