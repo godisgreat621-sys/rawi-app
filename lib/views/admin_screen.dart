@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +29,7 @@ class _AdminScreenState extends State<AdminScreen>
   String _userSearch   = '';
   String _novelSearch  = '';
   String _novelFilter  = 'all';
+  String _reportFilter = 'pending';
   String _broadcastTarget = 'all';
   late TabController _tab;
 
@@ -182,7 +183,7 @@ class _AdminScreenState extends State<AdminScreen>
               Text('${counts[i]}', style: GoogleFonts.cairo(fontSize: 10, color: _accent)),
               const SizedBox(height: 2),
               Container(height: h, margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(color: counts[i] > 0 ? _accent.withOpacity(0.6) : _surfaceHigh, borderRadius: BorderRadius.circular(4))),
+                decoration: BoxDecoration(color: counts[i] > 0 ? _accent.withValues(alpha: 0.6) : _surfaceHigh, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 4),
               Text(dayNames[days[i].weekday % 7], style: GoogleFonts.cairo(fontSize: 9, color: _textSecondary)),
             ]));
@@ -229,13 +230,13 @@ class _AdminScreenState extends State<AdminScreen>
     return Card(
       color: _surface, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isPerm ? Colors.red.shade900.withOpacity(0.5) : isBanned ? Colors.redAccent.withOpacity(0.3) : _border)),
+          side: BorderSide(color: isPerm ? Colors.red.shade900.withValues(alpha: 0.5) : isBanned ? Colors.redAccent.withValues(alpha: 0.3) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => AuthorScreen(authorId: uid, authorName: data['displayName'] ?? ''))),
-            child: CircleAvatar(radius: 18, backgroundColor: _accent.withOpacity(0.15),
+            child: CircleAvatar(radius: 18, backgroundColor: _accent.withValues(alpha: 0.15),
               backgroundImage: data['profilePicture'] != null ? NetworkImage(data['profilePicture']) : null,
               child: data['profilePicture'] == null ? Text((data['displayName'] ?? '؟')[0], style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null),
           ),
@@ -374,7 +375,7 @@ class _AdminScreenState extends State<AdminScreen>
     return Card(
       color: _surface, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isFeatured ? _gold.withOpacity(0.5) : isFrozen ? Colors.blueGrey.withOpacity(0.4) : _border)),
+          side: BorderSide(color: isFeatured ? _gold.withValues(alpha: 0.5) : isFrozen ? Colors.blueGrey.withValues(alpha: 0.4) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(
@@ -425,60 +426,256 @@ class _AdminScreenState extends State<AdminScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // ④ البلاغات
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _buildReportsTab() => StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('reports').orderBy('createdAt', descending: true).limit(50).snapshots(),
-    builder: (_, snap) {
-      if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
-      final docs = snap.data?.docs ?? [];
-      if (docs.isEmpty) return Center(child: Text('لا توجد بلاغات', style: GoogleFonts.cairo(color: _textSecondary)));
-      final freq = <String,int>{};
-      for (final d in docs) { final uid = (d.data() as Map<String,dynamic>)['reportedUser'] as String? ?? ''; if (uid.isNotEmpty) freq[uid] = (freq[uid] ?? 0) + 1; }
-      return ListView.builder(
-        padding: const EdgeInsets.all(16), itemCount: docs.length,
-        itemBuilder: (_, i) {
-          final doc  = docs[i];
-          final data = doc.data() as Map<String,dynamic>;
-          final rUid = data['reportedUser'] as String? ?? '';
-          final cnt  = freq[rUid] ?? 1;
-          final dismissed = data['status'] == 'dismissed';
-          final ts   = (data['createdAt'] as Timestamp?)?.toDate();
-          return Card(
-            color: dismissed ? _surfaceHigh : _surface, margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withOpacity(0.4) : _border)),
-            child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(child: Text('بلاغ: ${data['reason'] ?? data['type'] ?? 'مخالفة'}', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: dismissed ? _textSecondary : _textPrimary))),
-                if (cnt >= 3) _badge('$cnt بلاغات', Colors.redAccent),
-                if (dismissed) _badge('مُتجاهل', _textSecondary),
-              ]),
-              if (data['content'] != null) ...[
-                const SizedBox(height: 6),
-                Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: _surfaceHigh, borderRadius: BorderRadius.circular(8)),
-                  child: Text('${data['content']}', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary), maxLines: 3, overflow: TextOverflow.ellipsis)),
+  Widget _buildReportsTab() => Column(children: [
+    SizedBox(height: 48, child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      children: [
+        _reportChip('قيد الانتظار', 'pending'),
+        _reportChip('الكل',         'all'),
+        _reportChip('محلولة ✓',     'resolved'),
+        _reportChip('مُتجاهلة',     'dismissed'),
+      ],
+    )),
+    Expanded(child: StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('reports').orderBy('createdAt', descending: true).limit(100).snapshots(),
+      builder: (_, snap) {
+        if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
+        final allDocs = snap.data?.docs ?? [];
+        final docs = allDocs.where((d) {
+          final st = (d.data() as Map)['status'] as String? ?? 'pending';
+          if (_reportFilter == 'pending')   return st != 'dismissed' && st != 'resolved';
+          if (_reportFilter == 'dismissed') return st == 'dismissed';
+          if (_reportFilter == 'resolved')  return st == 'resolved';
+          return true;
+        }).toList();
+        if (docs.isEmpty) return Center(child: Text('لا توجد بلاغات', style: GoogleFonts.cairo(color: _textSecondary)));
+        final freq = <String,int>{};
+        for (final d in allDocs) {
+          final uid = (d.data() as Map<String,dynamic>)['reportedUser'] as String? ?? '';
+          if (uid.isNotEmpty) freq[uid] = (freq[uid] ?? 0) + 1;
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16), itemCount: docs.length,
+          itemBuilder: (_, i) => _reportCard(docs[i], freq),
+        );
+      },
+    )),
+  ]);
+
+  Widget _reportChip(String label, String val) {
+    final sel = _reportFilter == val;
+    return GestureDetector(
+      onTap: () => setState(() => _reportFilter = val),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? Colors.redAccent : _surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: sel ? Colors.redAccent : _border),
+        ),
+        child: Text(label, style: GoogleFonts.cairo(fontSize: 12, color: sel ? Colors.white : _textSecondary, fontWeight: sel ? FontWeight.w700 : FontWeight.w400)),
+      ),
+    );
+  }
+
+  Widget _reportCard(DocumentSnapshot doc, Map<String,int> freq) {
+    final data      = doc.data() as Map<String,dynamic>;
+    final rUid      = data['reportedUser'] as String? ?? '';
+    final byUid     = data['reportedBy']   as String? ?? '';
+    final novelId   = data['novelId']      as String? ?? '';
+    final commentId = data['commentId']    as String? ?? '';
+    final chapterId = data['chapterId']    as String? ?? '';
+    final cnt       = freq[rUid] ?? 1;
+    final status    = data['status'] as String? ?? 'pending';
+    final isDone    = status == 'dismissed' || status == 'resolved';
+    final ts        = (data['createdAt'] as Timestamp?)?.toDate();
+    final type      = data['type'] as String? ?? (commentId.isNotEmpty ? 'comment' : 'chapter');
+    final previewText = (data['details'] ?? data['content'] ?? '') as String;
+
+    return Card(
+      color: isDone ? _surfaceHigh : _surface,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withValues(alpha: 0.6) : _border, width: cnt >= 3 ? 1.5 : 1),
+      ),
+      child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── رأس: النوع + الشارات ───────────────────────────────────────────
+        Row(children: [
+          _badge(type == 'comment' ? '💬 تعليق' : type == 'novel' ? '📚 رواية' : type == 'profile' ? '👤 ملف شخصي' : '📖 فصل',
+                 type == 'comment' ? Colors.blueGrey : type == 'novel' ? _gold : type == 'profile' ? Colors.purple : _accent),
+          const SizedBox(width: 6),
+          if (cnt >= 3) _badge('🚨 $cnt بلاغات', Colors.redAccent),
+          const Spacer(),
+          if (status == 'dismissed') _badge('متجاهل', _textSecondary),
+          if (status == 'resolved')  _badge('محلول ✓', Colors.green),
+        ]),
+        const SizedBox(height: 8),
+
+        // ── سبب البلاغ ────────────────────────────────────────────────────
+        Text('السبب: ${data['reason'] ?? 'مخالفة'}',
+          style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: isDone ? _textSecondary : _textPrimary)),
+
+        if (previewText.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: _border)),
+            child: Text(previewText, style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary, height: 1.5), maxLines: 3, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+
+        const SizedBox(height: 10),
+        Divider(color: _border, height: 1),
+        const SizedBox(height: 10),
+
+        // ── معلومات الأطراف والموقع ───────────────────────────────────────
+        FutureBuilder<List<Map<String,dynamic>?>>(
+          future: Future.wait([
+            byUid.isNotEmpty
+                ? FirebaseFirestore.instance.collection('users').doc(byUid).get().then((d) => d.data())
+                : Future.value(null),
+            rUid.isNotEmpty
+                ? FirebaseFirestore.instance.collection('users').doc(rUid).get().then((d) => d.data())
+                : Future.value(null),
+            novelId.isNotEmpty
+                ? FirebaseFirestore.instance.collection('novels').doc(novelId).get().then((d) => d.data())
+                : Future.value(null),
+            (commentId.isNotEmpty && novelId.isNotEmpty)
+                ? FirebaseFirestore.instance.collection('novels').doc(novelId).collection('comments').doc(commentId).get().then((d) => d.data())
+                : Future.value(null),
+          ]),
+          builder: (_, infoSnap) {
+            final reporter   = infoSnap.data?[0];
+            final reported   = infoSnap.data?[1];
+            final novel      = infoSnap.data?[2];
+            final commentDoc = infoSnap.data?[3];
+            final commentText = (commentDoc?['text'] ?? commentDoc?['content'] ?? '') as String;
+            final reporterName = reporter?['displayName'] ?? reporter?['email'] ?? (byUid.length >= 8 ? byUid.substring(0, 8) : byUid);
+            final reportedName = reported?['displayName'] ?? reported?['email'] ?? (rUid.length >= 8 ? rUid.substring(0, 8) : rUid);
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _infoRow(Icons.person_outline_rounded, 'رافع البلاغ',  reporterName, Colors.blueGrey),
+              if (rUid.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.flag_rounded, 'المُبلَّغ عنه', reportedName, Colors.redAccent),
               ],
-              if (ts != null) ...[const SizedBox(height: 4), Text('${ts.day}/${ts.month}/${ts.year}', style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary))],
-              if (!dismissed) ...[
-                const SizedBox(height: 10),
-                Wrap(spacing: 6, runSpacing: 6, children: [
-                  if (rUid.isNotEmpty) _actionBtn(label: 'حظر 24h', color: Colors.orange, onTap: () async {
-                    if (!await _confirm('حظر المُبلَّغ عنه 24h؟')) return;
-                    await FirebaseFirestore.instance.collection('users').doc(rUid).update({'bannedUntil': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1)))});
-                    await _log('ban_from_report', extra: {'targetUid': rUid});
-                    _snack('تم الحظر', Colors.orange);
-                  }),
-                  _actionBtn(label: 'تجاهل', color: _textSecondary, onTap: () async {
-                    await FirebaseFirestore.instance.collection('reports').doc(doc.id).update({'status': 'dismissed'});
-                    await _log('dismiss_report', extra: {'reportId': doc.id});
-                    _snack('تم التجاهل', _textSecondary);
-                  }),
-                ]),
+              if (novel != null) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.auto_stories_rounded, 'الرواية', novel['title'] ?? '—', _accent),
               ],
-            ])),
-          );
-        },
-      );
-    },
-  );
+              if (commentId.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.comment_outlined, 'معرّف التعليق', '#${commentId.length >= 8 ? commentId.substring(0, 8) : commentId}…', _textSecondary),
+                if (commentText.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('نص التعليق المُبلَّغ عنه:', style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(commentText, style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary, height: 1.5), maxLines: 5, overflow: TextOverflow.ellipsis),
+                    ]),
+                  ),
+                ],
+              ] else if (chapterId.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _infoRow(Icons.menu_book_rounded, 'معرّف الفصل', '#${chapterId.length >= 8 ? chapterId.substring(0, 8) : chapterId}…', _textSecondary),
+              ],
+            ]);
+          },
+        ),
+
+        if (ts != null) ...[
+          const SizedBox(height: 4),
+          _infoRow(Icons.access_time_rounded, 'التاريخ',
+            '${ts.day}/${ts.month}/${ts.year}  ${ts.hour.toString().padLeft(2,'0')}:${ts.minute.toString().padLeft(2,'0')}',
+            _textSecondary),
+        ],
+
+        // ── أزرار الإجراءات ───────────────────────────────────────────────
+        if (!isDone) ...[
+          const SizedBox(height: 12),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            if (rUid.isNotEmpty) ...[
+              _actionBtn(label: 'حظر 24h',   color: Colors.orange,       onTap: () => _banFromReport(doc.id, rUid, 1, '24 ساعة')),
+              _actionBtn(label: 'حظر أسبوع', color: Colors.deepOrange,   onTap: () => _banFromReport(doc.id, rUid, 7, 'أسبوع')),
+              _actionBtn(label: 'حظر دائم',  color: Colors.red.shade900, onTap: () => _banFromReportPermanent(doc.id, rUid)),
+              _actionBtn(label: '⚠ تحذير',   color: Colors.amber.shade700, onTap: () => _warnFromReport(doc.id, rUid)),
+            ],
+            if (commentId.isNotEmpty && novelId.isNotEmpty)
+              _actionBtn(label: 'حذف التعليق', color: Colors.redAccent, onTap: () => _deleteReportedComment(doc.id, novelId, commentId)),
+            _actionBtn(label: 'قبول ✓', color: _accent,        onTap: () => _resolveReport(doc.id, 'resolved')),
+            _actionBtn(label: 'تجاهل',  color: _textSecondary, onTap: () => _resolveReport(doc.id, 'dismissed')),
+          ]),
+        ],
+
+      ])),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value, Color color) => Row(children: [
+    Icon(icon, size: 12, color: color),
+    const SizedBox(width: 4),
+    Text('$label: ', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+    Expanded(child: Text(value, style: GoogleFonts.cairo(fontSize: 11, color: _textPrimary, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+  ]);
+
+  Future<void> _resolveReport(String reportId, String status) async {
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': status, 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('${status}_report', extra: {'reportId': reportId});
+    _snack(status == 'resolved' ? 'تم قبول البلاغ ✅' : 'تم التجاهل', status == 'resolved' ? _accent : _textSecondary);
+  }
+
+  Future<void> _banFromReport(String reportId, String uid, int days, String label) async {
+    if (!await _confirm('حظر المُبلَّغ عنه $label؟')) return;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'bannedUntil': Timestamp.fromDate(DateTime.now().add(Duration(days: days))),
+      'isPermanentBan': false,
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('ban_from_report', extra: {'targetUid': uid, 'days': days, 'reportId': reportId});
+    _snack('تم الحظر $label ✅', Colors.orange);
+  }
+
+  Future<void> _banFromReportPermanent(String reportId, String uid) async {
+    if (!await _confirm('حظر دائم؟ لا يمكن التراجع إلا يدوياً.')) return;
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'bannedUntil': Timestamp.fromDate(DateTime(2099)),
+      'isPermanentBan': true,
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('ban_permanent_from_report', extra: {'targetUid': uid, 'reportId': reportId});
+    _snack('تم الحظر الدائم', Colors.red.shade900);
+  }
+
+  Future<void> _warnFromReport(String reportId, String uid) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': uid, 'type': 'admin_warning', 'isRead': false,
+      'body': 'تحذير من الإدارة: تم رفع بلاغ بحقك. يُرجى الالتزام بقواعد المجتمع. تكرار المخالفات قد يؤدي إلى تعليق حسابك.',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('warn_from_report', extra: {'targetUid': uid, 'reportId': reportId});
+    _snack('تم إرسال التحذير ✅', Colors.amber);
+  }
+
+  Future<void> _deleteReportedComment(String reportId, String novelId, String commentId) async {
+    if (!await _confirm('حذف التعليق المُبلَّغ عنه نهائياً؟')) return;
+    await FirebaseFirestore.instance.collection('novels').doc(novelId).collection('comments').doc(commentId).delete();
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _log('delete_reported_comment', extra: {'novelId': novelId, 'commentId': commentId, 'reportId': reportId});
+    _snack('تم حذف التعليق ✅', Colors.green);
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // ⑤ الدعم الفني
@@ -506,7 +703,7 @@ class _AdminScreenState extends State<AdminScreen>
     final isPend= status == 'pending';
     return Card(
       color: _surface, margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPend ? _gold.withOpacity(0.3) : _border)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPend ? _gold.withValues(alpha: 0.3) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(child: Text(data['title'] ?? 'طلب دعم', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 13))),
@@ -708,7 +905,7 @@ class _AdminScreenState extends State<AdminScreen>
           if (baned.isEmpty) Text('لا توجد كلمات محظورة', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary))
           else Wrap(spacing: 8, runSpacing: 8, children: baned.map((w) => Chip(
             label: Text(w, style: GoogleFonts.cairo(fontSize: 12, color: Colors.redAccent)),
-            backgroundColor: Colors.redAccent.withOpacity(0.08), side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+            backgroundColor: Colors.redAccent.withValues(alpha: 0.08), side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.3)),
             deleteIcon: const Icon(Icons.close, size: 14, color: Colors.redAccent),
             onDeleted: () async {
               final updated = List<String>.from(baned)..remove(w);
@@ -833,7 +1030,7 @@ class _AdminScreenState extends State<AdminScreen>
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.4))),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.4))),
           child: Center(child: Text(label, style: GoogleFonts.cairo(fontSize: 11, color: color, fontWeight: FontWeight.w700))),
         ),
       );
@@ -842,14 +1039,14 @@ class _AdminScreenState extends State<AdminScreen>
     final isAdmin = role == 'admin';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: isAdmin ? _gold.withOpacity(0.12) : _surfaceHigh, borderRadius: BorderRadius.circular(6), border: Border.all(color: isAdmin ? _gold : _border)),
+      decoration: BoxDecoration(color: isAdmin ? _gold.withValues(alpha: 0.12) : _surfaceHigh, borderRadius: BorderRadius.circular(6), border: Border.all(color: isAdmin ? _gold : _border)),
       child: Text(isAdmin ? 'أدمن' : 'مستخدم', style: GoogleFonts.cairo(fontSize: 10, color: isAdmin ? _gold : _textSecondary, fontWeight: FontWeight.w700)),
     );
   }
 
   Widget _badge(String text, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
     child: Text(text, style: GoogleFonts.cairo(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
   );
 

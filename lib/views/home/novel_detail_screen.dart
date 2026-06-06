@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -883,6 +883,19 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     ),
                   ),
                 ),
+              // زر الإبلاغ — للقراء فقط
+              if (!isOwner)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
+                  child: CircleAvatar(
+                    backgroundColor: _surface,
+                    child: IconButton(
+                      icon: const Icon(Icons.flag_outlined, color: Colors.redAccent, size: 18),
+                      tooltip: 'إبلاغ',
+                      onPressed: () => _showNovelReportDialog(novelId),
+                    ),
+                  ),
+                ),
               // قائمة إجراءات الكاتب (نقطتان عمودية)
               if (isOwner)
                 StreamBuilder<DocumentSnapshot>(
@@ -1002,7 +1015,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     Image.network(coverUrl, fit: BoxFit.cover),
                     BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(color: _bg.withOpacity(0.78)),
+                      child: Container(color: _bg.withValues(alpha: 0.78)),
                     ),
                   ] else
                     Container(color: coverBg),
@@ -1039,7 +1052,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                 border: Border.all(color: _border, width: 1.5),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.6),
+                                    color: Colors.black.withValues(alpha: 0.6),
                                     blurRadius: 30,
                                     offset: const Offset(0, 12),
                                   ),
@@ -1053,7 +1066,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                               child: coverUrl == null
                                   ? Icon(Icons.auto_stories_rounded,
                                       size: 60,
-                                      color: _accent.withOpacity(0.4))
+                                      color: _accent.withValues(alpha: 0.4))
                                   : null,
                             ),
                           ),
@@ -1071,7 +1084,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                     color: _accent,
                                     shape: BoxShape.circle,
                                     boxShadow: [BoxShadow(
-                                      color: Colors.black.withOpacity(0.5),
+                                      color: Colors.black.withValues(alpha: 0.5),
                                       blurRadius: 8,
                                     )],
                                   ),
@@ -1126,11 +1139,11 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                     children: [
                       // تصنيف + حالة
                       Row(children: [
-                        _badge(cat, _accent.withOpacity(0.15), _accent),
+                        _badge(cat, _accent.withValues(alpha: 0.15), _accent),
                         if (isCompleted) ...[
                           const SizedBox(width: 8),
                           _badge('مكتملة ✅',
-                              Colors.green.withOpacity(0.12), Colors.green),
+                              Colors.green.withValues(alpha: 0.12), Colors.green),
                         ],
                       ]),
                       const SizedBox(height: 12),
@@ -1264,9 +1277,9 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.07),
+                              color: Colors.green.withValues(alpha: 0.07),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.green.withOpacity(0.2)),
+                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                             ),
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Container(width: 7, height: 7,
@@ -1289,9 +1302,9 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                               decoration: BoxDecoration(
-                                color: _gold.withOpacity(0.1),
+                                color: _gold.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: _gold.withOpacity(0.35)),
+                                border: Border.all(color: _gold.withValues(alpha: 0.35)),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
                                 const Icon(Icons.redeem_rounded, size: 14, color: _gold),
@@ -1340,9 +1353,9 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.08),
+                            color: Colors.orange.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                           ),
                           child: Row(children: [
                             const Icon(Icons.pause_circle_outline_rounded,
@@ -1373,7 +1386,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: _gold.withOpacity(0.05),
+                            color: _gold.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(12),
                             border: Border(
                               right: BorderSide(color: _gold, width: 3),
@@ -1419,7 +1432,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                             label: Text('أضف إلى قائمة قراءة',
                                 style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w600)),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: _accent.withOpacity(0.4)),
+                              side: BorderSide(color: _accent.withValues(alpha: 0.4)),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -1449,12 +1462,12 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: _accent.withOpacity(0.12),
+                                  color: _accent.withValues(alpha: 0.12),
                                   borderRadius:
                                       BorderRadius.circular(8),
                                   border: Border.all(
                                       color:
-                                          _accent.withOpacity(0.3)),
+                                          _accent.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -1557,7 +1570,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                       width: 36,
                                       height: 36,
                                       decoration: BoxDecoration(
-                                        color: _accent.withOpacity(0.12),
+                                        color: _accent.withValues(alpha: 0.12),
                                         borderRadius:
                                             BorderRadius.circular(10),
                                       ),
@@ -1723,4 +1736,81 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
 
   Widget _vDiv() =>
       Container(height: 36, width: 1, color: _border);
+
+  // ── إبلاغ عن الرواية (غلاف / عنوان) ─────────────────────────────────────
+  void _showNovelReportDialog(String novelId) {
+    String? selected;
+    final reasons = ['غلاف غير لائق', 'عنوان مسيء', 'محتوى مخالف', 'انتحال هوية', 'أخرى'];
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(builder: (ctx, setSt) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('إبلاغ عن الرواية', style: GoogleFonts.cairo(fontWeight: FontWeight.w700, color: _textPrimary)),
+        content: SizedBox(width: 340, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('سبب البلاغ', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 6, children: reasons.map((r) => GestureDetector(
+            onTap: () => setSt(() => selected = r),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected == r ? _accent.withValues(alpha: 0.15) : _surfaceHigh,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: selected == r ? _accent : _border),
+              ),
+              child: Text(r, style: GoogleFonts.cairo(fontSize: 12, color: selected == r ? _accent : _textSecondary)),
+            ),
+          )).toList()),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary),
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'تفاصيل إضافية (اختياري)',
+              hintStyle: GoogleFonts.cairo(fontSize: 12, color: _textSecondary),
+              filled: true, fillColor: _surfaceHigh,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _accent)),
+              contentPadding: const EdgeInsets.all(10),
+            ),
+          ),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: _textSecondary))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () async {
+              if (selected == null) return;
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid == null) return;
+              final novel = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+              await FirebaseFirestore.instance.collection('reports').add({
+                'type': 'novel',
+                'reason': selected,
+                'details': ctrl.text.trim(),
+                'reportedBy': uid,
+                'reportedUser': novel.data()?['authorId'] ?? '',
+                'novelId': novelId,
+                'status': 'pending',
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+              if (ctx.mounted) { Navigator.pop(ctx); }
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('تم إرسال البلاغ ✅', style: GoogleFonts.cairo()),
+                  backgroundColor: Colors.green, behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ));
+              }
+            },
+            child: Text('إرسال', style: GoogleFonts.cairo(color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
 }

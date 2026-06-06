@@ -133,7 +133,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                     ),
                   ),
                 ),
-                // #44 زر مشاركة ملف الكاتب
+                // #44 زر مشاركة ملف الكاتب + زر الإبلاغ
                 actions: [
                   IconButton(
                     icon: Icon(Icons.share_outlined, color: _textSecondary, size: 20),
@@ -150,6 +150,12 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       ));
                     },
                   ),
+                  if (!isMe)
+                    IconButton(
+                      icon: const Icon(Icons.flag_outlined, color: Colors.redAccent, size: 20),
+                      tooltip: 'إبلاغ',
+                      onPressed: () => _showProfileReportDialog(widget.authorId),
+                    ),
                 ],
                 expandedHeight: 230,
                 flexibleSpace: FlexibleSpaceBar(
@@ -163,7 +169,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  _accent.withOpacity(0.06),
+                                  _accent.withValues(alpha: 0.06),
                                   _bg,
                                 ],
                                 begin: Alignment.topCenter,
@@ -227,7 +233,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: showPoints ? _gold.withOpacity(0.1) : _border,
+                              color: showPoints ? _gold.withValues(alpha: 0.1) : _border,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -537,7 +543,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
               ),
               child: novel.coverUrl == null
                   ? Icon(Icons.auto_stories_rounded,
-                      color: _accent.withOpacity(0.4), size: 22)
+                      color: _accent.withValues(alpha: 0.4), size: 22)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -567,7 +573,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.12),
+                            color: Colors.green.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(
@@ -655,4 +661,79 @@ class _AuthorScreenState extends State<AuthorScreen> {
 
   Widget _vDivider() =>
       Container(height: 40, width: 1, color: _border);
+
+  // ── إبلاغ عن ملف المستخدم (اسم / صورة) ──────────────────────────────────
+  void _showProfileReportDialog(String targetUid) {
+    String? selected;
+    final reasons = ['اسم مستخدم مسيء', 'صورة غير لائقة', 'انتحال شخصية', 'محتوى مخالف', 'أخرى'];
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(builder: (ctx, setSt) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('إبلاغ عن الملف الشخصي', style: GoogleFonts.cairo(fontWeight: FontWeight.w700, color: _textPrimary)),
+        content: SizedBox(width: 340, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('سبب البلاغ', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 6, children: reasons.map((r) => GestureDetector(
+            onTap: () => setSt(() => selected = r),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected == r ? _accent.withValues(alpha: 0.15) : _surfaceHigh,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: selected == r ? _accent : _border),
+              ),
+              child: Text(r, style: GoogleFonts.cairo(fontSize: 12, color: selected == r ? _accent : _textSecondary)),
+            ),
+          )).toList()),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary),
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'تفاصيل إضافية (اختياري)',
+              hintStyle: GoogleFonts.cairo(fontSize: 12, color: _textSecondary),
+              filled: true, fillColor: _surfaceHigh,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _accent)),
+              contentPadding: const EdgeInsets.all(10),
+            ),
+          ),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: _textSecondary))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () async {
+              if (selected == null) return;
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid == null) return;
+              await FirebaseFirestore.instance.collection('reports').add({
+                'type': 'profile',
+                'reason': selected,
+                'details': ctrl.text.trim(),
+                'reportedBy': uid,
+                'reportedUser': targetUid,
+                'status': 'pending',
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+              if (ctx.mounted) { Navigator.pop(ctx); }
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('تم إرسال البلاغ ✅', style: GoogleFonts.cairo()),
+                  backgroundColor: Colors.green, behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ));
+              }
+            },
+            child: Text('إرسال', style: GoogleFonts.cairo(color: Colors.white)),
+          ),
+        ],
+      )),
+    );
+  }
 }
