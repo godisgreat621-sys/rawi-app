@@ -121,7 +121,10 @@ class _AuthorScreenState extends State<AuthorScreen> {
             .doc(widget.authorId)
             .snapshots(),
         builder: (_, userSnap) {
-          final userData = userSnap.hasData && userSnap.data!.exists
+          if (!userSnap.hasData) {
+            return const Center(child: CircularProgressIndicator(color: _accent));
+          }
+          final userData = userSnap.data!.exists
               ? userSnap.data!.data() as Map<String, dynamic>
               : <String, dynamic>{};
 
@@ -350,43 +353,55 @@ class _AuthorScreenState extends State<AuthorScreen> {
                         children: [
                           const SizedBox(height: 4),
 
-                          // ── بطاقة الإحصائيات ────────────────────────────
+                          // ── بطاقة الإحصائيات — صفان منفصلان ────────────
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                             decoration: BoxDecoration(
                               color: _surface,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: _border),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            child: Column(
                               children: [
-                                _stat(novels.length.toString(), 'رواية',
-                                    Icons.auto_stories_rounded, _accent),
-                                _vDivider(),
-                                if (showReadingStats) ...[
-                                  _stat(totalReaders.toString(), 'قارئ',
-                                      Icons.remove_red_eye_rounded, Colors.blueGrey),
-                                  _vDivider(),
-                                  _stat(totalLikes.toString(), 'إعجاب',
-                                      Icons.favorite_rounded, Colors.redAccent),
-                                  _vDivider(),
-                                ],
-                                if (showRatings)
-                                  _stat(avgRating.toStringAsFixed(1), 'تقييم',
-                                      Icons.star_rounded, _gold)
-                                else
-                                  _stat('—', 'تقييم', Icons.star_rounded, _textSecondary),
-                                if (showFollowers) ...[
-                                  _vDivider(),
-                                  _stat(followersCount.toString(), 'متابع',
-                                      Icons.group_rounded, _accent),
-                                ],
-                                if (showFollowing) ...[
-                                  _vDivider(),
-                                  _stat(followingCount.toString(), 'يتابع',
-                                      Icons.person_rounded, _accent.withValues(alpha: 0.6)),
+                                // الصف الأول: إحصائيات المحتوى
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _statCompact(novels.length.toString(), 'رواية',
+                                        Icons.auto_stories_rounded, tAccent),
+                                    if (showReadingStats) ...[
+                                      _statCompact(totalReaders.toString(), 'قارئ',
+                                          Icons.remove_red_eye_rounded, Colors.blueGrey),
+                                      _statCompact(totalLikes.toString(), 'إعجاب',
+                                          Icons.favorite_rounded, Colors.redAccent),
+                                    ],
+                                    _statCompact(
+                                      showRatings ? avgRating.toStringAsFixed(1) : '—',
+                                      'تقييم',
+                                      Icons.star_rounded,
+                                      showRatings ? _gold : _textSecondary,
+                                    ),
+                                  ],
+                                ),
+                                // الصف الثاني: إحصائيات اجتماعية (ظاهرة فقط)
+                                if (showFollowers || showFollowing) ...[
+                                  const SizedBox(height: 10),
+                                  Divider(color: _border, height: 1),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      if (showFollowers)
+                                        _statCompact(followersCount.toString(), 'متابع',
+                                            Icons.group_rounded, tAccent),
+                                      if (showFollowing)
+                                        _statCompact(followingCount.toString(), 'يتابع',
+                                            Icons.person_rounded, tAccent.withValues(alpha: 0.7)),
+                                      // ملء فراغ إذا ظهر واحد فقط
+                                      if (showFollowers != showFollowing)
+                                        const Expanded(child: SizedBox()),
+                                    ],
+                                  ),
                                 ],
                               ],
                             ),
@@ -445,13 +460,13 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                           decoration: BoxDecoration(
                                             color: _isFollowing
                                                 ? _surface
-                                                : _accent,
+                                                : tAccent,
                                             borderRadius:
                                                 BorderRadius.circular(10),
                                             border: Border.all(
                                               color: _isFollowing
                                                   ? _border
-                                                  : _accent,
+                                                  : tAccent,
                                             ),
                                           ),
                                           child: Row(
@@ -698,29 +713,32 @@ class _AuthorScreenState extends State<AuthorScreen> {
   }
 
   // ── مساعدات ───────────────────────────────────────────────────────────────
-  Widget _stat(String value, String label, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.cairo(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: _textPrimary,
+  Widget _statCompact(String value, String label, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 17, color: color),
           ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary),
-        ),
-      ],
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w700, color: _textPrimary),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary),
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _vDivider() =>
-      Container(height: 40, width: 1, color: _border);
 
   // ── إبلاغ عن ملف المستخدم (اسم / صورة) ──────────────────────────────────
   void _showProfileReportDialog(String targetUid) {

@@ -34,6 +34,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // دور المستخدم — لإظهار زر الأدمن بدون الكشف للآخرين
   String _myRole = 'user';
+  // لون التيم الحالي — يتغير مع اختيار المستخدم
+  Color _tAccent = const Color(0xFF8BAF7C);
+  Color _tGrad   = const Color(0xFF1A2E1A);
 
   bool _isUploading = false;
 
@@ -152,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: _accent, width: 1.5),
+                  borderSide: BorderSide(color: _tAccent, width: 1.5),
                 ),
               ),
             ),
@@ -169,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (canChange)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _accent,
+                backgroundColor: _tAccent,
                 foregroundColor: const Color(0xFF0D0F14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -276,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _accent,
+                      backgroundColor: _tAccent,
                       foregroundColor: const Color(0xFF0D0F14),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
@@ -336,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: _accent, width: 1.5),
+          borderSide: BorderSide(color: _tAccent, width: 1.5),
         ),
       ),
     );
@@ -386,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               tooltip: 'لوحة التحكم',
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const AdminScreen())),
-              child: const Icon(Icons.shield_rounded, color: _accent, size: 22),
+              child: Icon(Icons.shield_rounded, color: _tAccent, size: 22),
             )
           : null,
       body: StreamBuilder<DocumentSnapshot>(
@@ -417,6 +420,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final profileTheme    = userData?['profileTheme']    as String?;
           final tAccent = _tAccentFor(profileTheme);
           final tGrad   = _tGradFor(profileTheme);
+          // مزامنة لون التيم مع state حتى تستخدمه الـ dialogs والـ methods أيضاً
+          if (_tAccent != tAccent || _tGrad != tGrad) {
+            Future.microtask(() { if (mounted) setState(() { _tAccent = tAccent; _tGrad = tGrad; }); });
+          }
 
           return CustomScrollView(
             slivers: [
@@ -586,10 +593,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       // #5 أربع بطاقات إحصائية في صف واحد
                       Row(children: [
-                        Expanded(child: _statBox(Icons.group_outlined, followersCount.toString(), 'متابع', _accent,
+                        Expanded(child: _statBox(Icons.group_outlined, followersCount.toString(), 'متابع', tAccent,
                             onTap: () => _showUserList('المتابعون', 'followers'))),
                         const SizedBox(width: 6),
-                        Expanded(child: _statBox(Icons.person_add_outlined, followingCount.toString(), 'أتابع', _accent,
+                        Expanded(child: _statBox(Icons.person_add_outlined, followingCount.toString(), 'أتابع', tAccent,
                             onTap: () => _showUserList('أتابعهم', 'following'))),
                         const SizedBox(width: 6),
                         Expanded(child: _statBox(Icons.stars_rounded, points.toString(), 'نقطة', _gold,
@@ -688,12 +695,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: _accent.withValues(alpha: 0.07),
+                            color: tAccent.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _accent.withValues(alpha: 0.18)),
+                            border: Border.all(color: tAccent.withValues(alpha: 0.18)),
                           ),
                           child: Row(children: [
-                            const Icon(Icons.auto_stories_outlined, size: 18, color: _accent),
+                            Icon(Icons.auto_stories_outlined, size: 18, color: tAccent),
                             const SizedBox(width: 10),
                             Text('هذا الأسبوع:',
                                 style: GoogleFonts.cairo(fontSize: 13, color: _textSecondary)),
@@ -702,7 +709,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: GoogleFonts.cairo(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: _accent)),
+                                    color: tAccent)),
                           ]),
                         );
                       }),
@@ -726,11 +733,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: SwitchListTile(
                             secondary: Icon(
                               tp.isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                              color: _accent, size: 20),
+                              color: tAccent, size: 20),
                             title: Text(tp.isDarkMode ? 'وضع داكن' : 'وضع فاتح',
                                 style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
                             value: tp.isDarkMode,
-                            activeThumbColor: _accent,
+                            activeThumbColor: tAccent,
+                            activeTrackColor: tAccent.withValues(alpha: 0.4),
                             onChanged: (val) async {
                               tp.setDarkMode(val);
                               final u = FirebaseAuth.instance.currentUser;
@@ -756,9 +764,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _gridAction(Icons.history_rounded,       'النقاط',      _gold,         _showPointsHistory),
                           _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   _gold,         _showLeaderboard),
-                          _gridAction(Icons.emoji_events_outlined, 'التحدي',      _accent,       _showWeeklyChallenge),
-                          _gridAction(Icons.notifications_outlined,'الإشعارات',   _accent,       _showNotificationSettings),
-                          _gridAction(Icons.palette_outlined,       'المظهر',      _accent,       () => _showThemePicker(userData)),
+                          _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent,       _showWeeklyChallenge),
+                          _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent,       _showNotificationSettings),
+                          _gridAction(Icons.palette_outlined,       'المظهر',      tAccent,       () => _showThemePicker(userData)),
                           _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
                           _gridAction(Icons.security_rounded,      'الأمان',      _textSecondary, _showSecuritySessions),
                           _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
@@ -859,7 +867,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // novelId من مسار الوثيقة: novels/{novelId}/ratings/...
                     final novelId = doc.reference.parent.parent?.id ?? '';
                     return ListTile(
-                      leading: const Icon(Icons.auto_stories_rounded, color: _accent, size: 18),
+                      leading: Icon(Icons.auto_stories_rounded, color: _tAccent, size: 18),
                       title: Text(
                         data['novelTitle'] ?? data['comment'] ?? 'رواية',
                         style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
@@ -1270,6 +1278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final accent = _tAccentFor(selected);
           final grad   = _tGradFor(selected);
           final displayName = userData?['displayName'] as String? ?? '';
+          final profilePicUrl = userData?['profilePicture'] as String?;
           final initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'أ';
           return DraggableScrollableSheet(
             expand: false,
@@ -1305,13 +1314,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: accent, width: 2),
+                          border: Border.all(color: accent, width: 2.5),
+                          boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 8)],
                         ),
                         child: CircleAvatar(
                           radius: 26,
                           backgroundColor: _bg,
-                          child: Text(initials,
-                              style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent)),
+                          backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
+                          child: profilePicUrl == null
+                              ? Text(initials, style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent))
+                              : null,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1579,7 +1591,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(Icons.security_rounded, color: _accent, size: 18),
+              Icon(Icons.security_rounded, color: _tAccent, size: 18),
               const SizedBox(width: 8),
               Text('أمان الحساب',
                   style: GoogleFonts.cairo(
