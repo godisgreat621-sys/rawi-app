@@ -183,7 +183,7 @@ class _AdminScreenState extends State<AdminScreen>
               Text('${counts[i]}', style: GoogleFonts.cairo(fontSize: 10, color: _accent)),
               const SizedBox(height: 2),
               Container(height: h, margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(color: counts[i] > 0 ? _accent.withOpacity(0.6) : _surfaceHigh, borderRadius: BorderRadius.circular(4))),
+                decoration: BoxDecoration(color: counts[i] > 0 ? _accent.withValues(alpha:0.6) : _surfaceHigh, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 4),
               Text(dayNames[days[i].weekday % 7], style: GoogleFonts.cairo(fontSize: 9, color: _textSecondary)),
             ]));
@@ -230,13 +230,13 @@ class _AdminScreenState extends State<AdminScreen>
     return Card(
       color: _surface, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isPerm ? Colors.red.shade900.withOpacity(0.5) : isBanned ? Colors.redAccent.withOpacity(0.3) : _border)),
+          side: BorderSide(color: isPerm ? Colors.red.shade900.withValues(alpha:0.5) : isBanned ? Colors.redAccent.withValues(alpha:0.3) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           GestureDetector(
             onTap: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => AuthorScreen(authorId: uid, authorName: data['displayName'] ?? ''))),
-            child: CircleAvatar(radius: 18, backgroundColor: _accent.withOpacity(0.15),
+            child: CircleAvatar(radius: 18, backgroundColor: _accent.withValues(alpha:0.15),
               backgroundImage: data['profilePicture'] != null ? NetworkImage(data['profilePicture']) : null,
               child: data['profilePicture'] == null ? Text((data['displayName'] ?? '؟')[0], style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null),
           ),
@@ -265,6 +265,7 @@ class _AdminScreenState extends State<AdminScreen>
         Wrap(spacing: 6, runSpacing: 6, children: [
           _actionBtn(label: role == 'admin' ? 'خفض' : 'ترقية', color: _accent, onTap: () async {
             if (!await _confirm(role == 'admin' ? 'خفض عن الأدمن؟' : 'ترقية لأدمن؟')) return;
+            if (!mounted) return;
             await context.read<NovelsProvider>().setUserRole(uid, role == 'admin' ? 'user' : 'admin');
             await _log('toggle_role', extra: {'targetUid': uid});
             _snack('تم ✅', _accent);
@@ -375,7 +376,7 @@ class _AdminScreenState extends State<AdminScreen>
     return Card(
       color: _surface, margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isFeatured ? _gold.withOpacity(0.5) : isFrozen ? Colors.blueGrey.withOpacity(0.4) : _border)),
+          side: BorderSide(color: isFeatured ? _gold.withValues(alpha:0.5) : isFrozen ? Colors.blueGrey.withValues(alpha:0.4) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(
@@ -445,7 +446,7 @@ class _AdminScreenState extends State<AdminScreen>
           final ts   = (data['createdAt'] as Timestamp?)?.toDate();
           return Card(
             color: dismissed ? _surfaceHigh : _surface, margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withOpacity(0.4) : _border)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: cnt >= 3 ? Colors.redAccent.withValues(alpha:0.4) : _border)),
             child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(child: Text('بلاغ: ${data['reason'] ?? data['type'] ?? 'مخالفة'}', style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: dismissed ? _textSecondary : _textPrimary))),
@@ -507,7 +508,7 @@ class _AdminScreenState extends State<AdminScreen>
     final isPend= status == 'pending';
     return Card(
       color: _surface, margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPend ? _gold.withOpacity(0.3) : _border)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isPend ? _gold.withValues(alpha:0.3) : _border)),
       child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(child: Text(data['title'] ?? 'طلب دعم', style: GoogleFonts.cairo(fontWeight: FontWeight.bold, color: _textPrimary, fontSize: 13))),
@@ -535,6 +536,7 @@ class _AdminScreenState extends State<AdminScreen>
     if (user == null) return;
     final doc  = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     final name = doc.data()?['displayName'] ?? user.email ?? 'الأدمن';
+    if (!mounted) return;
     await context.read<NovelsProvider>().resolveSupportRequest(
         id, status, 'تم ${status == 'approved' ? 'الموافقة' : 'الرفض'} من الأدمن $name.', user.uid, name);
     await _log('resolve_support', extra: {'requestId': id, 'status': status});
@@ -559,7 +561,7 @@ class _AdminScreenState extends State<AdminScreen>
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text(active ? 'نشط: "$text"' : 'البانر مُعطَّل', style: GoogleFonts.cairo(fontSize: 12, color: active ? _accent : _textSecondary))),
-              Switch(value: active, activeColor: _accent, onChanged: (v) async {
+              Switch(value: active, activeThumbColor: _accent, onChanged: (v) async {
                 await FirebaseFirestore.instance.collection('system_settings').doc('banner').set({'active': v, 'text': text}, SetOptions(merge: true));
                 await _log(v ? 'enable_banner' : 'disable_banner');
               }),
@@ -709,7 +711,7 @@ class _AdminScreenState extends State<AdminScreen>
           if (baned.isEmpty) Text('لا توجد كلمات محظورة', style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary))
           else Wrap(spacing: 8, runSpacing: 8, children: baned.map((w) => Chip(
             label: Text(w, style: GoogleFonts.cairo(fontSize: 12, color: Colors.redAccent)),
-            backgroundColor: Colors.redAccent.withOpacity(0.08), side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+            backgroundColor: Colors.redAccent.withValues(alpha:0.08), side: BorderSide(color: Colors.redAccent.withValues(alpha:0.3)),
             deleteIcon: const Icon(Icons.close, size: 14, color: Colors.redAccent),
             onDeleted: () async {
               final updated = List<String>.from(baned)..remove(w);
@@ -834,7 +836,7 @@ class _AdminScreenState extends State<AdminScreen>
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.4))),
+          decoration: BoxDecoration(color: color.withValues(alpha:0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha:0.4))),
           child: Center(child: Text(label, style: GoogleFonts.cairo(fontSize: 11, color: color, fontWeight: FontWeight.w700))),
         ),
       );
@@ -843,14 +845,14 @@ class _AdminScreenState extends State<AdminScreen>
     final isAdmin = role == 'admin';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: isAdmin ? _gold.withOpacity(0.12) : _surfaceHigh, borderRadius: BorderRadius.circular(6), border: Border.all(color: isAdmin ? _gold : _border)),
+      decoration: BoxDecoration(color: isAdmin ? _gold.withValues(alpha:0.12) : _surfaceHigh, borderRadius: BorderRadius.circular(6), border: Border.all(color: isAdmin ? _gold : _border)),
       child: Text(isAdmin ? 'أدمن' : 'مستخدم', style: GoogleFonts.cairo(fontSize: 10, color: isAdmin ? _gold : _textSecondary, fontWeight: FontWeight.w700)),
     );
   }
 
   Widget _badge(String text, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+    decoration: BoxDecoration(color: color.withValues(alpha:0.12), borderRadius: BorderRadius.circular(6)),
     child: Text(text, style: GoogleFonts.cairo(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
   );
 

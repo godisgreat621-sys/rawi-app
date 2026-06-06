@@ -39,7 +39,7 @@ class DraftsListScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.note_alt_outlined, size: 64, color: textSecondary.withOpacity(0.3)),
+                  Icon(Icons.note_alt_outlined, size: 64, color: textSecondary.withValues(alpha: 0.3)),
                   const SizedBox(height: 16),
                   Text(
                     'لا توجد مسودات محفوظة حالياً',

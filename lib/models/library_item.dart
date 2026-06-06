@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'novel_model.dart'; // Assuming Novel model is in novel_model.dart
+import 'novel_model.dart';
 
 class LibraryItem {
   final String id;

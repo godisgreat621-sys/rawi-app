@@ -242,7 +242,7 @@ class NovelsProvider with ChangeNotifier {
         .collection('drafts')
         .where('authorId', isEqualTo: user.uid)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) => LibraryItem.fromDraft(doc.data() as Map<String, dynamic>, doc.id)).toList());
+        .map((snap) => snap.docs.map((doc) => LibraryItem.fromDraft(doc.data(), doc.id)).toList());
 
     return Rx.combineLatest2(novelsStream, draftsStream, (List<LibraryItem> novels, List<LibraryItem> drafts) {
       final allItems = [...novels, ...drafts];

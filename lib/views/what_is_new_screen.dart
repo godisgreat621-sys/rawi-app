@@ -52,9 +52,9 @@ class WhatsNewScreen extends StatelessWidget {
                 Container(
                   width: 52, height: 52,
                   decoration: BoxDecoration(
-                    color: _accent.withOpacity(0.12),
+                    color: _accent.withValues(alpha:0.12),
                     shape: BoxShape.circle,
-                    border: Border.all(color: _accent.withOpacity(0.3)),
+                    border: Border.all(color: _accent.withValues(alpha:0.3)),
                   ),
                   child: const Icon(Icons.auto_awesome_rounded,
                       color: _accent, size: 26),
@@ -91,7 +91,7 @@ class WhatsNewScreen extends StatelessWidget {
                       Container(
                         width: 38, height: 38,
                         decoration: BoxDecoration(
-                          color: f.$2.withOpacity(0.1),
+                          color: f.$2.withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(f.$1, color: f.$2, size: 18),

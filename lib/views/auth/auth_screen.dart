@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen>
                           decoration: BoxDecoration(
                             color: _accentDim,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _accent.withOpacity(0.25)),
+                            border: Border.all(color: _accent.withValues(alpha: 0.25)),
                           ),
                           child: Text(
                             'راوي منصة حصرية لكتابة وقراءة الروايات العربية — كل ما تقرأه فيها من إبداع أعضائها فقط، لا ذكاء اصطناعي ولا منقول.',

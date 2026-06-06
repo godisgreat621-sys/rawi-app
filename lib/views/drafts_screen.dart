@@ -14,7 +14,6 @@ class DraftsScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     const bgColor = Color(0xFF0D0F14);
     const surfaceColor = Color(0xFF161920);
-    const accentColor = Color(0xFF8BAF7C);
     const borderColor = Color(0xFF252836);
     const textPrimary = Color(0xFFECECEC);
     const textSecondary = Color(0xFF6B7280);
@@ -105,6 +104,7 @@ class DraftsScreen extends StatelessWidget {
                             IconButton(
                               icon: const Icon(Icons.send, color: Colors.green),
                               onPressed: () async {
+                                final provider = context.read<NovelsProvider>();
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
@@ -141,8 +141,7 @@ class DraftsScreen extends StatelessWidget {
                                   ),
                                 );
                                 if (confirm == true) {
-                                  final error = await context
-                                      .read<NovelsProvider>()
+                                  final error = await provider
                                       .publishDraft(doc.id);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -186,6 +185,7 @@ class DraftsScreen extends StatelessWidget {
                                 color: Colors.redAccent,
                               ),
                               onPressed: () async {
+                                final provider = context.read<NovelsProvider>();
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
@@ -222,8 +222,7 @@ class DraftsScreen extends StatelessWidget {
                                   ),
                                 );
                                 if (confirm == true) {
-                                  final error = await context
-                                      .read<NovelsProvider>()
+                                  final error = await provider
                                       .deleteDraft(doc.id);
                                   if (error != null) {
                                     if (context.mounted) {

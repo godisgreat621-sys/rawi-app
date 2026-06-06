@@ -78,12 +78,6 @@ class _AuthorScreenState extends State<AuthorScreen> {
     return 'راوي ناشئ';
   }
 
-  Color _getRankColor(int points) {
-    if (points >= 2000) return _gold;
-    if (points >= 500)  return _accent;
-    return _textSecondary;
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
@@ -164,7 +158,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  _accent.withOpacity(0.06),
+                                  _accent.withValues(alpha:0.06),
                                   _bg,
                                 ],
                                 begin: Alignment.topCenter,
@@ -228,7 +222,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: showPoints ? _gold.withOpacity(0.1) : _border,
+                              color: showPoints ? _gold.withValues(alpha:0.1) : _border,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -538,7 +532,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
               ),
               child: novel.coverUrl == null
                   ? Icon(Icons.auto_stories_rounded,
-                      color: _accent.withOpacity(0.4), size: 22)
+                      color: _accent.withValues(alpha:0.4), size: 22)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -568,7 +562,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.12),
+                            color: Colors.green.withValues(alpha:0.12),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(

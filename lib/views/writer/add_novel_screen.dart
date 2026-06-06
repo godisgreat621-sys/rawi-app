@@ -376,7 +376,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: _gold.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _gold.withOpacity(0.3))),
+      decoration: BoxDecoration(color: _gold.withValues(alpha:0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _gold.withValues(alpha:0.3))),
       child: Row(
         children: [
           const Icon(Icons.timer_outlined, color: _gold, size: 18),
@@ -495,17 +495,11 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               padding: const EdgeInsets.only(bottom: 5),
               child: Row(
                 children: [
-                  if (item.$1 is IconData)
-                    Icon(
-                      item.$1 as IconData,
-                      size: 16,
-                      color: _accent,
-                    )
-                  else
-                    Text(
-                      item.$1.toString(),
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                  Icon(
+                    item.$1,
+                    size: 16,
+                    color: _accent,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -586,9 +580,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.08),
+                  color: _accent.withValues(alpha:0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _accent.withOpacity(0.2)),
+                  border: Border.all(color: _accent.withValues(alpha:0.2)),
                 ),
                 child: Text(
                   'تحرير مسودة محفوظة',
@@ -606,7 +600,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
               Row(children: [
                 Switch(
                   value: _isComingSoon,
-                  activeColor: _accent,
+                  activeThumbColor: _accent,
                   onChanged: (v) => setState(() => _isComingSoon = v),
                 ),
                 const SizedBox(width: 8),
@@ -630,9 +624,9 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.06),
+                  color: _accent.withValues(alpha:0.06),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _accent.withOpacity(0.18)),
+                  border: Border.all(color: _accent.withValues(alpha:0.18)),
                 ),
                 child: Row(children: [
                   const Icon(Icons.info_outline, size: 14, color: _accent),

@@ -170,7 +170,7 @@ class _WriterScreenState extends State<WriterScreen> {
                     width: 56,
                     height: 78,
                     decoration: BoxDecoration(
-                      color: isDraft ? _accent.withOpacity(0.1) : _surfaceHigh,
+                      color: isDraft ? _accent.withValues(alpha:0.1) : _surfaceHigh,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: _border),
                       image: item.coverUrl != null
@@ -183,7 +183,7 @@ class _WriterScreenState extends State<WriterScreen> {
                     child: item.coverUrl == null
                         ? Icon(
                             Icons.auto_stories_rounded,
-                            color: _accent.withOpacity(0.4),
+                            color: _accent.withValues(alpha:0.4),
                             size: 24,
                           )
                         : null,
@@ -217,9 +217,9 @@ class _WriterScreenState extends State<WriterScreen> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: isDraft ? _gold.withOpacity(0.12) : isCompleted
-                                    ? Colors.green.withOpacity(0.12)
-                                    : _accent.withOpacity(0.12),
+                                color: isDraft ? _gold.withValues(alpha:0.12) : isCompleted
+                                    ? Colors.green.withValues(alpha:0.12)
+                                    : _accent.withValues(alpha:0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -301,10 +301,10 @@ class _WriterScreenState extends State<WriterScreen> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.12),
+                          color: _accent.withValues(alpha:0.12),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: _accent.withOpacity(0.3),
+                            color: _accent.withValues(alpha:0.3),
                           ),
                         ),
                         child: Row(
@@ -401,7 +401,7 @@ class _WriterScreenState extends State<WriterScreen> {
               child: Icon(
                 Icons.edit_note_rounded,
                 size: 38,
-                color: _accent.withOpacity(0.5),
+                color: _accent.withValues(alpha:0.5),
               ),
             ),
             const SizedBox(height: 20),
@@ -473,7 +473,7 @@ class _WriterScreenState extends State<WriterScreen> {
       buf.writeln('══════════════════════════════');
       buf.writeln('رواية: ${item.title}');
       buf.writeln('تأليف: ${item.author}');
-      buf.writeln('التصنيف: ${item.category ?? ''}');
+      buf.writeln('التصنيف: ${item.category}');
       buf.writeln('══════════════════════════════\n');
 
       for (final doc in chaptersSnap.docs) {
