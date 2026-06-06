@@ -607,15 +607,14 @@ class _AdminScreenState extends State<AdminScreen>
           const SizedBox(height: 12),
           Wrap(spacing: 6, runSpacing: 6, children: [
             if (rUid.isNotEmpty) ...[
-              _actionBtn(label: 'حظر 24h',   color: Colors.orange,       onTap: () => _banFromReport(doc.id, rUid, 1, '24 ساعة')),
-              _actionBtn(label: 'حظر أسبوع', color: Colors.deepOrange,   onTap: () => _banFromReport(doc.id, rUid, 7, 'أسبوع')),
-              _actionBtn(label: 'حظر دائم',  color: Colors.red.shade900, onTap: () => _banFromReportPermanent(doc.id, rUid)),
-              _actionBtn(label: '⚠ تحذير',   color: Colors.amber.shade700, onTap: () => _warnFromReport(doc.id, rUid)),
+              _actionBtn(label: 'حظر 24h',   color: Colors.orange,         onTap: () => _banFromReport(doc.id, rUid, 1, '24 ساعة', byUid)),
+              _actionBtn(label: 'حظر أسبوع', color: Colors.deepOrange,     onTap: () => _banFromReport(doc.id, rUid, 7, 'أسبوع',   byUid)),
+              _actionBtn(label: 'حظر دائم',  color: Colors.red.shade900,   onTap: () => _banFromReportPermanent(doc.id, rUid, byUid)),
+              _actionBtn(label: '⚠ تحذير',   color: Colors.amber.shade700, onTap: () => _warnFromReport(doc.id, rUid, byUid)),
             ],
             if (commentId.isNotEmpty && novelId.isNotEmpty)
-              _actionBtn(label: 'حذف التعليق', color: Colors.redAccent, onTap: () => _deleteReportedComment(doc.id, novelId, commentId)),
-            _actionBtn(label: 'قبول ✓', color: _accent,        onTap: () => _resolveReport(doc.id, 'resolved')),
-            _actionBtn(label: 'تجاهل',  color: _textSecondary, onTap: () => _resolveReport(doc.id, 'dismissed')),
+              _actionBtn(label: 'حذف التعليق', color: Colors.redAccent, onTap: () => _deleteReportedComment(doc.id, novelId, commentId, byUid, rUid)),
+            _actionBtn(label: 'تجاهل', color: _textSecondary, onTap: () => _resolveReport(doc.id, 'dismissed', byUid)),
           ]),
         ],
 
@@ -630,49 +629,78 @@ class _AdminScreenState extends State<AdminScreen>
     Expanded(child: Text(value, style: GoogleFonts.cairo(fontSize: 11, color: _textPrimary, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
   ]);
 
-  Future<void> _resolveReport(String reportId, String status) async {
-    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': status, 'resolvedAt': FieldValue.serverTimestamp()});
-    await _log('${status}_report', extra: {'reportId': reportId});
-    _snack(status == 'resolved' ? 'تم قبول البلاغ ✅' : 'تم التجاهل', status == 'resolved' ? _accent : _textSecondary);
+  Future<void> _notifyReport({required String byUid, required String reportedUid, required bool dismissed}) async {
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+    // رافع البلاغ
+    if (byUid.isNotEmpty) {
+      batch.set(db.collection('notifications').doc(), {
+        'userId': byUid, 'type': 'report_update', 'isRead': false,
+        'body': dismissed
+            ? 'تمت مراجعة بلاغك ولم يُعثر على مخالفة واضحة. شكراً لمساهمتك في الحفاظ على المجتمع.'
+            : 'تمت مراجعة بلاغك واتخاذ الإجراء المناسب. شكراً لمساهمتك في الحفاظ على المجتمع.',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    // المُبلَّغ عنه — فقط إذا اتُّخذ إجراء فعلي
+    if (!dismissed && reportedUid.isNotEmpty) {
+      batch.set(db.collection('notifications').doc(), {
+        'userId': reportedUid, 'type': 'admin_action', 'isRead': false,
+        'body': 'أخطرتك الإدارة بأنه تم تلقّي بلاغ بحقك وقد اتُّخذ الإجراء المناسب. يُرجى مراجعة قواعد المجتمع والالتزام بها.',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 
-  Future<void> _banFromReport(String reportId, String uid, int days, String label) async {
+  Future<void> _resolveReport(String reportId, String status, String byUid) async {
+    await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': status, 'resolvedAt': FieldValue.serverTimestamp()});
+    await _notifyReport(byUid: byUid, reportedUid: '', dismissed: true);
+    await _log('${status}_report', extra: {'reportId': reportId});
+    _snack('تم التجاهل', _textSecondary);
+  }
+
+  Future<void> _banFromReport(String reportId, String uid, int days, String label, String byUid) async {
     if (!await _confirm('حظر المُبلَّغ عنه $label؟')) return;
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
       'bannedUntil': Timestamp.fromDate(DateTime.now().add(Duration(days: days))),
       'isPermanentBan': false,
     });
     await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _notifyReport(byUid: byUid, reportedUid: uid, dismissed: false);
     await _log('ban_from_report', extra: {'targetUid': uid, 'days': days, 'reportId': reportId});
     _snack('تم الحظر $label ✅', Colors.orange);
   }
 
-  Future<void> _banFromReportPermanent(String reportId, String uid) async {
+  Future<void> _banFromReportPermanent(String reportId, String uid, String byUid) async {
     if (!await _confirm('حظر دائم؟ لا يمكن التراجع إلا يدوياً.')) return;
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
       'bannedUntil': Timestamp.fromDate(DateTime(2099)),
       'isPermanentBan': true,
     });
     await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _notifyReport(byUid: byUid, reportedUid: uid, dismissed: false);
     await _log('ban_permanent_from_report', extra: {'targetUid': uid, 'reportId': reportId});
     _snack('تم الحظر الدائم', Colors.red.shade900);
   }
 
-  Future<void> _warnFromReport(String reportId, String uid) async {
+  Future<void> _warnFromReport(String reportId, String uid, String byUid) async {
     await FirebaseFirestore.instance.collection('notifications').add({
       'userId': uid, 'type': 'admin_warning', 'isRead': false,
       'body': 'تحذير من الإدارة: تم رفع بلاغ بحقك. يُرجى الالتزام بقواعد المجتمع. تكرار المخالفات قد يؤدي إلى تعليق حسابك.',
       'createdAt': FieldValue.serverTimestamp(),
     });
     await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _notifyReport(byUid: byUid, reportedUid: '', dismissed: false);
     await _log('warn_from_report', extra: {'targetUid': uid, 'reportId': reportId});
     _snack('تم إرسال التحذير ✅', Colors.amber);
   }
 
-  Future<void> _deleteReportedComment(String reportId, String novelId, String commentId) async {
+  Future<void> _deleteReportedComment(String reportId, String novelId, String commentId, String byUid, String reportedUid) async {
     if (!await _confirm('حذف التعليق المُبلَّغ عنه نهائياً؟')) return;
     await FirebaseFirestore.instance.collection('novels').doc(novelId).collection('comments').doc(commentId).delete();
     await FirebaseFirestore.instance.collection('reports').doc(reportId).update({'status': 'resolved', 'resolvedAt': FieldValue.serverTimestamp()});
+    await _notifyReport(byUid: byUid, reportedUid: reportedUid, dismissed: false);
     await _log('delete_reported_comment', extra: {'novelId': novelId, 'commentId': commentId, 'reportId': reportId});
     _snack('تم حذف التعليق ✅', Colors.green);
   }
