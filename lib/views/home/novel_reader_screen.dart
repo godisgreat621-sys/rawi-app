@@ -505,7 +505,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     });
 
     // إشعار صاحب الرد إذا كان هذا رداً
-    if (replyToId != null) {
+    if (replyToId != null && mounted) {
       await context.read<NovelsProvider>().notifyUserOfReply(
           replyToId, widget.novel['title'] ?? '', name, text, _novelId);
     }
@@ -513,7 +513,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     // إشعار الكاتب
     final nd  = (await _novelRef.get()).data() as Map<String,dynamic>?;
     final aId = nd?['authorId'] ?? '';
-    if (aId.isNotEmpty && aId != user.uid) {
+    if (aId.isNotEmpty && aId != user.uid && mounted) {
       await context.read<NovelsProvider>().notifyAuthorOfComment(
           aId, widget.novel['title'] ?? '', name, _novelId);
     }
@@ -705,9 +705,11 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
             .update({'lastChapterRatingsReceived': FieldValue.increment(1)});
       }
       final nd = (await _novelRef.get()).data() as Map<String,dynamic>?;
-      await context.read<NovelsProvider>().notifyAuthorOfRating(
-          authorId, nd?['title'] ?? '', 
-          widget.novel['chapterTitle'] ?? '', name, _novelId, _chapterId);
+      if (mounted) {
+        await context.read<NovelsProvider>().notifyAuthorOfRating(
+            authorId, nd?['title'] ?? '',
+            widget.novel['chapterTitle'] ?? '', name, _novelId, _chapterId);
+      }
     }
 
     // نقاط المُقيِّم (+2 إضافية لأول مقيّم)

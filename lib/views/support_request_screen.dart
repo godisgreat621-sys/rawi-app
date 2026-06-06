@@ -42,7 +42,7 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
       return;
     }
 
-    setState(() => _isSending = true);
+    if (mounted) setState(() => _isSending = true);
     final response = await context.read<NovelsProvider>().sendSupportRequest(
       type: _type,
       title: _type == 'spelling'
@@ -54,7 +54,7 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
           ? 'من "${_originalCtrl.text.trim()}" إلى "${_correctedCtrl.text.trim()}"'
           : _messageCtrl.text.trim(),
     );
-    setState(() => _isSending = false);
+    if (mounted) setState(() => _isSending = false);
 
     if (response != null) {
       _showError(response);

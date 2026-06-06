@@ -56,7 +56,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }, SetOptions(merge: true));
     }
     await OnboardingScreen.markDone();
-    widget.onDone();
+    if (mounted) widget.onDone();
   }
 
   @override

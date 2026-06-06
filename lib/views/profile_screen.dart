@@ -273,10 +273,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         type: selectedType,
                         description: descCtrl.text,
                       );
-                      if (mounted) {
-                        Navigator.pop(ctx);
-                        _showSnack('تم إرسال طلبك ✅', Colors.green);
-                      }
+                      if (ctx.mounted) { Navigator.pop(ctx); }
+                      if (mounted) { _showSnack('تم إرسال طلبك ✅', Colors.green); }
                     },
                     child: Text(
                       'إرسال الطلب',

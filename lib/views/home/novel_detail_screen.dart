@@ -395,13 +395,15 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                   'authorId':  user.uid,
                   'createdAt': FieldValue.serverTimestamp(),
                 });
-                if (ctx.mounted) Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('تم نشر مراجعتك ✅', style: GoogleFonts.cairo()),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ));
+                if (ctx.mounted) { Navigator.pop(ctx); }
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('تم نشر مراجعتك ✅', style: GoogleFonts.cairo()),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                }
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: _accent, foregroundColor: _bg,
