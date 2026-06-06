@@ -39,13 +39,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         .collection('notifications')
         .where('userId', isEqualTo: userId)
         .where('isRead', isEqualTo: false)
+        .limit(500)
         .get();
     if (snap.docs.isEmpty) return;
-    final batch = FirebaseFirestore.instance.batch();
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {'isRead': true});
+    // تقسيم على دفعات 400 لتجنب تجاوز حد batch (500 عملية)
+    const chunkSize = 400;
+    for (var i = 0; i < snap.docs.length; i += chunkSize) {
+      final chunk = snap.docs.skip(i).take(chunkSize);
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in chunk) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
     }
-    await batch.commit();
   }
 
   // ── أيقونة ولون حسب النوع ────────────────────────────────────────────────
@@ -81,6 +87,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return _NotifStyle(Icons.admin_panel_settings_rounded, Colors.redAccent, 'إجراء إداري');
       case 'report_update':
         return _NotifStyle(Icons.flag_rounded, Colors.blueGrey, 'تحديث البلاغ');
+      case 'admin_points':
+        return _NotifStyle(Icons.stars_rounded, const Color(0xFFD4A843), 'هدية نقاط من الإدارة');
+      case 'broadcast':
+        return _NotifStyle(Icons.campaign_rounded, Colors.purpleAccent, 'إعلان من الإدارة');
+      case 'novel_completed':
+        return _NotifStyle(Icons.auto_stories_rounded, const Color(0xFF8BAF7C), 'رواية اكتملت');
+      case 'friend_reading':
+        return _NotifStyle(Icons.menu_book_rounded, Colors.blueGrey, 'صديق يقرأ الآن');
       default:
         return _NotifStyle(Icons.notifications_rounded, _textSecondary, 'إشعار');
     }
@@ -145,6 +159,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 stream: FirebaseFirestore.instance
                     .collection('notifications')
                     .where('userId', isEqualTo: user.uid)
+                    .limit(100)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {

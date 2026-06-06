@@ -282,6 +282,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
                       .collection('notifications')
                       .where('userId', isEqualTo: user.uid)
                       .where('isRead',  isEqualTo: false)
+                      .limit(99)
                       .snapshots(),
                   builder: (_, snap) {
                     final count = snap.hasData ? snap.data!.docs.length : 0;
