@@ -750,8 +750,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ]),
                         );
                       }),
-                      const SizedBox(height: 8),
-                      _decoratedDivider(), // #10
+                      const SizedBox(height: 14),
 
                       // ── الإعدادات الرئيسية ────────────────────────
                       _menuTile(Icons.bookmark_outline_rounded, 'المكتبة الخاصة',
@@ -915,21 +914,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-  }
-
-  // ── ميزة مبتكرة: نظام الرتب بناءً على النقاط ────────────────────────────────
-  String _getWriterRank(int points) {
-    if (points >= 2000) return 'عميد الرواة';
-    if (points >= 1000) return 'أديب متألق';
-    if (points >= 500) return 'حكواتي متمكن';
-    if (points >= 100) return 'كاتب واعد';
-    return 'راوي ناشئ';
-  }
-
-  Color _getRankColor(int points) {
-    if (points >= 2000) return _gold;
-    if (points >= 500) return _tAccent;
-    return _textSecondary;
   }
 
   // ── عرض الروايات المحفوظة (المحفوظات) ──────────────────────────────────
@@ -2124,17 +2108,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
-  // #10 فاصل مزخرف
-  Widget _decoratedDivider() => Row(children: [
-    Expanded(child: Container(height: 1, color: _border)),
-    Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      width: 6, height: 6,
-      decoration: BoxDecoration(color: _tAccent.withValues(alpha: 0.45), shape: BoxShape.circle),
-    ),
-    Expanded(child: Container(height: 1, color: _border)),
-  ]);
 
   // #5 بطاقة إحصائية مستقلة
   Widget _statBox(IconData icon, String val, String label, Color color, {VoidCallback? onTap}) {
