@@ -1332,6 +1332,8 @@ class _AdminScreenState extends State<AdminScreen>
   // ── مساعدات الواجهة ──────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
   Widget _searchField(String hint, ValueChanged<String> cb) => TextField(
+    textDirection: TextDirection.rtl,
+    autocorrect: false,
     style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
     decoration: InputDecoration(
       hintText: hint, hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),

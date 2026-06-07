@@ -282,6 +282,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? TextField(
                     controller: _searchController,
                     autofocus: true,
+                    textDirection: TextDirection.rtl,
+                    autocorrect: false,
                     style: GoogleFonts.cairo(color: _textPrimary, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'ابحث عن رواية أو كاتب...',

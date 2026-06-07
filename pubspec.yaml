@@ -26,6 +26,7 @@ dependencies:
   shared_preferences: ^2.3.2     # #47 وضع بدون إنترنت
   connectivity_plus: ^6.1.4      # #48 إعادة تحميل عند عودة الاتصال
   google_sign_in: ^6.2.1         # #41 تسجيل دخول Google
+  share_plus: ^10.1.4            # مشاركة نصية عبر التطبيقات
 
   cupertino_icons: ^1.0.8
 

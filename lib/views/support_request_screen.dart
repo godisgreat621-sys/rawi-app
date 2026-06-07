@@ -140,6 +140,7 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
               TextField(
                 controller: _messageCtrl,
                 maxLines: 5,
+                textDirection: TextDirection.rtl,
                 textAlignVertical: TextAlignVertical.top,
                 autocorrect: false,
                 style: GoogleFonts.cairo(fontSize: 14),

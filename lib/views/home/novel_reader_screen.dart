@@ -733,6 +733,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 TextField(
                   controller: ratingCtrl,
                   maxLines: 3,
+                  textDirection: TextDirection.rtl,
                   textAlignVertical: TextAlignVertical.top,
                   autocorrect: false,
                   style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
@@ -1102,6 +1103,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       Expanded(
                         child: TextField(
                           controller: _commentController,
+                          textDirection: TextDirection.rtl,
                           autocorrect: false,
                           style: GoogleFonts.cairo(
                               color: _textPrimary, fontSize: 14),
@@ -1463,6 +1465,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 TextField(
                   controller: detailsCtrl,
                   maxLines: 2,
+                  textDirection: TextDirection.rtl,
                   textAlignVertical: TextAlignVertical.top,
                   autocorrect: false,
                   style: GoogleFonts.cairo(

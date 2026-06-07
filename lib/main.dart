@@ -50,6 +50,13 @@ class RawiApp extends StatelessWidget {
         textTheme: GoogleFonts.cairoTextTheme(ThemeData.dark().textTheme)
             .apply(fontSizeFactor: kBaseFontFactor),
         iconTheme: const IconThemeData(size: kIconMedium),
+        inputDecorationTheme: const InputDecorationTheme(
+          hintFadeDuration: Duration(milliseconds: 50),
+        ),
+      ),
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child!,
       ),
       home: const AuthWrapper(),
     );

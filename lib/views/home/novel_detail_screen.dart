@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -119,15 +119,8 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _shareNovel(String title, String novelId) {
-    final link = 'https://rawai.page.link/novel?id=$novelId';
-    final text = '📖 "$title"\nاقرأها الآن على تطبيق راوي:\n$link';
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('تم نسخ رابط المشاركة ✓', style: GoogleFonts.cairo()),
-      backgroundColor: _accent,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
+    final text = '📖 "$title"\n\nاقرأها الآن على تطبيق راوي 🌙\nكود الرواية: $novelId';
+    Share.share(text, subject: title);
   }
 
   void _showReadingListsSheet(String novelId, String novelTitle) {
@@ -372,6 +365,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
             controller: ctrl,
             maxLines: 6,
             maxLength: 1000,
+            textDirection: TextDirection.rtl,
             textAlignVertical: TextAlignVertical.top,
             autocorrect: false,
             style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary),
@@ -440,6 +434,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: ctrl, maxLines: 4, maxLength: 300,
+            textDirection: TextDirection.rtl,
             textAlignVertical: TextAlignVertical.top,
             autocorrect: false,
             style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary),
@@ -711,6 +706,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
+      textDirection: TextDirection.rtl,
       textAlignVertical: TextAlignVertical.top,
       autocorrect: false,
       style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),

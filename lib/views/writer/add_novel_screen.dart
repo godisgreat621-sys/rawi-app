@@ -446,6 +446,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       keyboardType: maxLines == null
           ? TextInputType.multiline
           : TextInputType.text,
+      textDirection: TextDirection.rtl,
       textAlignVertical: TextAlignVertical.top,
       autocorrect: false,
       style: GoogleFonts.cairo(

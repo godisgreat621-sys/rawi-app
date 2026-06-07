@@ -157,6 +157,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: controller,
               enabled: canChange,
+              textDirection: TextDirection.rtl,
+              autocorrect: false,
               style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'اسمك بين القراء',
@@ -341,9 +343,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
+      textDirection: TextDirection.rtl,
+      textAlignVertical: maxLines > 1 ? TextAlignVertical.top : null,
+      autocorrect: false,
       style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
+        alignLabelWithHint: maxLines > 1,
         hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
         filled: true,
         fillColor: _surfaceHigh,
@@ -1782,10 +1788,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           controller: ctrl,
           maxLines: 4,
           maxLength: 200,
+          textDirection: TextDirection.rtl,
+          textAlignVertical: TextAlignVertical.top,
+          autocorrect: false,
           style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary),
           decoration: InputDecoration(
             hintText: 'اكتب نبذة قصيرة عن نفسك...',
             hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
+            alignLabelWithHint: true,
             filled: true,
             fillColor: _surfaceHigh,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
