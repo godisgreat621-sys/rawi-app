@@ -303,15 +303,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(left: 8),
-                        decoration: BoxDecoration(
-                          color: _accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      Image.asset('logo.png', width: 28, height: 28),
+                      const SizedBox(width: 8),
                       Text(
                         'راوي',
                         style: GoogleFonts.cairo(
