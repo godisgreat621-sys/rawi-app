@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/views/home/novel_reader_screen.dart';
 import 'package:my_first_app/views/author_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -234,20 +235,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                           return GestureDetector(
                             onTap: () async {
-                              if (!isRead) {
-                                doc.reference.update({'isRead': true});
-                              }
+                              if (!isRead) doc.reference.update({'isRead': true});
+                              final chapterId = data['chapterId'] as String?;
+
+                              // متابع جديد → الملف الشخصي
                               if (type == 'follow' && senderId != null) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AuthorScreen(authorId: senderId, authorName: '')));
-                              } else if (novelId != null) {
-                                final nDoc = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+                                Navigator.push(context, MaterialPageRoute(
+                                    builder: (_) => AuthorScreen(authorId: senderId, authorName: '')));
+                                return;
+                              }
+
+                              // تعليق أو فصل جديد → الفصل مباشرة
+                              if ((type == 'comment' || type == 'novel_chapter' || type == 'like') &&
+                                  novelId != null && chapterId != null) {
+                                final db = FirebaseFirestore.instance;
+                                final nDoc = await db.collection('novels').doc(novelId).get();
+                                if (!context.mounted || !nDoc.exists) return;
+                                final chapDoc = await db.collection('novels').doc(novelId)
+                                    .collection('chapters').doc(chapterId).get();
+                                if (!context.mounted) return;
+                                Navigator.push(context, MaterialPageRoute(
+                                    builder: (_) => NovelReaderScreen(novel: {
+                                      'id': nDoc.id, ...nDoc.data()!,
+                                      'chapterId': chapterId,
+                                      'chapterTitle': chapDoc.data()?['title'] ?? '',
+                                      'content': chapDoc.data()?['content'] ?? '',
+                                      'chapterNumber': chapDoc.data()?['chapterNumber'] ?? 1,
+                                    })));
+                                return;
+                              }
+
+                              // رواية / تقييم / غير ذلك → صفحة الرواية
+                              if (novelId != null) {
+                                final nDoc = await FirebaseFirestore.instance
+                                    .collection('novels').doc(novelId).get();
                                 if (!context.mounted) return;
                                 if (nDoc.exists) {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => NovelDetailScreen(novel: {'id': nDoc.id, ...nDoc.data() as Map<String, dynamic>})));
+                                  Navigator.push(context, MaterialPageRoute(
+                                      builder: (_) => NovelDetailScreen(
+                                          novel: {'id': nDoc.id, ...nDoc.data()!})));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Text('هذه الرواية لم تعد متاحة', style: GoogleFonts.cairo()),
-                                    backgroundColor: _textSecondary, behavior: SnackBarBehavior.floating,
+                                    backgroundColor: _textSecondary,
+                                    behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ));
                                 }

@@ -265,7 +265,17 @@ class _AdminScreenState extends State<AdminScreen>
         Wrap(spacing: 6, runSpacing: 6, children: [
           _actionBtn(label: role == 'admin' ? 'خفض' : 'ترقية', color: _accent, onTap: () async {
             if (!await _confirm(role == 'admin' ? 'خفض عن الأدمن؟' : 'ترقية لأدمن؟')) return;
-            await context.read<NovelsProvider>().setUserRole(uid, role == 'admin' ? 'user' : 'admin');
+            final newRole = role == 'admin' ? 'user' : 'admin';
+            await context.read<NovelsProvider>().setUserRole(uid, newRole);
+            await FirebaseFirestore.instance.collection('notifications').add({
+              'userId': uid,
+              'type': 'admin_message',
+              'isRead': false,
+              'message': newRole == 'admin'
+                  ? 'مرحباً! تمت ترقيتك إلى مشرف في منصة راوي 🎉'
+                  : 'تمت إعادة حسابك إلى مستخدم عادي من قِبل الإدارة.',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
             await _log('toggle_role', extra: {'targetUid': uid});
             _snack('تم ✅', _accent);
           }),
@@ -567,10 +577,69 @@ class _AdminScreenState extends State<AdminScreen>
                 const SizedBox(height: 4),
                 _infoRow(Icons.flag_rounded, 'المُبلَّغ عنه', reportedName, Colors.redAccent),
               ],
+              // ── صورة الغلاف أو صورة البروفايل ──────────────────────────
+              Builder(builder: (_) {
+                final coverUrl = novel?['coverUrl'] as String?
+                    ?? novel?['imageUrl']  as String?
+                    ?? novel?['cover']     as String?;
+                final profilePic = type == 'profile'
+                    ? (reported?['profilePicture'] as String?) : null;
+                final imgUrl = profilePic ?? coverUrl;
+                if (imgUrl == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(type == 'profile' ? 50 : 8),
+                    child: Image.network(
+                      imgUrl,
+                      height: type == 'profile' ? 64 : 110,
+                      width:  type == 'profile' ? 64 : double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, s) => const SizedBox.shrink(),
+                    ),
+                  ),
+                );
+              }),
+
               if (novel != null) ...[
-                const SizedBox(height: 4),
-                _infoRow(Icons.auto_stories_rounded, 'الرواية', novel['title'] ?? '—', _accent),
+                const SizedBox(height: 6),
+                Row(children: [
+                  Icon(Icons.auto_stories_rounded, size: 12, color: _accent),
+                  const SizedBox(width: 4),
+                  Text('الرواية: ', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+                  Expanded(child: Text(novel['title'] ?? '—',
+                      style: GoogleFonts.cairo(fontSize: 11, color: _textPrimary, fontWeight: FontWeight.w600),
+                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  GestureDetector(
+                    onTap: () async {
+                      final d = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
+                      if (!mounted || !d.exists) return;
+                      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                          NovelDetailScreen(novel: {'id': d.id, ...d.data()!})));
+                    },
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text('فتح', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
+                      const SizedBox(width: 2),
+                      Icon(Icons.open_in_new_rounded, size: 11, color: _accent),
+                    ]),
+                  ),
+                ]),
               ],
+
+              // ── زر الانتقال للملف الشخصي (بلاغ ملف شخصي) ───────────────
+              if (type == 'profile' && rUid.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                      AuthorScreen(authorId: rUid, authorName: reportedName))),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('فتح الملف الشخصي', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 2),
+                    Icon(Icons.open_in_new_rounded, size: 11, color: _accent),
+                  ]),
+                ),
+              ],
+
               if (commentId.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Container(
@@ -587,15 +656,14 @@ class _AdminScreenState extends State<AdminScreen>
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      Text('نص التعليق المُبلَّغ عنه:',
-                          style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                      Text('نص التعليق:', style: GoogleFonts.cairo(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w700)),
                       const Spacer(),
                       if (novelId.isNotEmpty)
                         GestureDetector(
                           onTap: () => _openCommentInReader(
                               novelId, (commentDoc?['chapterId'] as String?) ?? ''),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text('فتح الفصل', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
+                            Text('انتقل للفصل', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
                             const SizedBox(width: 2),
                             Icon(Icons.open_in_new_rounded, size: 11, color: _accent),
                           ]),
@@ -610,9 +678,16 @@ class _AdminScreenState extends State<AdminScreen>
                             style: GoogleFonts.cairo(fontSize: 12, color: _textSecondary)),
                   ]),
                 ),
-              ] else if (chapterId.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                _infoRow(Icons.menu_book_rounded, 'معرّف الفصل', '#${chapterId.length >= 8 ? chapterId.substring(0, 8) : chapterId}…', _textSecondary),
+              ] else if (chapterId.isNotEmpty && novelId.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => _openCommentInReader(novelId, chapterId),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('انتقل للفصل', style: GoogleFonts.cairo(fontSize: 10, color: _accent, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 2),
+                    Icon(Icons.open_in_new_rounded, size: 11, color: _accent),
+                  ]),
+                ),
               ],
             ]);
           },
