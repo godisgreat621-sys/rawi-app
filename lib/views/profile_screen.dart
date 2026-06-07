@@ -22,7 +22,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const _accent = Color(0xFF8BAF7C);
+  static const _accent = Color(0xFF72B55A);
   static const _gold   = Color(0xFFD4A843);
   Color _bg          = const Color(0xFF0D0F14);
   Color _surface     = const Color(0xFF161920);
@@ -34,14 +34,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // دور المستخدم — لإظهار زر الأدمن بدون الكشف للآخرين
   String _myRole = 'user';
   // لون التيم الحالي — يتغير مع اختيار المستخدم
-  Color _tAccent = const Color(0xFF8BAF7C);
+  Color _tAccent = const Color(0xFF72B55A);
   Color _tGrad   = const Color(0xFF1A2E1A);
 
   bool _isUploading = false;
 
   // ── بيانات التيمات المتاحة ─────────────────────────────────────────────────
   static const Map<String, Map<String, dynamic>> _profileThemesData = {
-    'default':  {'label': 'الافتراضي',   'accent': Color(0xFF8BAF7C), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
+    'default':  {'label': 'الافتراضي',   'accent': Color(0xFF72B55A), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
     'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
     'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
     'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
@@ -66,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
       case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
       case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
-      default:         return [Color(0xFF8BAF7C), Color(0xFFBEE0A8), Color(0xFF4A7A35)];
+      default:         return [Color(0xFF72B55A), Color(0xFFBEE0A8), Color(0xFF4A7A35)];
     }
   }
 
@@ -722,7 +722,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (badges.isEmpty) return const SizedBox.shrink();
                         const badgeData = <String, (IconData, Color)>{
                           'مبتدئ':           (Icons.emoji_events_outlined, Color(0xFF6B7280)),
-                          'قارئ نشيط':       (Icons.menu_book_rounded,    Color(0xFF8BAF7C)),
+                          'قارئ نشيط':       (Icons.menu_book_rounded,    Color(0xFF72B55A)),
                           'محب للأدب':       (Icons.favorite_rounded,     Color(0xFFE06B6B)),
                           'راوي محترف':      (Icons.workspace_premium_rounded, Color(0xFFD4A843)),
                           'أسطورة الروايات': (Icons.star_rounded,         Color(0xFF9B59B6)),

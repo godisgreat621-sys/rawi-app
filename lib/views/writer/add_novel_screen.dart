@@ -47,7 +47,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ── ألوان المظهر الجديد ──────────────────────────────────────────────────
   Color _bg            = const Color(0xFF0D0F14);
   Color _surface       = const Color(0xFF161920);
-  static const _accent        = Color(0xFF8BAF7C);
+  static const _accent        = Color(0xFF72B55A);
   Color _border        = const Color(0xFF252836);
   Color _textPrimary   = const Color(0xFFECECEC);
   Color _textSecondary = const Color(0xFF6B7280);

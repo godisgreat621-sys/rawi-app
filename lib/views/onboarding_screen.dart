@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -25,7 +25,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _bg           = Color(0xFF0D0F14);
   static const _surface      = Color(0xFF161920);
-  static const _accent       = Color(0xFF8BAF7C);
+  static const _accent       = Color(0xFF72B55A);
   static const _border       = Color(0xFF252836);
   static const _textPrimary  = Color(0xFFECECEC);
   static const _textSecondary= Color(0xFF6B7280);
