@@ -754,37 +754,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _decoratedDivider(), // #10
 
                       // ── الإعدادات الرئيسية ────────────────────────
+                      _menuTile(Icons.bookmark_outline_rounded, 'المكتبة الخاصة',
+                          onTap: _showBookmarksSheet),
                       _menuTile(Icons.person_outline_rounded, 'تعديل الاسم',
                           subtitle: 'مرة كل 30 يوماً',
                           onTap: () => _showEditNameDialog(name, userData)),
-                      _menuTile(Icons.bookmark_outline_rounded, 'المكتبة الخاصة',
-                          onTap: _showBookmarksSheet),
                       const SizedBox(height: 12),
 
                       // ── شبكة الإجراءات السريعة ─────────────────────
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                        childAspectRatio: 0.9,
+                        crossAxisCount: 5,
+                        crossAxisSpacing: 7,
+                        mainAxisSpacing: 7,
+                        childAspectRatio: 0.82,
                         children: [
                           _gridAction(Icons.history_rounded,       'النقاط',      tAccent, _showPointsHistory),
                           _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   tAccent, _showLeaderboard),
                           _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent, _showWeeklyChallenge),
                           _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent, _showNotificationSettings),
-                          _gridAction(Icons.palette_outlined,       'المظهر',     tAccent, () => _showThemePicker(userData)),
+                          _gridAction(Icons.palette_outlined,      'المظهر',      tAccent, () => _showThemePicker(userData)),
                           _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   tAccent, () => _showPrivacySettings(userData)),
                           _gridAction(Icons.security_rounded,      'الأمان',      tAccent, _showSecuritySessions),
-                          _gridAction(Icons.help_outline_rounded,  'الدعم',       tAccent, _showSupportDialog),
-                          _gridAction(Icons.info_outline_rounded,  'عن راوي',    tAccent, _showAboutPlatformDialog),
+                          _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
+                          _gridAction(Icons.info_outline_rounded,  'عن راوي',    _textSecondary, _showAboutPlatformDialog),
+                          _gridAction(Icons.policy_outlined,       'سياستنا',    _textSecondary, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      _menuTile(Icons.policy_outlined, 'سياسة الخصوصية',
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
 
                       const SizedBox(height: 30),
 
