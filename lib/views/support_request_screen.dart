@@ -117,9 +117,12 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
             if (_type == 'spelling') ...[
               TextField(
                 controller: _originalCtrl,
+                textDirection: TextDirection.rtl,
+                autocorrect: false,
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
-                  labelText: 'النص الخاطئ',
+                  hintText: 'النص الخاطئ',
+                  hintStyle: GoogleFonts.cairo(fontSize: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -128,9 +131,12 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: _correctedCtrl,
+                textDirection: TextDirection.rtl,
+                autocorrect: false,
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
-                  labelText: 'النص الصحيح',
+                  hintText: 'النص الصحيح',
+                  hintStyle: GoogleFonts.cairo(fontSize: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

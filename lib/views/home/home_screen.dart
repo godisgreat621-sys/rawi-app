@@ -1120,7 +1120,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // #18 شارة المجتمع
             if (isCommunityPick)
               Positioned(
-                top: 8, right: 8,
+                bottom: 10, right: 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
