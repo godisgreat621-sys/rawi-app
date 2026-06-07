@@ -162,18 +162,60 @@ class _AuthorScreenState extends State<AuthorScreen> {
           final joinedAt      = (userData['createdAt'] as Timestamp?)?.toDate();
           final joinYear      = joinedAt?.year.toString() ?? '';
 
-          // إذا كان الملف خاصاً وليس صاحبه
-          if (!isMe && profileVisibility == 'private') {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.lock_rounded, size: 48, color: _textSecondary),
-                  const SizedBox(height: 12),
-                  Text('هذا الحساب خاص', style: GoogleFonts.cairo(color: _textSecondary, fontSize: 15)),
-                ],
-              ),
-            );
+          // حماية الملف الخاص أو للمتابعين فقط
+          if (!isMe) {
+            if (profileVisibility == 'private') {
+              return Scaffold(
+                backgroundColor: _bg,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock_rounded, size: 52, color: _textSecondary),
+                      const SizedBox(height: 12),
+                      Text('هذا الحساب خاص',
+                          style: GoogleFonts.cairo(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text('لا يمكنك رؤية هذا الملف',
+                          style: GoogleFonts.cairo(color: _textSecondary, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              );
+            }
+            if (profileVisibility == 'followers' && !_isFollowing) {
+              return Scaffold(
+                backgroundColor: _bg,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.group_outlined, size: 52, color: _textSecondary),
+                      const SizedBox(height: 12),
+                      Text('للمتابعين فقط',
+                          style: GoogleFonts.cairo(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text('تابع هذا الكاتب لتتمكن من رؤية ملفه',
+                          style: GoogleFonts.cairo(color: _textSecondary, fontSize: 13)),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _toggleFollow,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: tAccent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text('تابع',
+                              style: GoogleFonts.cairo(color: const Color(0xFF0D0F14),
+                                  fontWeight: FontWeight.w700, fontSize: 14)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
           }
 
           return CustomScrollView(
@@ -218,7 +260,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       onPressed: () => _showProfileReportDialog(widget.authorId),
                     ),
                 ],
-                expandedHeight: 200,
+                expandedHeight: 255,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,
@@ -251,7 +293,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       ),
                       // المحتوى
                       Padding(
-                        padding: const EdgeInsets.only(top: 56, bottom: 16),
+                        padding: const EdgeInsets.only(top: 48, bottom: 12),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -430,10 +472,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: tAccent.withValues(alpha: 0.15)),
                             ),
-                            child: Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 20,
-                              runSpacing: 10,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _statCompact(novels.length.toString(), 'رواية',
                                     Icons.auto_stories_rounded, tAccent),
