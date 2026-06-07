@@ -1749,6 +1749,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   // ── إبلاغ عن الرواية (غلاف / عنوان) ─────────────────────────────────────
   void _showNovelReportDialog(String novelId) {
     String? selected;
+    bool sending = false;
     final reasons = ['غلاف غير لائق', 'عنوان مسيء', 'محتوى مخالف', 'انتحال هوية', 'أخرى'];
     final ctrl = TextEditingController();
     showDialog(
@@ -1792,10 +1793,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: _textSecondary))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            onPressed: () async {
-              if (selected == null) return;
+            onPressed: (selected == null || sending) ? null : () async {
+              setSt(() => sending = true);
               final uid = FirebaseAuth.instance.currentUser?.uid;
-              if (uid == null) return;
+              if (uid == null) { setSt(() => sending = false); return; }
               final novel = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
               await FirebaseFirestore.instance.collection('reports').add({
                 'type': 'novel',
@@ -1807,7 +1808,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 'status': 'pending',
                 'createdAt': FieldValue.serverTimestamp(),
               });
-              if (ctx.mounted) { Navigator.pop(ctx); }
+              if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text('تم إرسال البلاغ ✅', style: GoogleFonts.cairo()),
@@ -1816,7 +1817,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 ));
               }
             },
-            child: Text('إرسال', style: GoogleFonts.cairo(color: Colors.white)),
+            child: sending
+                ? const SizedBox(height: 18, width: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text('إرسال', style: GoogleFonts.cairo(color: Colors.white)),
           ),
         ],
       )),

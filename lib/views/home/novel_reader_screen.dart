@@ -1200,6 +1200,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
 
   void _showReportCommentDialog(String commentId) {
     String? selectedReason;
+    bool sending = false;
     const reasons = ['محتوى مسيء', 'سب/قذف', 'حرق أحداث', 'سرقة أدبية', 'أخرى'];
     showModalBottomSheet(
       context: context,
@@ -1217,24 +1218,21 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 title: Text(r, style: GoogleFonts.cairo(fontSize: 13, color: _textSecondary)),
                 value: r,
                 groupValue: selectedReason,
-                onChanged: (v) => setS(() => selectedReason = v),
+                onChanged: sending ? null : (v) => setS(() => selectedReason = v),
                 activeColor: _accent,
               )),
               const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, minimumSize: const Size(double.infinity, 45)),
-                onPressed: selectedReason == null ? null : () async {
+                onPressed: (selectedReason == null || sending) ? null : () async {
+                  setS(() => sending = true);
                   final user = FirebaseAuth.instance.currentUser;
-                  Navigator.pop(ctx);
-                  _showSnack('تم إرسال البلاغ فوراً ✅ سيتم مراجعته', Colors.green);
                   if (user != null) {
-                    // احصل على صاحب التعليق
                     final commentDoc = await FirebaseFirestore.instance
                         .collection('novels').doc(_novelId)
                         .collection('comments').doc(commentId).get();
                     final commentData = commentDoc.data();
                     final reportedUid = commentData?['authorId'] as String?;
-
                     await FirebaseFirestore.instance.collection('reports').add({
                       'type': 'comment',
                       'commentId': commentId,
@@ -1244,11 +1242,14 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       'reportedUser': reportedUid,
                       'createdAt': FieldValue.serverTimestamp(),
                     });
-
-                    // الحظر التلقائي محذوف: يجب أن يكون قرار الحظر من الأدمن فقط
                   }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  _showSnack('تم إرسال البلاغ ✅ سيتم مراجعته', Colors.green);
                 },
-                child: Text('إرسال البلاغ', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                child: sending
+                    ? const SizedBox(height: 18, width: 18,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text('إرسال البلاغ', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
               )
             ],
           ),
@@ -1265,6 +1266,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
   // ── التبليغ عن محتوى الفصل ────────────────────────────────────────────────
   void _showReportDialog() {
     String? selectedReason;
+    bool sending = false;
     final detailsCtrl = TextEditingController();
     const reasons = [
       'محتوى مسيء أو غير لائق',
@@ -1354,12 +1356,16 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: selectedReason == null
+                    onPressed: (selectedReason == null || sending)
                         ? null
                         : () async {
+                            setS(() => sending = true);
                             final user =
                                 FirebaseAuth.instance.currentUser;
-                            if (user == null) return;
+                            if (user == null) {
+                              setS(() => sending = false);
+                              return;
+                            }
                             await FirebaseFirestore.instance
                                 .collection('reports')
                                 .add({
@@ -1373,15 +1379,21 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                               'status':      'pending',
                               'createdAt':   FieldValue.serverTimestamp(),
                             });
+                            sending = false;
                             if (ctx.mounted) {
                               Navigator.pop(ctx);
                               _showSnack('تم إرسال تبليغك ✅',
                                   Colors.green);
                             }
                           },
-                    child: Text('إرسال التبليغ',
-                        style: GoogleFonts.cairo(
-                            fontWeight: FontWeight.w700)),
+                    child: sending
+                        ? const SizedBox(
+                            height: 18, width: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text('إرسال التبليغ',
+                            style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],

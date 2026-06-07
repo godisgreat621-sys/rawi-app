@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
@@ -418,7 +419,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2),
             );
           }
@@ -557,7 +558,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Positioned.fill(
                                   child: Container(
                                     decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                    child: const Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2)),
+                                    child: Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2)),
                                   ),
                                 ),
                               Positioned(
@@ -1519,7 +1520,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .snapshots(),
                 builder: (_, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(
+                    return Center(
                         child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2));
                   }
                   final docs = snap.data?.docs ?? [];
@@ -1724,7 +1725,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 future: FirebaseFirestore.instance.collection('users')
                     .orderBy('points', descending: true).limit(50).get(),
                 builder: (_, snap) {
-                  if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2));
+                  if (!snap.hasData) return Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2));
                   final docs    = snap.data!.docs;
                   final myUid   = FirebaseAuth.instance.currentUser?.uid ?? '';
                   // #46 ابحث عن رتبة المستخدم الحالي
