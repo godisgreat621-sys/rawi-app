@@ -145,13 +145,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(10),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.07),
+                  color: _tAccent.withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _accent.withValues(alpha: 0.2)),
+                  border: Border.all(color: _tAccent.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   'تنبيه: يرى القراء اسمك على تعليقاتك وتقييماتك.\nاختر اسماً ثابتاً حتى لا يضيع القراء.',
-                  style: GoogleFonts.cairo(fontSize: 12, color: _accent),
+                  style: GoogleFonts.cairo(fontSize: 12, color: _tAccent),
                 ),
               ),
             TextField(
@@ -422,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+              child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2),
             );
           }
 
@@ -518,8 +518,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Builder(builder: (_) {
                                 final rc = _ringColors(profileTheme);
                                 final glow = _ringGlow(profileTheme);
-                                final isDoubleRing = profileTheme == 'galaxy' || profileTheme == 'desert';
-                                Widget frame = Container(
+                                final isAccent = profileTheme == 'galaxy' || profileTheme == 'desert';
+                                final innerFrame = Container(
                                   padding: const EdgeInsets.all(2.5),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
@@ -528,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
-                                    boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 16, spreadRadius: isDoubleRing ? 1 : 0)],
+                                    boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 16, spreadRadius: isAccent ? 2 : 0)],
                                   ),
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
@@ -544,23 +544,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   ),
                                 );
-                                if (isDoubleRing) {
-                                  frame = Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: tAccent.withValues(alpha: 0.35), width: 1),
+                                return Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: tAccent.withValues(alpha: isAccent ? 0.45 : 0.25),
+                                      width: 1,
                                     ),
-                                    child: frame,
-                                  );
-                                }
-                                return frame;
+                                  ),
+                                  child: innerFrame,
+                                );
                               }),
                               if (_isUploading)
                                 Positioned.fill(
                                   child: Container(
                                     decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                    child: const Center(child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
+                                    child: const Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2)),
                                   ),
                                 ),
                               Positioned(
@@ -696,31 +696,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // #40 السيرة الذاتية
                       Builder(builder: (_) {
                         final bio = (userData?['bio'] as String?) ?? '';
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 14),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: _surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _border),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  bio.isEmpty ? 'أضف سيرة ذاتية قصيرة...' : bio,
-                                  style: GoogleFonts.cairo(
-                                      fontSize: 13,
-                                      color: bio.isEmpty ? _textSecondary : _textPrimary,
-                                      height: 1.6),
+                        return GestureDetector(
+                          onTap: () => _showEditBioDialog(bio),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: tAccent.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: tAccent.withValues(alpha: 0.18)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.format_quote_rounded, color: tAccent, size: 18),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    bio.isEmpty ? 'أضف سيرة ذاتية قصيرة...' : bio,
+                                    style: GoogleFonts.cairo(
+                                        fontSize: 13,
+                                        color: bio.isEmpty ? _textSecondary : _textPrimary,
+                                        height: 1.6),
+                                  ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _showEditBioDialog(bio),
-                                child: Icon(Icons.edit_outlined, size: 16, color: _textSecondary),
-                              ),
-                            ],
+                                Icon(Icons.edit_outlined, size: 14, color: tAccent.withValues(alpha: 0.6)),
+                              ],
+                            ),
                           ),
                         );
                       }),
@@ -874,19 +876,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'روايات قيمتها',
               style: GoogleFonts.cairo(
                 fontWeight: FontWeight.bold,
-                color: _accent,
+                color: _tAccent,
               ),
             ),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collectionGroup('ratings')
-                  .where('authorId', isEqualTo: user.uid)
+                  .collection('users').doc(user.uid)
+                  .collection('myRatings')
+                  .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (snapshot.hasError) {
+                  return Center(child: Text('حدث خطأ', style: GoogleFonts.cairo(color: _textSecondary)));
+                }
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final docs = snapshot.data!.docs;
                 if (docs.isEmpty)
                   return Center(
@@ -899,23 +906,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, i) {
-                    final doc  = docs[i];
-                    final data = doc.data() as Map<String, dynamic>;
-                    // novelId من مسار الوثيقة: novels/{novelId}/ratings/...
-                    final novelId = doc.reference.parent.parent?.id ?? '';
+                    final data    = docs[i].data() as Map<String, dynamic>;
+                    final novelId = data['novelId'] as String? ?? '';
+                    final title   = data['novelTitle'] as String? ?? 'رواية';
+                    final comment = data['comment']   as String? ?? '';
+                    final rating  = data['rating'];
                     return ListTile(
-                      leading: Icon(Icons.auto_stories_rounded, color: _tAccent, size: 18),
-                      title: Text(
-                        data['novelTitle'] ?? data['comment'] ?? 'رواية',
-                        style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      leading: Container(
+                        width: 34, height: 34,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _tAccent.withValues(alpha: 0.12),
+                        ),
+                        child: Icon(Icons.auto_stories_rounded, color: _tAccent, size: 17),
                       ),
-                      subtitle: data['comment'] != null && data['comment'].toString().isNotEmpty
-                          ? Text(data['comment'], style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)
+                      title: Text(title,
+                          style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: comment.isNotEmpty
+                          ? Text(comment,
+                              style: GoogleFonts.cairo(color: _textSecondary, fontSize: 11),
+                              maxLines: 1, overflow: TextOverflow.ellipsis)
                           : null,
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Text(data['rating'].toString(), style: GoogleFonts.cairo(color: _gold, fontWeight: FontWeight.w700)),
-                        const Icon(Icons.star_rounded, color: _gold, size: 14),
+                        Text(rating?.toString() ?? '', style: GoogleFonts.cairo(color: _tAccent, fontWeight: FontWeight.w700)),
+                        const SizedBox(width: 2),
+                        Icon(Icons.star_rounded, color: _tAccent, size: 14),
                       ]),
                       onTap: novelId.isEmpty ? null : () async {
                         final nd = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
@@ -946,7 +962,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Color _getRankColor(int points) {
     if (points >= 2000) return _gold;
-    if (points >= 500) return _accent;
+    if (points >= 500) return _tAccent;
     return _textSecondary;
   }
 
@@ -970,7 +986,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'المحفوظات (للقراءة لاحقاً)',
                 style: GoogleFonts.cairo(
                   fontWeight: FontWeight.bold,
-                  color: _accent,
+                  color: _tAccent,
                 ),
               ),
             ),
@@ -1082,7 +1098,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title,
                   style: GoogleFonts.cairo(
                     fontWeight: FontWeight.bold,
-                    color: _accent,
+                    color: _tAccent,
                   ),
                 ),
               ),
@@ -1166,7 +1182,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool showFollowing    = userData?['showFollowing']        ?? true;
     bool showReadingList  = userData?['showReadingList']      ?? true;
     bool showReadingStats = userData?['showReadingStats']     ?? true;
-    bool allowDMs         = userData?['allowDirectMessages']  ?? true;
     // profileVisibility: public | followers | private
     String profileVisibility = (userData?['profileVisibility'] as String?) ?? 'public';
 
@@ -1193,8 +1208,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: Text(label, style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
               subtitle: Text(subtitle, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12)),
               value: val,
-              activeThumbColor: _accent,
-              activeTrackColor: _accent.withValues(alpha: 0.4),
+              activeThumbColor: _tAccent,
+              activeTrackColor: _tAccent.withValues(alpha: 0.4),
               onChanged: (v) async { setS(() {}); await onChange(v); },
             );
 
@@ -1247,15 +1262,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           (v) async { showReadingList = v; await save({'showReadingList': v}); }),
                       toggle('إحصائيات القراءة', 'إظهار عدد الفصول والكلمات المقروءة', showReadingStats,
                           (v) async { showReadingStats = v; await save({'showReadingStats': v}); }),
-                      Divider(color: _border),
-                      // ── التواصل ──
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: Text('التواصل',
-                            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      ),
-                      toggle('الرسائل المباشرة', 'السماح للآخرين بمراسلتي', allowDMs,
-                          (v) async { allowDMs = v; await save({'allowDirectMessages': v}); }),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -1282,15 +1288,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-      leading: Icon(icon, color: selected ? _accent : _textSecondary, size: 20),
+      leading: Icon(icon, color: selected ? _tAccent : _textSecondary, size: 20),
       title: Text(label,
           style: GoogleFonts.cairo(
-              color: selected ? _accent : _textPrimary,
+              color: selected ? _tAccent : _textPrimary,
               fontSize: 14,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
       subtitle: Text(subtitle, style: GoogleFonts.cairo(color: _textSecondary, fontSize: 12)),
       trailing: selected
-          ? Icon(Icons.check_circle_rounded, color: _accent, size: 18)
+          ? Icon(Icons.check_circle_rounded, color: _tAccent, size: 18)
           : Icon(Icons.circle_outlined, color: _border, size: 18),
       onTap: () => setS(() => onSelect(value)),
     );
@@ -1546,7 +1552,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 builder: (_, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(
-                        child: CircularProgressIndicator(color: _accent, strokeWidth: 2));
+                        child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2));
                   }
                   final docs = snap.data?.docs ?? [];
                   if (docs.isEmpty) {
@@ -1712,7 +1718,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: Text('حفظ', style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)),
+            child: Text('حفظ', style: GoogleFonts.cairo(color: _tAccent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1750,7 +1756,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 future: FirebaseFirestore.instance.collection('users')
                     .orderBy('points', descending: true).limit(50).get(),
                 builder: (_, snap) {
-                  if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: _accent, strokeWidth: 2));
+                  if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2));
                   final docs    = snap.data!.docs;
                   final myUid   = FirebaseAuth.instance.currentUser?.uid ?? '';
                   // #46 ابحث عن رتبة المستخدم الحالي
@@ -1762,15 +1768,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _accent.withValues(alpha: 0.08),
+                          color: _tAccent.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: _accent.withValues(alpha: 0.25)),
+                          border: Border.all(color: _tAccent.withValues(alpha: 0.25)),
                         ),
                         child: Row(children: [
-                          const Icon(Icons.person_rounded, color: _accent, size: 16),
+                          Icon(Icons.person_rounded, color: _tAccent, size: 16),
                           const SizedBox(width: 8),
                           Text('رتبتك: #$myRank من أصل ${docs.length}',
-                              style: GoogleFonts.cairo(fontSize: 13, color: _accent, fontWeight: FontWeight.w700)),
+                              style: GoogleFonts.cairo(fontSize: 13, color: _tAccent, fontWeight: FontWeight.w700)),
                         ]),
                       ),
                     Expanded(
@@ -1790,7 +1796,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             decoration: BoxDecoration(
                               color: isMe ? _accent.withValues(alpha: 0.07) : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
-                              border: isMe ? Border.all(color: _accent.withValues(alpha: 0.3)) : null,
+                              border: isMe ? Border.all(color: _tAccent.withValues(alpha: 0.3)) : null,
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1799,7 +1805,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 backgroundImage: pic != null ? NetworkImage(pic) : null,
                                 backgroundColor: _surfaceHigh,
                                 child: pic == null ? Text(n.isNotEmpty ? n[0] : '؟',
-                                    style: GoogleFonts.cairo(color: _accent, fontWeight: FontWeight.w700)) : null,
+                                    style: GoogleFonts.cairo(color: _tAccent, fontWeight: FontWeight.w700)) : null,
                               ),
                               title: Row(children: [
                                 if (i < 3) Text('${medals[i]} ', style: const TextStyle(fontSize: 16)),
@@ -1807,7 +1813,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     color: isMe ? _accent : _textPrimary,
                                     fontWeight: isMe ? FontWeight.w700 : FontWeight.normal)),
                                 if (isMe) ...[const SizedBox(width: 6),
-                                  Text('(أنت)', style: GoogleFonts.cairo(fontSize: 10, color: _accent))],
+                                  Text('(أنت)', style: GoogleFonts.cairo(fontSize: 10, color: _tAccent))],
                               ]),
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1993,7 +1999,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             pts,
             style: GoogleFonts.cairo(
-              color: _accent,
+              color: _tAccent,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
@@ -2037,7 +2043,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.cairo(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: _accent,
+                color: _tAccent,
               ),
             ),
             const SizedBox(height: 20),
@@ -2079,7 +2085,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: _accent, size: 24),
+          Icon(icon, color: _tAccent, size: 24),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -2166,7 +2172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Container(
       margin: const EdgeInsets.symmetric(horizontal: 10),
       width: 6, height: 6,
-      decoration: BoxDecoration(color: _accent.withValues(alpha: 0.45), shape: BoxShape.circle),
+      decoration: BoxDecoration(color: _tAccent.withValues(alpha: 0.45), shape: BoxShape.circle),
     ),
     Expanded(child: Container(height: 1, color: _border)),
   ]);
@@ -2215,10 +2221,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _surfaceHigh,
-                borderRadius: BorderRadius.circular(10),
+                color: _tAccent.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: _accent, size: 18),
+              child: Icon(icon, color: _tAccent, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(

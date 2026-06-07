@@ -261,8 +261,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             Builder(builder: (_) {
                               final rc = _ringColors(profileTheme);
                               final glow = _ringGlow(profileTheme);
-                              final isDoubleRing = profileTheme == 'galaxy' || profileTheme == 'desert';
-                              Widget frame = Container(
+                              final isAccent = profileTheme == 'galaxy' || profileTheme == 'desert';
+                              final innerFrame = Container(
                                 padding: const EdgeInsets.all(2.5),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
@@ -271,7 +271,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 18, spreadRadius: isDoubleRing ? 2 : 0)],
+                                  boxShadow: [BoxShadow(color: tAccent.withValues(alpha: glow), blurRadius: 18, spreadRadius: isAccent ? 2 : 0)],
                                 ),
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
@@ -289,17 +289,17 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                   ),
                                 ),
                               );
-                              if (isDoubleRing) {
-                                frame = Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: tAccent.withValues(alpha: 0.35), width: 1),
+                              return Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: tAccent.withValues(alpha: isAccent ? 0.45 : 0.25),
+                                    width: 1,
                                   ),
-                                  child: frame,
-                                );
-                              }
-                              return frame;
+                                ),
+                                child: innerFrame,
+                              );
                             }),
                             const SizedBox(height: 12),
                             // #35 اسم الكاتب + شارة التوثيق
@@ -563,39 +563,17 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: tAccent.withValues(alpha: 0.25)),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Column(
                                 children: [
-                                  Container(
-                                    width: 32, height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: tAccent.withValues(alpha: 0.15),
-                                    ),
-                                    child: Icon(Icons.format_quote_rounded, color: tAccent, size: 18),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('عن الكاتب',
-                                            style: GoogleFonts.cairo(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: tAccent,
-                                              letterSpacing: 0.5,
-                                            )),
-                                        const SizedBox(height: 5),
-                                        Text(bio,
-                                            style: GoogleFonts.cairo(
-                                              fontSize: 13,
-                                              color: _textPrimary,
-                                              height: 1.7,
-                                            )),
-                                      ],
-                                    ),
-                                  ),
+                                  Icon(Icons.format_quote_rounded, color: tAccent, size: 22),
+                                  const SizedBox(height: 8),
+                                  Text(bio,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 13,
+                                        color: _textPrimary,
+                                        height: 1.7,
+                                      )),
                                 ],
                               ),
                             );

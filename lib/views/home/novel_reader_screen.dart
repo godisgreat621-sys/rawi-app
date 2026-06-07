@@ -684,6 +684,20 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       'createdAt':  FieldValue.serverTimestamp(),
     });
 
+    // حفظ في myRatings للعرض السريع في البروفايل
+    await FirebaseFirestore.instance
+        .collection('users').doc(user.uid)
+        .collection('myRatings').doc(_chapterId)
+        .set({
+      'rating':       rating,
+      'comment':      comment,
+      'novelId':      _novelId,
+      'novelTitle':   widget.novel['title'] ?? '',
+      'chapterId':    _chapterId,
+      'chapterTitle': widget.novel['chapterTitle'] ?? '',
+      'createdAt':    FieldValue.serverTimestamp(),
+    });
+
     // متوسط تقييم الفصل
     final allRatings = await _chapterRef.collection('ratings').get();
     final total = allRatings.docs
