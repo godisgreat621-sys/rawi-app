@@ -251,7 +251,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   void _onItemTapped(int index) {
     if (_selectedIndex == index) return;
     HapticFeedback.selectionClick();
+    // عند المغادرة من تبويب الإشعارات → تحديد الكل كمقروء
+    if (_selectedIndex == 2) _markAllNotificationsRead();
     setState(() => _selectedIndex = index);
+  }
+
+  Future<void> _markAllNotificationsRead() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final snap = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .where('isRead', isEqualTo: false)
+        .limit(500)
+        .get();
+    if (snap.docs.isEmpty) return;
+    const chunkSize = 400;
+    for (var i = 0; i < snap.docs.length; i += chunkSize) {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in snap.docs.skip(i).take(chunkSize)) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    }
   }
 
   @override

@@ -23,16 +23,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Color _textSecondary = const Color(0xFF6B7280);
   static const _gold          = Color(0xFFD4A843);
 
-  @override
-  void initState() {
-    super.initState();
-    // قراءة تلقائية عند فتح الشاشة بعد تحميل الـ frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) _markAllRead(user.uid);
-    });
-  }
-
   Future<void> _markAllRead(String userId) async {
     final snap = await FirebaseFirestore.instance
         .collection('notifications')
@@ -48,6 +38,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in chunk) {
         batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    }
+  }
+
+  Future<void> _confirmDeleteAll() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('حذف الإشعارات',
+            style: GoogleFonts.cairo(color: _textPrimary, fontWeight: FontWeight.w700)),
+        content: Text('هل تريد حذف جميع الإشعارات؟',
+            style: GoogleFonts.cairo(color: _textSecondary, fontSize: 13)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('إلغاء', style: GoogleFonts.cairo(color: _textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('حذف', style: GoogleFonts.cairo(color: Colors.redAccent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final snap = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .limit(500)
+        .get();
+    if (snap.docs.isEmpty) return;
+    const chunkSize = 400;
+    for (var i = 0; i < snap.docs.length; i += chunkSize) {
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in snap.docs.skip(i).take(chunkSize)) {
+        batch.delete(doc.reference);
       }
       await batch.commit();
     }
@@ -137,6 +168,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
                     color: _textPrimary)),
+            actions: [
+              if (user != null)
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep_rounded,
+                      color: Colors.redAccent, size: 22),
+                  tooltip: 'حذف كل الإشعارات',
+                  onPressed: _confirmDeleteAll,
+                ),
+            ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(1),
               child: Container(height: 1, color: _border),

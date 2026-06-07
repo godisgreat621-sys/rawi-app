@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -463,8 +464,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (profilePic != null)
                         Opacity(
                           opacity: 0.28,
-                          child: Image.network(profilePic, fit: BoxFit.cover,
-                              errorBuilder: (context, e, s) => const SizedBox()),
+                          child: CachedNetworkImage(
+                              imageUrl: profilePic, fit: BoxFit.cover,
+                              memCacheWidth: 600,
+                              errorWidget: (_, e, s) => const SizedBox()),
                         )
                       else
                         Container(color: _bg),
@@ -1199,8 +1202,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           insetPadding: const EdgeInsets.all(24),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(100),
-            child: Image.network(url, fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => CircleAvatar(
+            child: CachedNetworkImage(
+                imageUrl: url, fit: BoxFit.contain, memCacheWidth: 400,
+                errorWidget: (_, e, s) => CircleAvatar(
                   radius: 80, backgroundColor: _surface,
                   child: Text(fallbackLetter,
                       style: GoogleFonts.cairo(fontSize: 48, color: accent)),

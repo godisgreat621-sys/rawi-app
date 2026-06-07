@@ -140,9 +140,12 @@ class _SupportRequestScreenState extends State<SupportRequestScreen> {
               TextField(
                 controller: _messageCtrl,
                 maxLines: 5,
+                textAlignVertical: TextAlignVertical.top,
+                autocorrect: false,
                 style: GoogleFonts.cairo(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'اترك التفاصيل هنا...',
+                  alignLabelWithHint: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

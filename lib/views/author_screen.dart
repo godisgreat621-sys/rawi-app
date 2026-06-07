@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -132,8 +133,9 @@ class _AuthorScreenState extends State<AuthorScreen> {
           insetPadding: const EdgeInsets.all(24),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(100),
-            child: Image.network(url, fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const SizedBox()),
+            child: CachedNetworkImage(
+                imageUrl: url, fit: BoxFit.contain, memCacheWidth: 400,
+                errorWidget: (_, e, s) => const SizedBox()),
           ),
         ),
       ),
@@ -288,10 +290,11 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       if (profilePic != null)
                         Opacity(
                           opacity: 0.28,
-                          child: Image.network(
-                            profilePic,
+                          child: CachedNetworkImage(
+                            imageUrl: profilePic,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const SizedBox(),
+                            memCacheWidth: 600,
+                            errorWidget: (_, e, s) => const SizedBox(),
                           ),
                         )
                       else

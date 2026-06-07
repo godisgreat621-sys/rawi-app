@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/views/home/novel_reader_screen.dart';
 import 'package:my_first_app/views/writer/add_novel_screen.dart';
@@ -118,7 +119,8 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _shareNovel(String title, String novelId) {
-    final text = 'اقرأ رواية "$title" على تطبيق راوي 📖\nرمز الرواية: $novelId';
+    final link = 'https://rawai.page.link/novel?id=$novelId';
+    final text = '📖 "$title"\nاقرأها الآن على تطبيق راوي:\n$link';
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('تم نسخ رابط المشاركة ✓', style: GoogleFonts.cairo()),
@@ -370,12 +372,15 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
             controller: ctrl,
             maxLines: 6,
             maxLength: 1000,
+            textAlignVertical: TextAlignVertical.top,
+            autocorrect: false,
             style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary),
             decoration: InputDecoration(
               hintText: 'اكتب مراجعتك التفصيلية هنا...',
               hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
               filled: true,
               fillColor: _surfaceHigh,
+              alignLabelWithHint: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
             ),
           ),
@@ -435,11 +440,14 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: ctrl, maxLines: 4, maxLength: 300,
+            textAlignVertical: TextAlignVertical.top,
+            autocorrect: false,
             style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary),
             decoration: InputDecoration(
               hintText: 'اختر جملة مميزة من روايتك لتظهر للقراء...',
               hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
               filled: true, fillColor: _surfaceHigh,
+              alignLabelWithHint: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
             ),
           ),
@@ -703,12 +711,15 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
+      textAlignVertical: TextAlignVertical.top,
+      autocorrect: false,
       style: GoogleFonts.cairo(color: _textPrimary, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
         filled: true,
         fillColor: _surfaceHigh,
+        alignLabelWithHint: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
@@ -1015,8 +1026,9 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                   if (coverUrl != null)
                     Opacity(
                       opacity: 0.30,
-                      child: Image.network(coverUrl, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(color: coverBg)),
+                      child: CachedNetworkImage(imageUrl: coverUrl, fit: BoxFit.cover,
+                          memCacheWidth: 800,
+                          errorWidget: (_, e, s) => Container(color: coverBg)),
                     )
                   else
                     Container(color: coverBg),
@@ -1051,7 +1063,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                                     insetPadding: const EdgeInsets.all(20),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Image.network(coverUrl, fit: BoxFit.contain),
+                                      child: CachedNetworkImage(imageUrl: coverUrl, fit: BoxFit.contain, memCacheWidth: 600),
                                     ),
                                   ),
                                 ),
@@ -1790,10 +1802,13 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
             controller: ctrl,
             style: GoogleFonts.cairo(fontSize: 12, color: _textPrimary),
             maxLines: 3,
+            textAlignVertical: TextAlignVertical.top,
+            autocorrect: false,
             decoration: InputDecoration(
               hintText: 'تفاصيل إضافية (اختياري)',
               hintStyle: GoogleFonts.cairo(fontSize: 12, color: _textSecondary),
               filled: true, fillColor: _surfaceHigh,
+              alignLabelWithHint: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _accent)),
@@ -1809,6 +1824,25 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               setSt(() => sending = true);
               final uid = FirebaseAuth.instance.currentUser?.uid;
               if (uid == null) { setSt(() => sending = false); return; }
+              // فحص البلاغات المكررة
+              final existing = await FirebaseFirestore.instance
+                  .collection('reports')
+                  .where('reportedBy', isEqualTo: uid)
+                  .where('novelId', isEqualTo: novelId)
+                  .where('type', isEqualTo: 'novel')
+                  .limit(1)
+                  .get();
+              if (existing.docs.isNotEmpty) {
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('لقد أرسلت بلاغاً عن هذه الرواية من قبل', style: GoogleFonts.cairo()),
+                    backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                }
+                return;
+              }
               final novel = await FirebaseFirestore.instance.collection('novels').doc(novelId).get();
               await FirebaseFirestore.instance.collection('reports').add({
                 'type': 'novel',

@@ -1,9 +1,11 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import '../../models/novel_model.dart';
 import 'novel_detail_screen.dart';
@@ -38,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _filterMode      = 'all'; // all | completed | today | topRated | discussed | unread
   // #46 تحميل تدريجي
   int    _limit           = 20;
+  // stream الروايات كـ instance variable لمنع إعادة الاشتراك عند كل build
+  Stream<QuerySnapshot>? _novelsStream;
   // #49 عرض قائمة أو شبكة
   bool   _isListView      = false;
   // #18 شارة المجتمع
@@ -53,8 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _novelsStream = _buildQuery();
     _getCommunityPickId().then((id) {
       if (mounted) setState(() => _communityPickId = id);
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted) setState(() => _isListView = prefs.getBool('home_list_view') ?? false);
     });
   }
 
@@ -82,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'topRated':
         return col.orderBy('rating', descending: true).limit(_limit).snapshots();
       case 'discussed':
-        return col.orderBy('likes', descending: true).limit(_limit).snapshots();
+        return col.orderBy('commentsCount', descending: true).limit(_limit).snapshots();
       default:
         return col
             .orderBy(_sortByActivity ? 'lastActivityAt' : 'createdAt',
@@ -325,7 +333,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 IconButton(
                   icon: Icon(_isListView ? Icons.grid_view_rounded : Icons.view_list_rounded,
                       color: _textSecondary, size: 21),
-                  onPressed: () => setState(() => _isListView = !_isListView),
+                  onPressed: () {
+                    final next = !_isListView;
+                    setState(() => _isListView = next);
+                    SharedPreferences.getInstance()
+                        .then((p) => p.setBool('home_list_view', next));
+                  },
                 ),
                 IconButton(
                   icon: Icon(Icons.search_rounded, color: _textSecondary, size: 22),
@@ -414,8 +427,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       final title = (novel['title'] as String?) ?? '';
                       final chaptersCount = (novel['chaptersCount'] as int?) ?? 0;
                       // لا تُظهر الـ widget إذا لم يقرأ شيئاً أو أكمل كل الفصول
-                      if (readIds.isEmpty) return const SizedBox();
-                      if (chaptersCount > 0 && readIds.length >= chaptersCount) return const SizedBox();
+                      if (readIds.isEmpty || chaptersCount <= 0) return const SizedBox();
+                      if (readIds.length >= chaptersCount) return const SizedBox();
                       return GestureDetector(
                         onTap: () => _navigateToDetail(Novel.fromFirestore(novelSnap.data!)),
                         child: Container(
@@ -460,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // ── المحتوى ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _buildQuery(),
+              stream: _novelsStream ?? _buildQuery(),
               builder: (context, snapshot) {
                 // #27 Skeleton loading
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -561,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ClipRRect(
                                                 borderRadius: BorderRadius.circular(8),
                                                 child: cover != null && cover.isNotEmpty
-                                                    ? Image.network(cover, width: 50, height: 65, fit: BoxFit.cover)
+                                                    ? CachedNetworkImage(imageUrl: cover, width: 50, height: 65, fit: BoxFit.cover, memCacheWidth: 100, memCacheHeight: 130, errorWidget: (_, __, ___) => Container(width: 50, height: 65, color: _surfaceHigh))
                                                     : Container(width: 50, height: 65, color: _surfaceHigh,
                                                         child: const Icon(Icons.book, color: _accent, size: 22)),
                                               ),
@@ -620,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 child: ClipRRect(
                                                   borderRadius: BorderRadius.circular(10),
                                                   child: rec[i].coverUrl != null
-                                                      ? Image.network(rec[i].coverUrl!, fit: BoxFit.cover, width: double.infinity)
+                                                      ? CachedNetworkImage(imageUrl: rec[i].coverUrl!, fit: BoxFit.cover, width: double.infinity, memCacheWidth: 220, errorWidget: (_, __, ___) => Container(color: _surfaceHigh))
                                                       : Container(color: _surfaceHigh,
                                                           child: Icon(Icons.auto_stories_rounded, color: _accent, size: 30)),
                                                 ),
@@ -666,7 +679,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                             child: GestureDetector(
-                              onTap: () => setState(() => _limit += 20),
+                              onTap: () => setState(() {
+                                _limit += 20;
+                                _novelsStream = _buildQuery();
+                              }),
                               child: Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -761,6 +777,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _filterMode = isSel ? 'all' : f.$1;
                   _showBookmarkedOnly = false;
                 }
+                _novelsStream = _buildQuery();
               }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -805,7 +822,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(child: Text(text, style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w600, color: _textSecondary))),
           if (!_showBookmarkedOnly && !(_isSearching && _searchQuery.isNotEmpty))
             GestureDetector(
-              onTap: () => setState(() => _sortByActivity = !_sortByActivity),
+              onTap: () => setState(() {
+                _sortByActivity = !_sortByActivity;
+                _novelsStream = _buildQuery();
+              }),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -904,7 +924,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: n.coverUrl != null
-                      ? Image.network(n.coverUrl!, width: 50, height: 68, fit: BoxFit.cover)
+                      ? CachedNetworkImage(imageUrl: n.coverUrl!, width: 50, height: 68, fit: BoxFit.cover, memCacheWidth: 100, memCacheHeight: 140, errorWidget: (_, e, s) => Container(width: 50, height: 68, color: _surfaceHigh))
                       : Container(width: 50, height: 68, color: _surfaceHigh,
                           child: Icon(Icons.auto_stories_rounded, color: _accent, size: 22)),
                 ),

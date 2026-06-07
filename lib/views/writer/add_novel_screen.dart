@@ -446,6 +446,8 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
       keyboardType: maxLines == null
           ? TextInputType.multiline
           : TextInputType.text,
+      textAlignVertical: TextAlignVertical.top,
+      autocorrect: false,
       style: GoogleFonts.cairo(
         fontSize: fontSize,
         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
@@ -455,6 +457,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         hintText: hint,
         hintStyle: GoogleFonts.cairo(color: Colors.grey),
         border: InputBorder.none,
+        alignLabelWithHint: true,
       ),
     );
   }
@@ -753,12 +756,15 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                 maxLines: null,
                 expands: true,
                 keyboardType: TextInputType.multiline,
+                textAlignVertical: TextAlignVertical.top,
+                autocorrect: false,
                 style: GoogleFonts.cairo(
                     fontSize: 17, height: 2.0, color: _textPrimary),
                 decoration: InputDecoration(
                   hintText: 'اكتب بحرية...',
                   hintStyle: GoogleFonts.cairo(color: _textSecondary),
                   border: InputBorder.none,
+                  alignLabelWithHint: true,
                 ),
               ),
             ),

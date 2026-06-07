@@ -30,6 +30,7 @@ class _AdminScreenState extends State<AdminScreen>
   String _novelSearch  = '';
   String _novelFilter  = 'all';
   String _reportFilter = 'pending';
+  String _logFilter    = 'all';
   String _broadcastTarget = 'all';
   late TabController _tab;
 
@@ -1081,13 +1082,43 @@ class _AdminScreenState extends State<AdminScreen>
   // ⑧ سجل التدقيق
   // ══════════════════════════════════════════════════════════════════════════
   Widget _buildAuditTab() => StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('admin_logs').orderBy('at', descending: true).limit(60).snapshots(),
+    stream: FirebaseFirestore.instance.collection('admin_logs').orderBy('at', descending: true).limit(100).snapshots(),
     builder: (_, snap) {
       if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: _accent));
-      final docs = snap.data?.docs ?? [];
-      if (docs.isEmpty) return Center(child: Text('لا توجد سجلات بعد', style: GoogleFonts.cairo(color: _textSecondary)));
-      return ListView.builder(
-        padding: const EdgeInsets.all(16), itemCount: docs.length,
+      final allDocs = snap.data?.docs ?? [];
+      final docs = _logFilter == 'all'
+          ? allDocs
+          : allDocs.where((d) {
+              final a = (d.data() as Map<String,dynamic>)['action'] as String? ?? '';
+              if (_logFilter == 'freeze') return a == 'freeze' || a == 'unfreeze';
+              return a.contains(_logFilter);
+            }).toList();
+      return Column(children: [
+        // شريط الفلاتر
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(children: [
+            for (final f in [('all','الكل'), ('freeze','تجميد ❄️'), ('ban','حظر'), ('report','بلاغات')])
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: FilterChip(
+                  label: Text(f.$2, style: GoogleFonts.cairo(fontSize: 11,
+                      color: _logFilter == f.$1 ? _bg : _textSecondary)),
+                  selected: _logFilter == f.$1,
+                  selectedColor: _accent,
+                  backgroundColor: _surface,
+                  side: BorderSide(color: _logFilter == f.$1 ? _accent : _border),
+                  onSelected: (_) => setState(() => _logFilter = f.$1),
+                ),
+              ),
+          ]),
+        ),
+        if (docs.isEmpty)
+          Expanded(child: Center(child: Text('لا توجد سجلات', style: GoogleFonts.cairo(color: _textSecondary))))
+        else
+        Expanded(child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), itemCount: docs.length,
         itemBuilder: (_, i) {
           final data   = docs[i].data() as Map<String,dynamic>;
           final ts     = (data['at'] as Timestamp?)?.toDate();
@@ -1116,7 +1147,8 @@ class _AdminScreenState extends State<AdminScreen>
             ),
           );
         },
-      );
+        )),
+      ]);
     },
   );
 

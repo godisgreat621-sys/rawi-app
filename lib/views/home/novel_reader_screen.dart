@@ -1,6 +1,6 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -636,6 +636,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       'createdAt':            FieldValue.serverTimestamp(),
       'reported':             false,
     });
+    // تحديث عداد التعليقات للرواية (يُستخدم في فلتر الأكثر نقاشاً)
+    await _novelRef.update({'commentsCount': FieldValue.increment(1)});
 
     // إشعار صاحب الرد إذا كان هذا رداً
     if (replyToId != null && mounted) {
@@ -731,6 +733,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 TextField(
                   controller: ratingCtrl,
                   maxLines: 3,
+                  textAlignVertical: TextAlignVertical.top,
+                  autocorrect: false,
                   style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
                   onChanged: (v) => setS(() => charCount = v.trim().length),
                   decoration: InputDecoration(
@@ -739,6 +743,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                         color: _textSecondary, fontSize: 13),
                     filled: true,
                     fillColor: _surfaceHigh,
+                    alignLabelWithHint: true,
                     contentPadding: const EdgeInsets.all(12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -835,7 +840,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     final allRatings = await _chapterRef.collection('ratings').get();
     final total = allRatings.docs
         .fold<int>(0, (s, d) => s + ((d.data()['rating'] ?? 0) as int));
-    final avg = total / allRatings.docs.length;
+    final avg = allRatings.docs.isEmpty ? 0.0 : total / allRatings.docs.length;
     await _chapterRef.update({
       'rating':       double.parse(avg.toStringAsFixed(1)),
       'ratingsCount': allRatings.docs.length,
@@ -1097,6 +1102,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       Expanded(
                         child: TextField(
                           controller: _commentController,
+                          autocorrect: false,
                           style: GoogleFonts.cairo(
                               color: _textPrimary, fontSize: 14),
                           decoration: InputDecoration(
@@ -1457,6 +1463,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                 TextField(
                   controller: detailsCtrl,
                   maxLines: 2,
+                  textAlignVertical: TextAlignVertical.top,
+                  autocorrect: false,
                   style: GoogleFonts.cairo(
                       color: _textPrimary, fontSize: 13),
                   decoration: InputDecoration(
@@ -1465,6 +1473,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                         color: _textSecondary, fontSize: 13),
                     filled:    true,
                     fillColor: _surfaceHigh,
+                    alignLabelWithHint: true,
                     contentPadding: const EdgeInsets.all(10),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -1741,7 +1750,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
               child: IgnorePointer(
                 ignoring: !_showControls,
                 child: Container(
-                  color: _readerBg.withValues(alpha: 0.95),
+                  color: const Color(0xFF0D0F14).withValues(alpha: 0.97),
                   child: SafeArea(
                     bottom: false,
                     child: Column(
@@ -1856,9 +1865,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                           : <String, dynamic>{};
                       return Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: _readerBg.withValues(alpha: 0.97),
-                          border: Border(top: BorderSide(color: _border.withValues(alpha: 0.5))),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF0D0F14),
+                          border: Border(top: BorderSide(color: Color(0xFF252836))),
                         ),
                         child: SafeArea(
                           top: false,
@@ -2089,8 +2098,15 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: cover != null && cover.isNotEmpty
-                                ? Image.network(cover,
-                                    width: 82, height: 106, fit: BoxFit.cover)
+                                ? CachedNetworkImage(
+                                    imageUrl: cover,
+                                    width: 82, height: 106, fit: BoxFit.cover,
+                                    memCacheWidth: 164, memCacheHeight: 212,
+                                    errorWidget: (_, e, s) => Container(
+                                        width: 82, height: 106,
+                                        color: _surfaceHigh,
+                                        child: const Icon(Icons.book_outlined,
+                                            color: _textSecondary, size: 28)))
                                 : Container(
                                     width: 82, height: 106,
                                     color: _surfaceHigh,
