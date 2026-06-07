@@ -437,7 +437,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final ratingsGiven    = userData?['ratingsGiven']    ?? 0;
           final followersCount  = userData?['followersCount']  ?? 0;
           final followingCount  = userData?['followingCount']  ?? 0;
-          final profileTheme    = userData?['profileTheme']    as String?;
+          final profileTheme      = userData?['profileTheme']      as String?;
+          final profileVisibility = (userData?['profileVisibility'] as String?) ?? 'public';
           final tAccent = _tAccentFor(profileTheme);
           final tGrad   = _tGradFor(profileTheme);
           // مزامنة لون التيم مع state حتى تستخدمه الـ dialogs والـ methods أيضاً
@@ -626,6 +627,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      // بانر الخصوصية — يظهر فقط إذا لم يكن الملف عاماً
+                      if (profileVisibility != 'public') ...[
+                        GestureDetector(
+                          onTap: () => _showPrivacySettings(userData),
+                          child: Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: profileVisibility == 'private'
+                                  ? Colors.redAccent.withValues(alpha: 0.08)
+                                  : tAccent.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: profileVisibility == 'private'
+                                    ? Colors.redAccent.withValues(alpha: 0.35)
+                                    : tAccent.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Row(children: [
+                              Icon(
+                                profileVisibility == 'private'
+                                    ? Icons.lock_rounded
+                                    : Icons.group_rounded,
+                                size: 16,
+                                color: profileVisibility == 'private'
+                                    ? Colors.redAccent
+                                    : tAccent,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  profileVisibility == 'private'
+                                      ? 'ملفك الشخصي خاص — لا يراه أحد سواك'
+                                      : 'ملفك للمتابعين فقط — يراه من يتابعونك',
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 12,
+                                    color: profileVisibility == 'private'
+                                        ? Colors.redAccent
+                                        : tAccent,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.chevron_left_rounded, size: 16,
+                                  color: profileVisibility == 'private'
+                                      ? Colors.redAccent
+                                      : tAccent),
+                            ]),
+                          ),
+                        ),
+                      ],
+
                       // #5 أربع بطاقات إحصائية في صف واحد
                       Row(children: [
                         Expanded(child: _statBox(Icons.group_outlined, followersCount.toString(), 'متابع', tAccent,

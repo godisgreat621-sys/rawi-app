@@ -245,6 +245,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       context: context,
       backgroundColor: _surface,
       isScrollControlled: true,
+      barrierColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
