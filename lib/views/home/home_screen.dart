@@ -26,9 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _textSecondary = const Color(0xFF6B7280);
   Color _border        = const Color(0xFF252836);
 
-  final _searchController = TextEditingController();
-  String _searchQuery     = '';
-  bool   _isSearching     = false;
+  final _searchController  = TextEditingController();
+  final _scrollController  = ScrollController();
+  String _searchQuery      = '';
+  bool   _isSearching      = false;
   Timer? _searchDebounce;
   String _selectedCategory= 'الكل';
   bool   _showBookmarkedOnly = false;
@@ -60,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
   }
@@ -258,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: _surface,
         onRefresh: () async => setState(() {}),
         child: CustomScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           // ── AppBar ──────────────────────────────────────────────────────
@@ -446,6 +449,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+          // ── شريط الفلاتر (ثابت خارج StreamBuilder) ─────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 14, bottom: 4),
+              child: _buildCategoryBar(),
+            ),
+          ),
+
           // ── المحتوى ─────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
@@ -499,9 +510,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 14),
-
-                        _buildCategoryBar(),
-                        const SizedBox(height: 18),
 
                         // #26 ما يقرأه أصدقاؤك
                         if (!_isSearching && _filterMode == 'all' && _selectedCategory == 'الكل' &&
