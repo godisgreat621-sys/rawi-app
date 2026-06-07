@@ -54,6 +54,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
   // #9 ألوان خلفية القراءة
   Color  _readerBg        = const Color(0xFF0D0F14);
   Color  _readerTextColor = const Color(0xFFDDDDDD);
+  bool   _isBold          = false;
+  double _lineHeight      = 2.0;
   // #29 تقدم التمرير
   double _scrollProgress = 0.0;
   // #20 كاش محتوى الفصل في الذاكرة — بحد أقصى 50 فصل
@@ -212,134 +214,212 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
 
   // #1 تطبيق الخط المختار
   TextStyle _contentStyle() {
+    final w = _isBold ? FontWeight.w700 : FontWeight.w400;
     switch (_fontFamily) {
       case 'Amiri':
-        return GoogleFonts.amiri(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
+        return GoogleFonts.amiri(fontSize: _fontSize, height: _lineHeight, color: _readerTextColor, fontWeight: w);
       case 'Tajawal':
-        return GoogleFonts.tajawal(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
+        return GoogleFonts.tajawal(fontSize: _fontSize, height: _lineHeight, color: _readerTextColor, fontWeight: w);
       case 'Lateef':
-        return GoogleFonts.lateef(fontSize: _fontSize + 2, height: 2.0, color: _readerTextColor);
+        return GoogleFonts.lateef(fontSize: _fontSize + 2, height: _lineHeight, color: _readerTextColor, fontWeight: w);
       default:
-        return GoogleFonts.cairo(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
+        return GoogleFonts.cairo(fontSize: _fontSize, height: _lineHeight, color: _readerTextColor, fontWeight: w);
     }
   }
 
-  // #1 اختيار الخط
-  void _showFontPicker() {
+  // لوحة إعدادات القراءة الموحدة — تبقى مفتوحة حتى يغلقها المستخدم
+  void _showReadingSettings() {
     const fonts = ['Cairo', 'Amiri', 'Tajawal', 'Lateef'];
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('نوع الخط',
-                style: GoogleFonts.cairo(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: _textPrimary)),
-            const SizedBox(height: 14),
-            ...fonts.map((f) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Radio<String>(
-                    value: f,
-                    groupValue: _fontFamily,
-                    activeColor: _accent,
-                    onChanged: (v) {
-                      setState(() => _fontFamily = v!);
-                      _saveGlobalFontPref();
-                      Navigator.pop(ctx);
-                    },
-                  ),
-                  title: Text('نموذج النص — $f',
-                      style: f == 'Amiri'
-                          ? GoogleFonts.amiri(fontSize: 16, color: _textPrimary)
-                          : f == 'Tajawal'
-                              ? GoogleFonts.tajawal(fontSize: 15, color: _textPrimary)
-                              : f == 'Lateef'
-                                  ? GoogleFonts.lateef(fontSize: 17, color: _textPrimary)
-                                  : GoogleFonts.cairo(fontSize: 14, color: _textPrimary)),
-                )),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // #9 تغيير خلفية القراءة
-  void _showBgColorPicker() {
-    // كل ثيم: اسم، خلفية، لون نص
-    final themes = <Map<String, dynamic>>[
-      {'name': 'أبيض',        'bg': const Color(0xFFFFFFFF), 'text': const Color(0xFF1A1A1A)},
-      {'name': 'ورق',         'bg': const Color(0xFFF5E6C8), 'text': const Color(0xFF3B2A1A)},
-      {'name': 'كريمي',       'bg': const Color(0xFFFAF3E0), 'text': const Color(0xFF2C2416)},
-      {'name': 'رمادي فاتح', 'bg': const Color(0xFFE8E8E8), 'text': const Color(0xFF1A1A1A)},
-      {'name': 'رمادي داكن', 'bg': const Color(0xFF3A3A3A), 'text': const Color(0xFFDDDDDD)},
-      {'name': 'أسود',        'bg': const Color(0xFF0D0F14), 'text': const Color(0xFFDDDDDD)},
+    const bgThemes = <Map<String, dynamic>>[
+      {'name': 'أبيض',       'bg': Color(0xFFFFFFFF), 'text': Color(0xFF1A1A1A)},
+      {'name': 'ورق',        'bg': Color(0xFFF5E6C8), 'text': Color(0xFF3B2A1A)},
+      {'name': 'كريمي',      'bg': Color(0xFFFAF3E0), 'text': Color(0xFF2C2416)},
+      {'name': 'رمادي فاتح','bg': Color(0xFFE8E8E8), 'text': Color(0xFF1A1A1A)},
+      {'name': 'رمادي داكن','bg': Color(0xFF3A3A3A), 'text': Color(0xFFDDDDDD)},
+      {'name': 'أسود',       'bg': Color(0xFF0D0F14), 'text': Color(0xFFDDDDDD)},
     ];
+    const lineHeights = [1.5, 1.8, 2.0, 2.5, 3.0];
+    final lineLabels  = ['ضيق', 'عادي', 'مريح', 'واسع', 'فضفاض'];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: _surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('لون خلفية القراءة',
-                style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700, color: _textPrimary)),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: themes.map((t) {
-                final bg   = t['bg']   as Color;
-                final text = t['text'] as Color;
-                final name = t['name'] as String;
-                final selected = _readerBg == bg;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _readerBg        = bg;
-                      _readerTextColor = text;
-                    });
-                    Navigator.pop(ctx);
-                  },
-                  child: Column(children: [
-                    Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(
-                        color: bg,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected ? _accent : _border,
-                          width: selected ? 2.5 : 1,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── خلفية القراءة ──────────────────────────────
+              Text('الخلفية', style: GoogleFonts.cairo(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: _textSecondary)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: bgThemes.map((t) {
+                  final bg   = t['bg']   as Color;
+                  final text = t['text'] as Color;
+                  final name = t['name'] as String;
+                  final sel  = _readerBg == bg;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() { _readerBg = bg; _readerTextColor = text; });
+                      setS(() {});
+                    },
+                    child: Column(children: [
+                      Container(
+                        width: 42, height: 42,
+                        decoration: BoxDecoration(
+                          color: bg,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: sel ? _accent : _border,
+                              width: sel ? 2.5 : 1),
+                          boxShadow: sel
+                              ? [BoxShadow(color: _accent.withValues(alpha: 0.35), blurRadius: 6)]
+                              : null,
                         ),
-                        boxShadow: selected
-                            ? [BoxShadow(color: _accent.withValues(alpha: 0.35), blurRadius: 6)]
+                        child: sel
+                            ? Icon(Icons.check_rounded, size: 17,
+                                color: bg.computeLuminance() > 0.5
+                                    ? const Color(0xFF1A1A1A)
+                                    : const Color(0xFFFFFFFF))
                             : null,
                       ),
-                      child: selected
-                          ? Icon(Icons.check_rounded, size: 18,
-                              color: bg.computeLuminance() > 0.5
-                                  ? const Color(0xFF1A1A1A)
-                                  : const Color(0xFFFFFFFF))
-                          : null,
+                      const SizedBox(height: 5),
+                      Text(name, style: GoogleFonts.cairo(fontSize: 9, color: _textSecondary)),
+                    ]),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 20),
+              Divider(color: _border, height: 1),
+              const SizedBox(height: 16),
+
+              // ── نوع الخط ──────────────────────────────────
+              Text('الخط', style: GoogleFonts.cairo(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: _textSecondary)),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: fonts.map((f) {
+                  final sel = _fontFamily == f;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _fontFamily = f);
+                      setS(() {});
+                      _saveGlobalFontPref();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sel ? _accent.withValues(alpha: 0.15) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: sel ? _accent : _border,
+                            width: sel ? 1.5 : 1),
+                      ),
+                      child: Text(f,
+                          style: f == 'Amiri'
+                              ? GoogleFonts.amiri(fontSize: 15, color: sel ? _accent : _textSecondary)
+                              : f == 'Tajawal'
+                                  ? GoogleFonts.tajawal(fontSize: 14, color: sel ? _accent : _textSecondary)
+                                  : f == 'Lateef'
+                                      ? GoogleFonts.lateef(fontSize: 16, color: sel ? _accent : _textSecondary)
+                                      : GoogleFonts.cairo(fontSize: 13, color: sel ? _accent : _textSecondary)),
                     ),
-                    const SizedBox(height: 6),
-                    Text(name, style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
-                  ]),
-                );
-              }).toList(),
-            ),
-          ],
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 20),
+              Divider(color: _border, height: 1),
+              const SizedBox(height: 16),
+
+              // ── تنسيق النص ────────────────────────────────
+              Text('تنسيق النص', style: GoogleFonts.cairo(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: _textSecondary)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  // بولد
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() => _isBold = !_isBold);
+                        setS(() {});
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _isBold ? _accent.withValues(alpha: 0.15) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: _isBold ? _accent : _border,
+                              width: _isBold ? 1.5 : 1),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.format_bold_rounded,
+                                size: 18, color: _isBold ? _accent : _textSecondary),
+                            const SizedBox(width: 6),
+                            Text('غامق', style: GoogleFonts.cairo(
+                                fontSize: 12,
+                                color: _isBold ? _accent : _textSecondary,
+                                fontWeight: _isBold ? FontWeight.w700 : FontWeight.w400)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // مسافة بين الأسطر
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(lineHeights.length, (i) {
+                        final lh  = lineHeights[i];
+                        final lbl = lineLabels[i];
+                        final sel = _lineHeight == lh;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _lineHeight = lh);
+                            setS(() {});
+                          },
+                          child: Column(children: [
+                            Container(
+                              width: 38, height: 32,
+                              decoration: BoxDecoration(
+                                color: sel ? _accent.withValues(alpha: 0.15) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: sel ? _accent : _border,
+                                    width: sel ? 1.5 : 1),
+                              ),
+                              child: Center(
+                                child: Icon(Icons.format_line_spacing_rounded,
+                                    size: 16, color: sel ? _accent : _textSecondary),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(lbl, style: GoogleFonts.cairo(
+                                fontSize: 9, color: sel ? _accent : _textSecondary)),
+                          ]),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1685,16 +1765,15 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                 icon: const Icon(Icons.more_vert, color: _textSecondary, size: 22),
                                 color: _surface,
                                 onSelected: (v) {
-                                  if (v == 'report') { _showReportDialog(); }
-                                  if (v == 'bg')     { _showBgColorPicker(); }
-                                  if (v == 'font')   { _showFontPicker(); }
-                                  if (v == 'paged')  { setState(() { _pagedMode = !_pagedMode; _pageIndex = 0; }); }
+                                  if (v == 'report')   { _showReportDialog(); }
+                                  if (v == 'settings') { _showReadingSettings(); }
+                                  if (v == 'paged')    { setState(() { _pagedMode = !_pagedMode; _pageIndex = 0; }); }
                                 },
                                 itemBuilder: (_) => [
-                                  PopupMenuItem(value: 'font', child: Row(children: [
-                                    const Icon(Icons.font_download_outlined, color: _accent, size: 16),
+                                  PopupMenuItem(value: 'settings', child: Row(children: [
+                                    const Icon(Icons.tune_rounded, color: _accent, size: 16),
                                     const SizedBox(width: 8),
-                                    Text('نوع الخط', style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
+                                    Text('إعدادات القراءة', style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
                                   ])),
                                   PopupMenuItem(value: 'paged', child: Row(children: [
                                     Icon(_pagedMode ? Icons.view_stream_outlined : Icons.menu_book_outlined,
@@ -1702,11 +1781,6 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                     const SizedBox(width: 8),
                                     Text(_pagedMode ? 'تمرير عمودي' : 'تصفح بصفحات',
                                         style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
-                                  ])),
-                                  PopupMenuItem(value: 'bg', child: Row(children: [
-                                    const Icon(Icons.palette_outlined, color: _accent, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text('لون الخلفية', style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
                                   ])),
                                   PopupMenuItem(value: 'report', child: Row(children: [
                                     const Icon(Icons.flag_outlined, color: Colors.redAccent, size: 16),
