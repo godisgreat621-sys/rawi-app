@@ -119,7 +119,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   }
 
   void _shareNovel(String title, String novelId) {
-    final text = '📖 "$title"\n\nاقرأها الآن على تطبيق راوي 🌙\nكود الرواية: $novelId';
+    final text = '📖 "$title"\n\nاقرأها الآن على راوي 🌙\nhttps://rawi-app.vercel.app';
     Share.share(text, subject: title);
   }
 
