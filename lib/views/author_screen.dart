@@ -155,7 +155,6 @@ class _AuthorScreenState extends State<AuthorScreen> {
           final showRatings   = userData['showPublicRatings']  ?? true;
           final showFollowers = userData['showFollowers']       ?? true;
           final showFollowing = userData['showFollowing']       ?? true;
-          final showReadingStats = userData['showReadingStats'] ?? true;
           final profileVisibility = (userData['profileVisibility'] as String?) ?? 'public';
           final profileTheme  = userData['profileTheme']       as String?;
           final tAccent = _themeAccent(profileTheme);
@@ -219,7 +218,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       onPressed: () => _showProfileReportDialog(widget.authorId),
                     ),
                 ],
-                expandedHeight: 230,
+                expandedHeight: 200,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
                     fit: StackFit.expand,
@@ -252,7 +251,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       ),
                       // المحتوى
                       Padding(
-                        padding: const EdgeInsets.only(top: 48, bottom: 12),
+                        padding: const EdgeInsets.only(top: 56, bottom: 16),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -383,8 +382,6 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             .toList()
                         : <Novel>[];
 
-                    final totalLikes   = novels.fold(0, (s, n) => s + n.likes);
-                    final totalReaders = novels.fold(0, (s, n) => s + n.readers);
                     final avgRating    = novels.isEmpty
                         ? 0.0
                         : novels.fold(0.0, (s, n) => s + n.rating) /
@@ -404,7 +401,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
                               decoration: BoxDecoration(
                                 color: _surface,
                                 borderRadius: BorderRadius.circular(14),
@@ -433,56 +430,25 @@ class _AuthorScreenState extends State<AuthorScreen> {
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: tAccent.withValues(alpha: 0.15)),
                             ),
-                            child: Column(
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 20,
+                              runSpacing: 10,
                               children: [
-                                // الصف الأول: إحصائيات المحتوى
-                                Wrap(
-                                  alignment: WrapAlignment.center,
-                                  spacing: 16,
-                                  runSpacing: 10,
-                                  children: [
-                                    _statCompact(novels.length.toString(), 'رواية',
-                                        Icons.auto_stories_rounded, tAccent),
-                                    if (showReadingStats) ...[
-                                      _statCompact(totalReaders.toString(), 'قارئ',
-                                          Icons.remove_red_eye_rounded, tAccent),
-                                      _statCompact(totalLikes.toString(), 'إعجاب',
-                                          Icons.favorite_rounded, tAccent),
-                                    ],
-                                    _statCompact(
-                                      showRatings ? avgRating.toStringAsFixed(1) : '—',
-                                      'تقييم',
-                                      Icons.star_rounded,
-                                      showRatings ? tAccent : _textSecondary,
-                                    ),
-                                  ],
+                                _statCompact(novels.length.toString(), 'رواية',
+                                    Icons.auto_stories_rounded, tAccent),
+                                _statCompact(
+                                  showRatings ? avgRating.toStringAsFixed(1) : '—',
+                                  'تقييم',
+                                  Icons.star_rounded,
+                                  showRatings ? tAccent : _textSecondary,
                                 ),
-                                // الصف الثاني: إحصائيات اجتماعية + النقاط
-                                Builder(builder: (_) {
-                                  final row2 = <Widget>[
-                                    if (showFollowers)
-                                      _statCompact(followersCount.toString(), 'متابع',
-                                          Icons.group_rounded, tAccent),
-                                    if (showFollowing)
-                                      _statCompact(followingCount.toString(), 'يتابع',
-                                          Icons.person_rounded, tAccent),
-                                    if (showPoints)
-                                      _statCompact('$points', 'نقطة',
-                                          Icons.stars_rounded, tAccent),
-                                  ];
-                                  if (row2.isEmpty) return const SizedBox.shrink();
-                                  return Column(children: [
-                                    const SizedBox(height: 10),
-                                    Divider(color: _border, height: 1),
-                                    const SizedBox(height: 10),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: 16,
-                                      runSpacing: 10,
-                                      children: row2,
-                                    ),
-                                  ]);
-                                }),
+                                if (showFollowers)
+                                  _statCompact(followersCount.toString(), 'متابع',
+                                      Icons.group_rounded, tAccent),
+                                if (showFollowing)
+                                  _statCompact(followingCount.toString(), 'يتابع',
+                                      Icons.person_rounded, tAccent),
                               ],
                             ),
                           ),
