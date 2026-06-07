@@ -147,7 +147,10 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('following').limit(10).get();
     if (followingSnap.docs.isEmpty) return [];
 
-    final followingIds = followingSnap.docs.map((d) => d.id).toList();
+    final followingIds = followingSnap.docs
+        .map((d) => d.id)
+        .where((id) => id != user.uid)
+        .toList();
 
     // جلب المستخدمين والتقدم بشكل متوازٍ
     final futures = await Future.wait([
