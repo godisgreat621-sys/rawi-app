@@ -747,19 +747,13 @@ class _AuthorScreenState extends State<AuthorScreen> {
 
   // ── مساعدات ───────────────────────────────────────────────────────────────
   Widget _statCompact(String value, String label, IconData icon, Color color) {
-    return Expanded(
+    return SizedBox(
+      width: 64,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 17, color: color),
-          ),
-          const SizedBox(height: 5),
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w700, color: _textPrimary),
