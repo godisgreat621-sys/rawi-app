@@ -251,10 +251,11 @@ class _AuthorScreenState extends State<AuthorScreen> {
                         ),
                       ),
                       // المحتوى
-                      Column(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 48, bottom: 12),
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 50),
                             // الصورة الشخصية — إطار مزخرف متدرج بحسب الثيم
                             Builder(builder: (_) {
                               final rc = _ringColors(profileTheme);
@@ -356,9 +357,10 @@ class _AuthorScreenState extends State<AuthorScreen> {
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                ),
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(1),
                   child: Container(height: 1, color: _border),
@@ -395,189 +397,146 @@ class _AuthorScreenState extends State<AuthorScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 4),
-
-                          // ── بطاقة الإحصائيات — صفان منفصلان ────────────
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: _surface,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: _border),
-                            ),
-                            child: Column(
-                              children: [
-                                // الصف الأول: إحصائيات المحتوى
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _statCompact(novels.length.toString(), 'رواية',
-                                        Icons.auto_stories_rounded, tAccent),
-                                    if (showReadingStats) ...[
-                                      _statCompact(totalReaders.toString(), 'قارئ',
-                                          Icons.remove_red_eye_rounded, Colors.blueGrey),
-                                      _statCompact(totalLikes.toString(), 'إعجاب',
-                                          Icons.favorite_rounded, Colors.redAccent),
-                                    ],
-                                    _statCompact(
-                                      showRatings ? avgRating.toStringAsFixed(1) : '—',
-                                      'تقييم',
-                                      Icons.star_rounded,
-                                      showRatings ? _gold : _textSecondary,
-                                    ),
-                                  ],
-                                ),
-                                // الصف الثاني: إحصائيات اجتماعية (ظاهرة فقط)
-                                if (showFollowers || showFollowing) ...[
-                                  const SizedBox(height: 10),
-                                  Divider(color: _border, height: 1),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      if (showFollowers)
-                                        _statCompact(followersCount.toString(), 'متابع',
-                                            Icons.group_rounded, tAccent),
-                                      if (showFollowing)
-                                        _statCompact(followingCount.toString(), 'يتابع',
-                                            Icons.person_rounded, tAccent.withValues(alpha: 0.7)),
-                                      // ملء فراغ إذا ظهر واحد فقط
-                                      if (showFollowers != showFollowing)
-                                        const Expanded(child: SizedBox()),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-
-                          // ── نقاط + زر متابعة ────────────────────────────
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              // النقاط
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 10, horizontal: 14),
-                                  decoration: BoxDecoration(
-                                    color: _surface,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: _border),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.stars_rounded,
-                                          color: _gold, size: 18),
-                                      const SizedBox(width: 6),
-                                      Text( // خفاء النقاط بناءً على الخصوصية
-                                        showPoints ? '$points نقطة' : 'نقاط مخفية',
-                                        style: GoogleFonts.cairo(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                          color: _gold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              // زر المتابعة (للآخرين فقط)
-                              if (!isMe) ...[
-                                const SizedBox(width: 10),
-                                _isFollowLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                            color: _accent, strokeWidth: 2),
-                                      )
-                                    : GestureDetector(
-                                        onTap: _toggleFollow,
-                                        child: AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 200),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 20, vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: _isFollowing
-                                                ? _surface
-                                                : tAccent,
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            border: Border.all(
-                                              color: _isFollowing
-                                                  ? _border
-                                                  : tAccent,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                _isFollowing
-                                                    ? Icons
-                                                        .person_remove_outlined
-                                                    : Icons.person_add_outlined,
-                                                size: 16,
-                                                color: _isFollowing
-                                                    ? _textSecondary
-                                                    : const Color(0xFF0D0F14),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                _isFollowing
-                                                    ? 'متابَع'
-                                                    : 'تابع',
-                                                style: GoogleFonts.cairo(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: _isFollowing
-                                                      ? _textSecondary
-                                                      : const Color(0xFF0D0F14),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                              ],
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // ── النبذة الشخصية ───────────────────────────────
+                          // ── النبذة الشخصية — أول ما يراه الزائر ──────────
                           Builder(builder: (_) {
                             final bio = (userData['bio'] as String?)?.trim() ?? '';
                             if (bio.isEmpty) return const SizedBox.shrink();
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                               decoration: BoxDecoration(
-                                color: tAccent.withValues(alpha: 0.07),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: tAccent.withValues(alpha: 0.25)),
+                                color: _surface,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: tAccent.withValues(alpha: 0.22)),
                               ),
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.format_quote_rounded, color: tAccent, size: 22),
+                                  Icon(Icons.format_quote_rounded, color: tAccent, size: 20),
                                   const SizedBox(height: 8),
                                   Text(bio,
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.cairo(
-                                        fontSize: 13,
-                                        color: _textPrimary,
-                                        height: 1.7,
-                                      )),
+                                          fontSize: 13, color: _textPrimary, height: 1.7)),
                                 ],
                               ),
                             );
                           }),
 
-                          const SizedBox(height: 8),
+                          // ── بطاقة الإحصائيات الموحّدة ────────────────────
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: _surface,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: tAccent.withValues(alpha: 0.15)),
+                            ),
+                            child: Column(
+                              children: [
+                                // الصف الأول: إحصائيات المحتوى
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 16,
+                                  runSpacing: 10,
+                                  children: [
+                                    _statCompact(novels.length.toString(), 'رواية',
+                                        Icons.auto_stories_rounded, tAccent),
+                                    if (showReadingStats) ...[
+                                      _statCompact(totalReaders.toString(), 'قارئ',
+                                          Icons.remove_red_eye_rounded, tAccent),
+                                      _statCompact(totalLikes.toString(), 'إعجاب',
+                                          Icons.favorite_rounded, tAccent),
+                                    ],
+                                    _statCompact(
+                                      showRatings ? avgRating.toStringAsFixed(1) : '—',
+                                      'تقييم',
+                                      Icons.star_rounded,
+                                      showRatings ? tAccent : _textSecondary,
+                                    ),
+                                  ],
+                                ),
+                                // الصف الثاني: إحصائيات اجتماعية + النقاط
+                                Builder(builder: (_) {
+                                  final row2 = <Widget>[
+                                    if (showFollowers)
+                                      _statCompact(followersCount.toString(), 'متابع',
+                                          Icons.group_rounded, tAccent),
+                                    if (showFollowing)
+                                      _statCompact(followingCount.toString(), 'يتابع',
+                                          Icons.person_rounded, tAccent),
+                                    if (showPoints)
+                                      _statCompact('$points', 'نقطة',
+                                          Icons.stars_rounded, tAccent),
+                                  ];
+                                  if (row2.isEmpty) return const SizedBox.shrink();
+                                  return Column(children: [
+                                    const SizedBox(height: 10),
+                                    Divider(color: _border, height: 1),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 16,
+                                      runSpacing: 10,
+                                      children: row2,
+                                    ),
+                                  ]);
+                                }),
+                              ],
+                            ),
+                          ),
+
+                          // ── زر المتابعة ───────────────────────────────────
+                          if (!isMe) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: _isFollowLoading
+                                  ? const Center(child: SizedBox(width: 24, height: 24,
+                                      child: CircularProgressIndicator(color: _accent, strokeWidth: 2)))
+                                  : GestureDetector(
+                                      onTap: _toggleFollow,
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: _isFollowing ? _surface : tAccent,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: _isFollowing ? _border : tAccent),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              _isFollowing
+                                                  ? Icons.person_remove_outlined
+                                                  : Icons.person_add_outlined,
+                                              size: 16,
+                                              color: _isFollowing
+                                                  ? _textSecondary
+                                                  : const Color(0xFF0D0F14),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              _isFollowing ? 'متابَع' : 'تابع',
+                                              style: GoogleFonts.cairo(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: _isFollowing
+                                                    ? _textSecondary
+                                                    : const Color(0xFF0D0F14),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 20),
 
                           // ── روايات الكاتب ────────────────────────────────
                           Row(
@@ -586,7 +545,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 width: 3,
                                 height: 16,
                                 decoration: BoxDecoration(
-                                  color: _accent,
+                                  color: tAccent,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
