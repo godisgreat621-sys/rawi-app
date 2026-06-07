@@ -23,14 +23,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
 
-  static const _accent  = Color(0xFF72B55A);
+  static const _accent  = Color(0xFF8BAF7C);
   Color _bg      = const Color(0xFF0D0F14);
   Color _navBg   = const Color(0xFF13151C);
   Color _border  = const Color(0xFF252836);
   Color _textDim = const Color(0xFF4B5263);
 
   // لون أيقونة الملف الشخصي — يتغير بحسب التيم المختار
-  Color _profileAccent = const Color(0xFF72B55A);
+  Color _profileAccent = const Color(0xFF8BAF7C);
 
   // #48
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
@@ -81,7 +81,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   static Color _resolveThemeAccent(String? theme) {
     const map = <String, Color>{
-      'default':  Color(0xFF72B55A),
+      'default':  Color(0xFF8BAF7C),
       'sakura':   Color(0xFFE891B2),
       'ocean':    Color(0xFF5BAFD6),
       'sunset':   Color(0xFFE8945B),
@@ -90,7 +90,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       'midnight': Color(0xFF4A90D9),
       'forest':   Color(0xFF5BBF7C),
     };
-    return map[theme ?? 'default'] ?? const Color(0xFF72B55A);
+    return map[theme ?? 'default'] ?? const Color(0xFF8BAF7C);
   }
 
   void _listenProfileTheme() {

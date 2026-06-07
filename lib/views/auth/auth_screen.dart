@@ -26,8 +26,8 @@ class _AuthScreenState extends State<AuthScreen>
   // ── الألوان الثابتة ──────────────────────────────────────────────────────────
   static const _bg = Color(0xFF0F1117);
   static const _surface = Color(0xFF1A1D27);
-  static const _accent = Color(0xFF72B55A); // أخضر زيتوني هادئ
-  static const _accentDim = Color(0x3372B55A);
+  static const _accent = Color(0xFF8BAF7C); // أخضر زيتوني هادئ
+  static const _accentDim = Color(0x338BAF7C);
   static const _textPrimary = Color(0xFFEAEAEA);
   static const _textSecondary = Color(0xFF7A8090);
   static const _border = Color(0xFF2A2D3A);
@@ -104,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen>
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('تم إرسال رسالة تحقق إلى بريدك 📧',
                   style: GoogleFonts.cairo(fontSize: 12)),
-              backgroundColor: const Color(0xFF72B55A),
+              backgroundColor: const Color(0xFF8BAF7C),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

@@ -17,7 +17,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Color _bg            = const Color(0xFF0D0F14);
   Color _surface       = const Color(0xFF161920);
   Color _surfaceHigh   = const Color(0xFF1E2130);
-  static const _accent        = Color(0xFF72B55A);
+  static const _accent        = Color(0xFF8BAF7C);
   Color _border        = const Color(0xFF252836);
   Color _textPrimary   = const Color(0xFFECECEC);
   Color _textSecondary = const Color(0xFF6B7280);
@@ -110,7 +110,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'admin_message': // #45
         return _NotifStyle(Icons.admin_panel_settings_rounded, Colors.purpleAccent, 'رسالة من الإدارة');
       case 'friend_recommendation': // #23
-        return _NotifStyle(Icons.recommend_rounded, const Color(0xFF72B55A), 'ترشيح رواية من صديق');
+        return _NotifStyle(Icons.recommend_rounded, const Color(0xFF8BAF7C), 'ترشيح رواية من صديق');
       case 'admin_warning':
         return _NotifStyle(Icons.warning_amber_rounded, Colors.orange, 'تحذير من الإدارة');
       case 'admin_action':
@@ -122,7 +122,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'broadcast':
         return _NotifStyle(Icons.campaign_rounded, Colors.purpleAccent, 'إعلان من الإدارة');
       case 'novel_completed':
-        return _NotifStyle(Icons.auto_stories_rounded, const Color(0xFF72B55A), 'رواية اكتملت');
+        return _NotifStyle(Icons.auto_stories_rounded, const Color(0xFF8BAF7C), 'رواية اكتملت');
       case 'friend_reading':
         return _NotifStyle(Icons.menu_book_rounded, Colors.blueGrey, 'صديق يقرأ الآن');
       default:

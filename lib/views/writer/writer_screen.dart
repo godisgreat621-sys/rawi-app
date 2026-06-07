@@ -20,7 +20,7 @@ class _WriterScreenState extends State<WriterScreen> {
   Color _bg          = const Color(0xFF0D0F14);
   Color _surface     = const Color(0xFF161920);
   Color _surfaceHigh = const Color(0xFF1E2130);
-  static const _accent      = Color(0xFF72B55A);
+  static const _accent      = Color(0xFF8BAF7C);
   Color _border      = const Color(0xFF252836);
   Color _textPrimary = const Color(0xFFECECEC);
   Color _textSecondary = const Color(0xFF6B7280);

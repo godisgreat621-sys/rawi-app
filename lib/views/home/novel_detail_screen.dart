@@ -24,7 +24,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
   static const _bg           = Color(0xFF0D0F14);
   static const _surface      = Color(0xFF161920);
   static const _surfaceHigh  = Color(0xFF1E2130);
-  static const _accent       = Color(0xFF72B55A);
+  static const _accent       = Color(0xFF8BAF7C);
   static const _border       = Color(0xFF252836);
   static const _textPrimary  = Color(0xFFECECEC);
   static const _textSecondary= Color(0xFF6B7280);
