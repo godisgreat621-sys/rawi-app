@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:my_first_app/providers/theme_provider.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -523,12 +522,11 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
   // ─────────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    _bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
-    _surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
-    _border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
-    _textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
-    _textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
+    _bg           = const Color(0xFF0D0F14);
+    _surface      = const Color(0xFF161920);
+    _border       = const Color(0xFF252836);
+    _textPrimary  = const Color(0xFFECECEC);
+    _textSecondary= const Color(0xFF6B7280);
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(

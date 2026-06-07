@@ -2,7 +2,6 @@
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/novels_provider.dart';
-import '../../providers/theme_provider.dart';
 import 'add_novel_screen.dart';
 
 class DraftsListScreen extends StatelessWidget {
@@ -11,12 +10,11 @@ class DraftsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NovelsProvider>();
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    final bg           = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
-    final surface      = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
-    final border       = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
-    final textPrimary  = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
-    final textSecondary= isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
+    const bg           = Color(0xFF0D0F14);
+    const surface      = Color(0xFF161920);
+    const border       = Color(0xFF252836);
+    const textPrimary  = Color(0xFFECECEC);
+    const textSecondary= Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: bg,
@@ -103,10 +101,9 @@ class DraftsListScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, NovelsProvider provider, String id) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
-    final textPrimary = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
-    final textSecondary = isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
+    const surface = Color(0xFF161920);
+    const textPrimary = Color(0xFFECECEC);
+    const textSecondary = Color(0xFF6B7280);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

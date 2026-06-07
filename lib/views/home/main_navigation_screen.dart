@@ -4,9 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/views/what_is_new_screen.dart';
 import 'package:my_first_app/views/onboarding_screen.dart';
 import '../home/home_screen.dart';
@@ -68,7 +66,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     _logLoginSession();     // #38
     _checkWhatsNew();       // #50
     _checkIdlePenalty();
-    _loadThemePreference();
     _checkWriterReminder(); // #38
     _listenConnectivity();  // #48
     _checkOnboarding();     // #36
@@ -212,17 +209,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     }
   }
 
-  Future<void> _loadThemePreference() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection('users').doc(user.uid).get();
-    final isDark = (doc.data()?['isDarkMode'] as bool?) ?? true;
-    if (mounted) {
-      context.read<ThemeProvider>().setDarkMode(isDark);
-    }
-  }
-
   Future<void> _checkIdlePenalty() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -270,11 +256,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    _bg      = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
-    _navBg   = isDark ? const Color(0xFF13151C) : const Color(0xFFFFFFFF);
-    _border  = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
-    _textDim = isDark ? const Color(0xFF4B5263) : const Color(0xFF9CA3AF);
+    _bg      = const Color(0xFF0D0F14);
+    _navBg   = const Color(0xFF13151C);
+    _border  = const Color(0xFF252836);
+    _textDim = const Color(0xFF4B5263);
     return Scaffold(
       backgroundColor: _bg,
       body: IndexedStack(

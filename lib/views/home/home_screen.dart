@@ -5,10 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
-import 'package:my_first_app/providers/theme_provider.dart';
 import '../../models/novel_model.dart';
 import 'novel_detail_screen.dart';
-import '../writer/drafts_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   static const _accent       = Color(0xFF8BAF7C);
   static const _accentDim    = Color(0xFF4A6741);
   static const _gold         = Color(0xFFD4A843);
-  bool  _isDark        = true;
   Color _bg            = const Color(0xFF0D0F14);
   Color _surface       = const Color(0xFF161920);
   Color _surfaceHigh   = const Color(0xFF1E2130);
@@ -248,13 +245,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _isDark       = context.watch<ThemeProvider>().isDarkMode;
-    _bg           = _isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
-    _surface      = _isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
-    _surfaceHigh  = _isDark ? const Color(0xFF1E2130) : const Color(0xFFEEEEF0);
-    _textPrimary  = _isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
-    _textSecondary= _isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
-    _border       = _isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _bg           = const Color(0xFF0D0F14);
+    _surface      = const Color(0xFF161920);
+    _surfaceHigh  = const Color(0xFF1E2130);
+    _textPrimary  = const Color(0xFFECECEC);
+    _textSecondary= const Color(0xFF6B7280);
+    _border       = const Color(0xFF252836);
     return Scaffold(
       backgroundColor: _bg,
       body: RefreshIndicator(
@@ -950,25 +946,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNovelCard(Novel novel) {
-    final categoryColors = _isDark
-        ? <String, Color>{
-            'فانتازيا':  const Color(0xFF2D1F4E),
-            'دراما':     const Color(0xFF4E1F2D),
-            'رعب':       const Color(0xFF1F2D1F),
-            'غموض':      const Color(0xFF1F2A4E),
-            'تاريخية':   const Color(0xFF4E3A1F),
-            'خيال علمي': const Color(0xFF1F3A4E),
-            'عام':       const Color(0xFF252836),
-          }
-        : <String, Color>{
-            'فانتازيا':  const Color(0xFFEDE9F6),
-            'دراما':     const Color(0xFFF6E9ED),
-            'رعب':       const Color(0xFFE9F0E9),
-            'غموض':      const Color(0xFFE9EDF6),
-            'تاريخية':   const Color(0xFFF5EFE6),
-            'خيال علمي': const Color(0xFFE9EFF5),
-            'عام':       const Color(0xFFEEEEF0),
-          };
+    const categoryColors = <String, Color>{
+      'فانتازيا':  Color(0xFF2D1F4E),
+      'دراما':     Color(0xFF4E1F2D),
+      'رعب':       Color(0xFF1F2D1F),
+      'غموض':      Color(0xFF1F2A4E),
+      'تاريخية':   Color(0xFF4E3A1F),
+      'خيال علمي': Color(0xFF1F3A4E),
+      'عام':       Color(0xFF252836),
+    };
     final coverBg = categoryColors[novel.category] ?? _surfaceHigh;
     final user = FirebaseAuth.instance.currentUser;
 

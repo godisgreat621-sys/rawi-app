@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_first_app/view_models/auth_view_model.dart';
@@ -11,7 +10,6 @@ import 'package:my_first_app/views/author_screen.dart'; // Add this import
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
-import 'package:my_first_app/providers/theme_provider.dart';
 import 'package:my_first_app/views/privacy_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -382,13 +380,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    _bg          = isDark ? const Color(0xFF0D0F14) : const Color(0xFFF5F5F7);
-    _surface     = isDark ? const Color(0xFF161920) : const Color(0xFFFFFFFF);
-    _surfaceHigh = isDark ? const Color(0xFF1E2130) : const Color(0xFFEEEEF0);
-    _textPrimary = isDark ? const Color(0xFFECECEC) : const Color(0xFF111827);
-    _textSecondary = isDark ? const Color(0xFF6B7280) : const Color(0xFF555F6E);
-    _border      = isDark ? const Color(0xFF252836) : const Color(0xFFE0E0E4);
+    _bg           = const Color(0xFF0D0F14);
+    _surface      = const Color(0xFF161920);
+    _surfaceHigh  = const Color(0xFF1E2130);
+    _textPrimary  = const Color(0xFFECECEC);
+    _textSecondary= const Color(0xFF6B7280);
+    _border       = const Color(0xFF252836);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Scaffold(
@@ -761,35 +758,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () => _showEditNameDialog(name, userData)),
                       _menuTile(Icons.bookmark_outline_rounded, 'المكتبة الخاصة',
                           onTap: _showBookmarksSheet),
-                      // مفتاح الثيم
-                      Builder(builder: (_) {
-                        final tp = context.watch<ThemeProvider>();
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 2),
-                          decoration: BoxDecoration(color: _surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _border)),
-                          child: SwitchListTile(
-                            secondary: Icon(
-                              tp.isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                              color: tAccent, size: 20),
-                            title: Text(tp.isDarkMode ? 'وضع داكن' : 'وضع فاتح',
-                                style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),
-                            value: tp.isDarkMode,
-                            activeThumbColor: tAccent,
-                            activeTrackColor: tAccent.withValues(alpha: 0.4),
-                            onChanged: (val) async {
-                              tp.setDarkMode(val);
-                              final u = FirebaseAuth.instance.currentUser;
-                              if (u != null) {
-                                await FirebaseFirestore.instance
-                                    .collection('users').doc(u.uid)
-                                    .set({'isDarkMode': val}, SetOptions(merge: true));
-                              }
-                            },
-                          ),
-                        );
-                      }),
                       const SizedBox(height: 12),
 
                       // ── شبكة الإجراءات السريعة ─────────────────────
