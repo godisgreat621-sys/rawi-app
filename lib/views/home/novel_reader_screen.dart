@@ -52,7 +52,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
   bool   _hasRestoredScroll = false;
 
   // #9 ألوان خلفية القراءة
-  Color  _readerBg    = const Color(0xFF0D0F14);
+  Color  _readerBg        = const Color(0xFF0D0F14);
+  Color  _readerTextColor = const Color(0xFFDDDDDD);
   // #29 تقدم التمرير
   double _scrollProgress = 0.0;
   // #20 كاش محتوى الفصل في الذاكرة — بحد أقصى 50 فصل
@@ -211,16 +212,15 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
 
   // #1 تطبيق الخط المختار
   TextStyle _contentStyle() {
-    final color = Colors.grey.shade300;
     switch (_fontFamily) {
       case 'Amiri':
-        return GoogleFonts.amiri(fontSize: _fontSize, height: 2.0, color: color);
+        return GoogleFonts.amiri(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
       case 'Tajawal':
-        return GoogleFonts.tajawal(fontSize: _fontSize, height: 2.0, color: color);
+        return GoogleFonts.tajawal(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
       case 'Lateef':
-        return GoogleFonts.lateef(fontSize: _fontSize + 2, height: 2.0, color: color);
+        return GoogleFonts.lateef(fontSize: _fontSize + 2, height: 2.0, color: _readerTextColor);
       default:
-        return GoogleFonts.cairo(fontSize: _fontSize, height: 2.0, color: color);
+        return GoogleFonts.cairo(fontSize: _fontSize, height: 2.0, color: _readerTextColor);
     }
   }
 
@@ -274,51 +274,71 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
 
   // #9 تغيير خلفية القراءة
   void _showBgColorPicker() {
-    final options = <String, Color>{
-      'داكن':      const Color(0xFF0D0F14),
-      'رمادي':     const Color(0xFF1A1C24),
-      'بني دافئ':  const Color(0xFF1C1510),
-      'أزرق ليلي': const Color(0xFF0D1117),
-    };
+    // كل ثيم: اسم، خلفية، لون نص
+    final themes = <Map<String, dynamic>>[
+      {'name': 'أبيض',        'bg': const Color(0xFFFFFFFF), 'text': const Color(0xFF1A1A1A)},
+      {'name': 'ورق',         'bg': const Color(0xFFF5E6C8), 'text': const Color(0xFF3B2A1A)},
+      {'name': 'كريمي',       'bg': const Color(0xFFFAF3E0), 'text': const Color(0xFF2C2416)},
+      {'name': 'رمادي فاتح', 'bg': const Color(0xFFE8E8E8), 'text': const Color(0xFF1A1A1A)},
+      {'name': 'رمادي داكن', 'bg': const Color(0xFF3A3A3A), 'text': const Color(0xFFDDDDDD)},
+      {'name': 'أسود',        'bg': const Color(0xFF0D0F14), 'text': const Color(0xFFDDDDDD)},
+    ];
     showModalBottomSheet(
       context: context,
       backgroundColor: _surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('لون خلفية القراءة',
                 style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700, color: _textPrimary)),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: options.entries.map((e) => GestureDetector(
-                onTap: () {
-                  setState(() => _readerBg = e.value);
-                  Navigator.pop(ctx);
-                },
-                child: Column(children: [
-                  Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(
-                      color: e.value,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _readerBg == e.value ? _accent : _border,
-                        width: _readerBg == e.value ? 2.5 : 1,
+              children: themes.map((t) {
+                final bg   = t['bg']   as Color;
+                final text = t['text'] as Color;
+                final name = t['name'] as String;
+                final selected = _readerBg == bg;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _readerBg        = bg;
+                      _readerTextColor = text;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  child: Column(children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color: bg,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected ? _accent : _border,
+                          width: selected ? 2.5 : 1,
+                        ),
+                        boxShadow: selected
+                            ? [BoxShadow(color: _accent.withValues(alpha: 0.35), blurRadius: 6)]
+                            : null,
                       ),
+                      child: selected
+                          ? Icon(Icons.check_rounded, size: 18,
+                              color: bg.computeLuminance() > 0.5
+                                  ? const Color(0xFF1A1A1A)
+                                  : const Color(0xFFFFFFFF))
+                          : null,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(e.key, style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
-                ]),
-              )).toList(),
+                    const SizedBox(height: 6),
+                    Text(name, style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary)),
+                  ]),
+                );
+              }).toList(),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
