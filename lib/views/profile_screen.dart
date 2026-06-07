@@ -700,9 +700,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             margin: const EdgeInsets.only(bottom: 14),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             decoration: BoxDecoration(
-                              color: tAccent.withValues(alpha: 0.06),
+                              color: _surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: tAccent.withValues(alpha: 0.18)),
+                              border: Border.all(color: _border),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -732,9 +732,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: tAccent.withValues(alpha: 0.07),
+                            color: _surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: tAccent.withValues(alpha: 0.18)),
+                            border: Border.all(color: _border),
                           ),
                           child: Row(children: [
                             Icon(Icons.auto_stories_outlined, size: 18, color: tAccent),
@@ -2108,9 +2108,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: _surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: _border),
         ),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: color, size: 22),
@@ -2144,9 +2144,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: _surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: _border),
         ),
         child: Column(children: [
           Icon(icon, color: color, size: 20),
@@ -2170,9 +2170,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _tAccent.withValues(alpha: 0.05),
+          color: _surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _tAccent.withValues(alpha: 0.18)),
+          border: Border.all(color: _border),
         ),
         child: Row(
           children: [
@@ -2180,7 +2180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _tAccent.withValues(alpha: 0.12),
+                color: _surfaceHigh,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: _tAccent, size: 18),
