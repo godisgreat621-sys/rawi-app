@@ -121,6 +121,25 @@ class _AuthorScreenState extends State<AuthorScreen> {
     }
   }
 
+  void _showFullImage(String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: Image.network(url, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const SizedBox()),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _bg           = const Color(0xFF0D0F14);
@@ -298,7 +317,9 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // الصورة الشخصية — إطار مزخرف متدرج بحسب الثيم
-                            Builder(builder: (_) {
+                            GestureDetector(
+                              onTap: profilePic == null ? null : () => _showFullImage(profilePic),
+                              child: Builder(builder: (_) {
                               final rc = _ringColors(profileTheme);
                               final glow = _ringGlow(profileTheme);
                               final isAccent = profileTheme == 'galaxy' || profileTheme == 'desert';
@@ -341,6 +362,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                 child: innerFrame,
                               );
                             }),
+                            ),  // GestureDetector
                             const SizedBox(height: 12),
                             // #35 اسم الكاتب + شارة التوثيق
                             Row(mainAxisAlignment: MainAxisAlignment.center, children: [

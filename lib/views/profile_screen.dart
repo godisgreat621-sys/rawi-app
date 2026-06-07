@@ -485,9 +485,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Positioned(
                         top: 8, left: 8,
                         child: GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => AuthorScreen(authorId: user.uid, authorName: name),
-                          )),
+                          onTap: () {
+                            if (profileVisibility == 'private') {
+                              _showPrivatePreview(name, profilePic, tAccent);
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => AuthorScreen(authorId: user.uid, authorName: name),
+                              ));
+                            }
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
@@ -514,7 +520,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Stack(clipBehavior: Clip.none, children: [
                               // إطار مزخرف متدرج اللون بحسب الثيم
-                              Builder(builder: (_) {
+                              GestureDetector(
+                                onTap: () => _showFullImage(
+                                    profilePic,
+                                    name.isNotEmpty ? name[0].toUpperCase() : '؟',
+                                    tAccent),
+                                child: Builder(builder: (_) {
                                 final rc = _ringColors(profileTheme);
                                 final glow = _ringGlow(profileTheme);
                                 final isAccent = profileTheme == 'galaxy' || profileTheme == 'desert';
@@ -555,6 +566,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   child: innerFrame,
                                 );
                               }),
+                              ),  // GestureDetector
                               if (_isUploading)
                                 Positioned.fill(
                                   child: Container(
@@ -1171,6 +1183,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showFullImage(String? url, String fallbackLetter, Color accent) {
+    if (url == null) return;
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: Image.network(url, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => CircleAvatar(
+                  radius: 80, backgroundColor: _surface,
+                  child: Text(fallbackLetter,
+                      style: GoogleFonts.cairo(fontSize: 48, color: accent)),
+                )),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPrivatePreview(String name, String? profilePic, Color accent) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog(
+        backgroundColor: _surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 44,
+                backgroundColor: _surfaceHigh,
+                backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
+                child: profilePic == null
+                    ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
+                        style: GoogleFonts.cairo(fontSize: 32, color: accent))
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              Text(name,
+                  style: GoogleFonts.cairo(fontSize: 16, fontWeight: FontWeight.w700, color: _textPrimary)),
+              const SizedBox(height: 24),
+              Icon(Icons.lock_rounded, size: 48, color: _textSecondary),
+              const SizedBox(height: 10),
+              Text('صفحة شخصية خاصة',
+                  style: GoogleFonts.cairo(fontSize: 14, color: _textSecondary)),
+              const SizedBox(height: 24),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('إغلاق', style: GoogleFonts.cairo(color: accent)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

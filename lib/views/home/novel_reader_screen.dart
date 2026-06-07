@@ -148,6 +148,18 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     final totalSecs  = ((wordCount / 170) * 60).round();
     _requiredSeconds = (totalSecs * 0.7).round().clamp(30, 3600);
 
+    // استعادة التقدم السابق من SharedPreferences
+    if (_chapterId.isNotEmpty) {
+      SharedPreferences.getInstance().then((prefs) {
+        if (!mounted) return;
+        final saved = prefs.getInt('read_secs_$_chapterId') ?? 0;
+        setState(() {
+          _secondsRead = saved;
+          if (_secondsRead >= _requiredSeconds) _canRate = true;
+        });
+      });
+    }
+
     _readTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
       setState(() {
@@ -161,6 +173,10 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     _saveTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted) return;
       _saveProgress();
+      if (_chapterId.isNotEmpty && _secondsRead > 0) {
+        SharedPreferences.getInstance().then((prefs) =>
+            prefs.setInt('read_secs_$_chapterId', _secondsRead));
+      }
     });
   }
 
@@ -188,7 +204,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
     } catch (_) {}
   }
 
-  // #8 تحميل حجم الخط العالمي + #1 نوع الخط من Firestore
+  // #8 تحميل إعدادات القراءة العالمية
   Future<void> _loadGlobalFontPref() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -200,16 +216,29 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
       if (pref != null) _fontSize = (pref as num).toDouble().clamp(12.0, 30.0);
       final font = data?['preferredFont'] as String?;
       if (font != null) _fontFamily = font;
+      final bgVal = data?['preferredBgColor'] as int?;
+      if (bgVal != null) _readerBg = Color(bgVal);
+      final textVal = data?['preferredTextColor'] as int?;
+      if (textVal != null) _readerTextColor = Color(textVal);
+      final bold = data?['preferredBold'] as bool?;
+      if (bold != null) _isBold = bold;
+      final lh = data?['preferredLineHeight'] as num?;
+      if (lh != null) _lineHeight = lh.toDouble().clamp(1.2, 4.0);
     });
   }
 
-  // #8 حفظ حجم الخط + #1 نوع الخط عالمياً
+  // #8 حفظ كل إعدادات القراءة
   Future<void> _saveGlobalFontPref() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    await FirebaseFirestore.instance.collection('users').doc(user.uid)
-        .set({'preferredFontSize': _fontSize, 'preferredFont': _fontFamily},
-            SetOptions(merge: true));
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'preferredFontSize':   _fontSize,
+      'preferredFont':       _fontFamily,
+      'preferredBgColor':    _readerBg.toARGB32(),
+      'preferredTextColor':  _readerTextColor.toARGB32(),
+      'preferredBold':       _isBold,
+      'preferredLineHeight': _lineHeight,
+    }, SetOptions(merge: true));
   }
 
   // #1 تطبيق الخط المختار
@@ -270,6 +299,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                     onTap: () {
                       setState(() { _readerBg = bg; _readerTextColor = text; });
                       setS(() {});
+                      _saveGlobalFontPref();
                     },
                     child: Column(children: [
                       Container(
@@ -354,6 +384,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       onTap: () {
                         setState(() => _isBold = !_isBold);
                         setS(() {});
+                        _saveGlobalFontPref();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -393,6 +424,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                           onTap: () {
                             setState(() => _lineHeight = lh);
                             setS(() {});
+                            _saveGlobalFontPref();
                           },
                           child: Column(children: [
                             Container(
@@ -1825,8 +1857,8 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF13151C).withValues(alpha: 0.97),
-                          border: const Border(top: BorderSide(color: _border)),
+                          color: _readerBg.withValues(alpha: 0.97),
+                          border: Border(top: BorderSide(color: _border.withValues(alpha: 0.5))),
                         ),
                         child: SafeArea(
                           top: false,

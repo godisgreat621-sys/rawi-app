@@ -1112,12 +1112,126 @@ class _AdminScreenState extends State<AdminScreen>
                 '${ts.day}/${ts.month}\n${ts.hour.toString().padLeft(2,'0')}:${ts.minute.toString().padLeft(2,'0')}',
                 style: GoogleFonts.cairo(fontSize: 9, color: _textSecondary), textAlign: TextAlign.end,
               ) : null,
-              onTap: () {},
+              onTap: () => _showLogDetail(docs[i].id, data),
             ),
           );
         },
       );
     },
+  );
+
+  void _showLogDetail(String logId, Map<String, dynamic> data) {
+    final action    = data['action'] as String? ?? '';
+    final targetUid = data['targetUid'] as String?;
+    final ts        = (data['at'] as Timestamp?)?.toDate();
+    final label     = _auditLabel(action);
+    final color     = _auditColor(action);
+
+    // تحديد ما إذا كان الإجراء قابلاً للتراجع
+    String? undoLabel;
+    Future<void> Function()? undoAction;
+
+    if ((action == 'ban_24h' || action == 'ban_week' || action == 'ban_permanent') && targetUid != null) {
+      undoLabel = 'رفع الحظر';
+      undoAction = () async {
+        await FirebaseFirestore.instance.collection('users').doc(targetUid)
+            .update({'bannedUntil': Timestamp.fromDate(DateTime(2000)), 'isPermanentBan': false});
+        await _log('unban', extra: {'targetUid': targetUid});
+        if (mounted) { Navigator.pop(context); _snack('رُفع الحظر ✅', Colors.green); }
+      };
+    } else if (action == 'toggle_role' && targetUid != null) {
+      undoLabel = 'عكس الصلاحية';
+      undoAction = () async {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(targetUid).get();
+        final currentRole = (doc.data()?['role'] as String?) ?? 'user';
+        final newRole = currentRole == 'admin' ? 'user' : 'admin';
+        await context.read<NovelsProvider>().setUserRole(targetUid, newRole);
+        await _log('toggle_role', extra: {'targetUid': targetUid});
+        if (mounted) { Navigator.pop(context); _snack('تم عكس الصلاحية ✅', _accent); }
+      };
+    } else if (action == 'feature') {
+      final novelId = data['novelId'] as String?;
+      if (novelId != null) {
+        undoLabel = 'إلغاء التمييز';
+        undoAction = () async {
+          await FirebaseFirestore.instance.collection('novels').doc(novelId).update({'isFeatured': false});
+          await _log('unfeature', extra: {'novelId': novelId});
+          if (mounted) { Navigator.pop(context); _snack('تم إلغاء التمييز', _textSecondary); }
+        };
+      }
+    } else if (action == 'freeze') {
+      final novelId = data['novelId'] as String?;
+      if (novelId != null) {
+        undoLabel = 'رفع التجميد';
+        undoAction = () async {
+          await FirebaseFirestore.instance.collection('novels').doc(novelId).update({'isFrozen': false});
+          await _log('unfreeze', extra: {'novelId': novelId});
+          if (mounted) { Navigator.pop(context); _snack('تم رفع التجميد ✅', Colors.green); }
+        };
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(_auditIcon(action), color: color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(child: Text(label,
+                  style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.w700, color: _textPrimary))),
+            ]),
+            const SizedBox(height: 14),
+            if (targetUid != null) _detailRow('المستخدم المستهدف', targetUid),
+            if (data['novelId'] != null) _detailRow('الرواية', data['title'] ?? data['novelId']),
+            if (data['points']  != null) _detailRow('النقاط', '${data['points']}'),
+            _detailRow('المشرف', data['adminEmail'] ?? '—'),
+            if (ts != null) _detailRow('التوقيت',
+                '${ts.day}/${ts.month}/${ts.year}  ${ts.hour.toString().padLeft(2,'0')}:${ts.minute.toString().padLeft(2,'0')}'),
+            if (undoLabel != null && undoAction != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: undoAction,
+                  icon: const Icon(Icons.undo_rounded, size: 16),
+                  label: Text(undoLabel, style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color.withValues(alpha: 0.15),
+                    foregroundColor: color,
+                    elevation: 0,
+                    side: BorderSide(color: color.withValues(alpha: 0.4)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: 12),
+              Text('هذا الإجراء لا يمكن التراجع عنه',
+                  style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String val) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 120, child: Text('$label:', style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary))),
+        Expanded(child: Text(val, style: GoogleFonts.cairo(fontSize: 11, color: _textPrimary))),
+      ],
+    ),
   );
 
   String _auditLabel(String a) {

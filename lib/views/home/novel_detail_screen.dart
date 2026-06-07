@@ -1,5 +1,4 @@
-﻿import 'dart:ui';
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1012,15 +1011,28 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // خلفية ضبابية من الغلاف
-                  if (coverUrl != null) ...[
-                    Image.network(coverUrl, fit: BoxFit.cover),
-                    BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                      child: Container(color: _bg.withValues(alpha: 0.78)),
-                    ),
-                  ] else
+                  // خلفية شفافة من الغلاف — بدون ضبابية مثل البروفايل
+                  if (coverUrl != null)
+                    Opacity(
+                      opacity: 0.30,
+                      child: Image.network(coverUrl, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(color: coverBg)),
+                    )
+                  else
                     Container(color: coverBg),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _bg.withValues(alpha: 0.55),
+                          _bg.withValues(alpha: 0.30),
+                          _bg.withValues(alpha: 0.88),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
                   // الغلاف المركزي الكبير
                   Center(
                     child: Padding(
