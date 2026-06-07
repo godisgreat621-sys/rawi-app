@@ -2180,9 +2180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _surface,
+          color: _tAccent.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _border),
+          border: Border.all(color: _tAccent.withValues(alpha: 0.18)),
         ),
         child: Row(
           children: [
@@ -2190,7 +2190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _tAccent.withValues(alpha: 0.10),
+                color: _tAccent.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: _tAccent, size: 18),
