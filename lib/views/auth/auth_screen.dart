@@ -137,11 +137,11 @@ class _AuthScreenState extends State<AuthScreen>
                     Column(
                       children: [
                         SizedBox(
-                          width: 72,
-                          height: 72,
+                          width: 110,
+                          height: 110,
                           child: Image.asset('logo.png'),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 8),
                         Text(
                           'راوي',
                           style: GoogleFonts.cairo(
