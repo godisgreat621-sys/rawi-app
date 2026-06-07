@@ -2116,14 +2116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
+          Icon(icon, color: color, size: 22),
           const SizedBox(height: 6),
           Text(label,
               style: GoogleFonts.cairo(fontSize: 10, color: _textPrimary,
