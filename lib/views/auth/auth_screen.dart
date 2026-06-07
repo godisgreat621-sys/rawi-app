@@ -136,19 +136,10 @@ class _AuthScreenState extends State<AuthScreen>
                     // ── الشعار ──────────────────────────────────────────────
                     Column(
                       children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: _accentDim,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: _accent, width: 1),
-                          ),
-                          child: const Icon(
-                            Icons.auto_stories_rounded,
-                            color: _accent,
-                            size: 28,
-                          ),
+                        SizedBox(
+                          width: 72,
+                          height: 72,
+                          child: Image.asset('logo.png'),
                         ),
                         const SizedBox(height: 20),
                         Text(
