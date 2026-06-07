@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -104,21 +105,32 @@ class AuthViewModel extends ChangeNotifier {
   Future<String?> signInWithGoogle() async {
     _setLoading(true);
     try {
-      final googleUser = await GoogleSignIn(
-        clientId: _webClientId,
-        scopes: ['email', 'profile'],
-      ).signIn();
-      if (googleUser == null) {
-        _setLoading(false);
-        return 'تم إلغاء تسجيل الدخول';
+      User? user;
+
+      if (kIsWeb) {
+        // الويب: نافذة popup من Firebase مباشرة
+        final provider = GoogleAuthProvider();
+        final result = await _auth.signInWithPopup(provider);
+        user = result.user;
+      } else {
+        // الجوال: google_sign_in
+        final googleUser = await GoogleSignIn(
+          clientId: _webClientId,
+          scopes: ['email', 'profile'],
+        ).signIn();
+        if (googleUser == null) {
+          _setLoading(false);
+          return 'تم إلغاء تسجيل الدخول';
+        }
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken:     googleAuth.idToken,
+        );
+        final result = await _auth.signInWithCredential(credential);
+        user = result.user;
       }
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken:     googleAuth.idToken,
-      );
-      final result = await _auth.signInWithCredential(credential);
-      final user = result.user;
+
       if (user == null) { _setLoading(false); return 'فشل تسجيل الدخول'; }
 
       // إنشاء وثيقة المستخدم إن لم تكن موجودة
@@ -128,7 +140,7 @@ class AuthViewModel extends ChangeNotifier {
         final deviceId = await _getDeviceId();
         await ref.set({
           'email':        user.email ?? '',
-          'displayName':  user.displayName ?? googleUser.displayName ?? '',
+          'displayName':  user.displayName ?? '',
           'profilePicture': user.photoURL ?? '',
           'role':         'user',
           'isActive':     true,
