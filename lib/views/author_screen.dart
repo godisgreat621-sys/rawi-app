@@ -72,7 +72,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
   String _getWriterRank(int points) {
     if (points >= 2000) return 'عميد الرواة';
     if (points >= 1000) return 'أديب متألق';
-    if (points >= 500)  return 'حكواتي متمكن';
+    if (points >= 500)  return 'صاحب الحرف';
     if (points >= 100)  return 'كاتب نشيط';
     return 'راوي';
   }
