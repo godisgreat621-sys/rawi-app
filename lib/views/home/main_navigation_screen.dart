@@ -81,14 +81,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
 
   static Color _resolveThemeAccent(String? theme) {
     const map = <String, Color>{
-      'default':  Color(0xFFC4A87A),
-      'sakura':   Color(0xFFE891B2),
-      'ocean':    Color(0xFF5BAFD6),
-      'sunset':   Color(0xFFE8945B),
-      'galaxy':   Color(0xFFAA7DE8),
-      'desert':   Color(0xFFD4A843),
-      'midnight': Color(0xFF4A90D9),
-      'forest':   Color(0xFF5BBF7C),
+      'default':   Color(0xFFC4A87A),
+      'sakura':    Color(0xFFE891B2),
+      'ocean':     Color(0xFF5BAFD6),
+      'sunset':    Color(0xFFE8945B),
+      'galaxy':    Color(0xFFAA7DE8),
+      'desert':    Color(0xFFD4A843),
+      'midnight':  Color(0xFF4A90D9),
+      'forest':    Color(0xFF5BBF7C),
+      'aurora':    Color(0xFF00D4B8),
+      'ruby':      Color(0xFFE03C3C),
+      'diamond':   Color(0xFFA8CBF0),
+      'oldbooks':  Color(0xFFCC9A5A),
+      'deepspace': Color(0xFF7A5FDD),
+      'fireice':   Color(0xFFFF5E35),
     };
     return map[theme ?? 'default'] ?? const Color(0xFFC4A87A);
   }
