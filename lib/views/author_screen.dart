@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
+import 'package:my_first_app/widgets/profile_effect_overlay.dart';
 
 class AuthorScreen extends StatefulWidget {
   final String authorId;
@@ -72,7 +73,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
   String _getWriterRank(int points) {
     if (points >= 2000) return 'عميد الرواة';
     if (points >= 1000) return 'أديب متألق';
-    if (points >= 500)  return 'صاحب الحرف';
+    if (points >= 500)  return 'قلم راسخ';
     if (points >= 100)  return 'كاتب نشيط';
     return 'راوي';
   }
@@ -91,8 +92,14 @@ class _AuthorScreenState extends State<AuthorScreen> {
     'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
     'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
     'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
-    'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
-    'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+    'midnight':  {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
+    'forest':    {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+    'aurora':    {'label': 'الشفق القطبي',  'accent': Color(0xFF00D4B8), 'grad1': Color(0xFF051A16), 'icon': '🌌'},
+    'ruby':      {'label': 'الياقوت',       'accent': Color(0xFFE03C3C), 'grad1': Color(0xFF180606), 'icon': '🌹'},
+    'diamond':   {'label': 'الماس',         'accent': Color(0xFFA8CBF0), 'grad1': Color(0xFF0A1018), 'icon': '💠'},
+    'oldbooks':  {'label': 'الكتب القديمة', 'accent': Color(0xFFCC9A5A), 'grad1': Color(0xFF120E06), 'icon': '📖'},
+    'deepspace': {'label': 'فضاء أعمق',     'accent': Color(0xFF7A5FDD), 'grad1': Color(0xFF060412), 'icon': '🌠'},
+    'fireice':   {'label': 'نار وثلج',      'accent': Color(0xFFFF5E35), 'grad1': Color(0xFF0C0810), 'icon': '🔥'},
   };
 
   Color _themeAccent(String? theme) =>
@@ -107,17 +114,25 @@ class _AuthorScreenState extends State<AuthorScreen> {
       case 'sunset':   return [Color(0xFFE8945B), Color(0xFFFFD166), Color(0xFFE06030)];
       case 'galaxy':   return [Color(0xFFAA7DE8), Color(0xFFD4A8FF), Color(0xFF6A3FB0)];
       case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
-      case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
-      case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
-      default:         return [Color(0xFFC4A87A), Color(0xFFE8D5A0), Color(0xFF8A6A3A)];
+      case 'midnight':  return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
+      case 'forest':    return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
+      case 'aurora':    return [Color(0xFF00D4B8), Color(0xFF80FFEE), Color(0xFF008B7A)];
+      case 'ruby':      return [Color(0xFFE03C3C), Color(0xFFFF9090), Color(0xFF901010)];
+      case 'diamond':   return [Color(0xFFA8CBF0), Color(0xFFDCEEFF), Color(0xFF5A90CC)];
+      case 'oldbooks':  return [Color(0xFFCC9A5A), Color(0xFFFFCF8A), Color(0xFF8A6030)];
+      case 'deepspace': return [Color(0xFF7A5FDD), Color(0xFFB8A0FF), Color(0xFF3A1A9A)];
+      case 'fireice':   return [Color(0xFFFF5E35), Color(0xFFFFAA60), Color(0xFFCC3010)];
+      default:          return [Color(0xFFC4A87A), Color(0xFFE8D5A0), Color(0xFF8A6A3A)];
     }
   }
 
   static double _ringGlow(String? theme) {
     switch (theme) {
-      case 'galaxy': return 0.55;
-      case 'sunset': case 'desert': return 0.45;
-      case 'sakura': return 0.42;
+      case 'galaxy':    case 'deepspace': return 0.55;
+      case 'sunset':    case 'desert':
+      case 'ruby':      case 'fireice':   return 0.48;
+      case 'aurora':    case 'diamond':   return 0.45;
+      case 'sakura':    return 0.42;
       default: return 0.35;
     }
   }
@@ -177,7 +192,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
           final showFollowers = userData['showFollowers']       ?? true;
           final showFollowing = userData['showFollowing']       ?? true;
           final profileVisibility = (userData['profileVisibility'] as String?) ?? 'public';
-          final profileTheme  = userData['profileTheme']       as String?;
+          final profileTheme  = userData['profileTheme']        as String?;
+          final profileEffect = (userData['profileEffect'] as String?) ?? 'none';
           final tAccent = _themeAccent(profileTheme);
           final tGrad   = _themeGrad(profileTheme);
           final joinedAt      = (userData['createdAt'] as Timestamp?)?.toDate();
@@ -313,6 +329,14 @@ class _AuthorScreenState extends State<AuthorScreen> {
                           ),
                         ),
                       ),
+                      if (profileEffect != 'none')
+                        Positioned.fill(
+                          child: ProfileEffectOverlay(
+                            key: ValueKey('$profileEffect-${tAccent.toARGB32()}'),
+                            effect: profileEffect,
+                            color: tAccent,
+                          ),
+                        ),
                       // المحتوى
                       Padding(
                         padding: const EdgeInsets.only(top: 48, bottom: 12),

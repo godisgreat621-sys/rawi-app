@@ -13,6 +13,7 @@ import 'package:my_first_app/providers/novels_provider.dart';
 import 'package:my_first_app/models/novel_model.dart';
 import 'package:my_first_app/views/home/novel_detail_screen.dart';
 import 'package:my_first_app/views/privacy_screen.dart';
+import 'package:my_first_app/widgets/profile_effect_overlay.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -36,19 +37,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // لون التيم الحالي — يتغير مع اختيار المستخدم
   Color _tAccent = const Color(0xFFC4A87A);
   Color _tGrad   = const Color(0xFF1E1610);
+  String _profileEffect = 'none';
 
   bool _isUploading = false;
 
+  // ── بيانات التأثيرات المتاحة ──────────────────────────────────────────────
+  static const Map<String, Map<String, dynamic>> _profileEffectsData = {
+    'none':      {'label': 'بدون تأثير', 'icon': '✦',    'animated': false},
+    'sparkles':  {'label': 'بريق',       'icon': '✨',    'animated': false},
+    'bokeh':     {'label': 'بوكيه',      'icon': '🔮',    'animated': false},
+    'particles': {'label': 'جسيمات',     'icon': '🌟',    'animated': true},
+    'petals':    {'label': 'بتلات',      'icon': '🌸',    'animated': true},
+    'fireflies': {'label': 'يراعات',     'icon': '💫',    'animated': true},
+    'rain':      {'label': 'مطر ناعم',   'icon': '🌧️',   'animated': true},
+    'snow':      {'label': 'ثلج',        'icon': '❄️',    'animated': true},
+    'waves':     {'label': 'موجات',      'icon': '〰️',   'animated': true},
+    'ink':       {'label': 'حبر',        'icon': '🖊️',   'animated': true},
+  };
+
   // ── بيانات التيمات المتاحة ─────────────────────────────────────────────────
   static const Map<String, Map<String, dynamic>> _profileThemesData = {
-    'default':  {'label': 'الافتراضي',   'accent': Color(0xFFC4A87A), 'grad1': Color(0xFF1E1610), 'icon': '🌙'},
-    'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
-    'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
-    'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
-    'galaxy':   {'label': 'المجرة',        'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
-    'desert':   {'label': 'الصحراء',       'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
-    'midnight': {'label': 'منتصف الليل',   'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
-    'forest':   {'label': 'الغابة',        'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+    'default':   {'label': 'الافتراضي',      'accent': Color(0xFFC4A87A), 'grad1': Color(0xFF1E1610), 'icon': '🌙'},
+    'sakura':    {'label': 'ساكورا',           'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
+    'ocean':     {'label': 'المحيط',           'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
+    'sunset':    {'label': 'الغروب',           'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
+    'galaxy':    {'label': 'المجرة',           'accent': Color(0xFFAA7DE8), 'grad1': Color(0xFF1A0E2A), 'icon': '🔮'},
+    'desert':    {'label': 'الصحراء',          'accent': Color(0xFFD4A843), 'grad1': Color(0xFF2A1E0A), 'icon': '🏜️'},
+    'midnight':  {'label': 'منتصف الليل',      'accent': Color(0xFF4A90D9), 'grad1': Color(0xFF0A0E1A), 'icon': '🌙'},
+    'forest':    {'label': 'الغابة',           'accent': Color(0xFF5BBF7C), 'grad1': Color(0xFF0E2215), 'icon': '🌲'},
+    'aurora':    {'label': 'الشفق القطبي',     'accent': Color(0xFF00D4B8), 'grad1': Color(0xFF051A16), 'icon': '🌌'},
+    'ruby':      {'label': 'الياقوت',          'accent': Color(0xFFE03C3C), 'grad1': Color(0xFF180606), 'icon': '🌹'},
+    'diamond':   {'label': 'الماس',            'accent': Color(0xFFA8CBF0), 'grad1': Color(0xFF0A1018), 'icon': '💠'},
+    'oldbooks':  {'label': 'الكتب القديمة',    'accent': Color(0xFFCC9A5A), 'grad1': Color(0xFF120E06), 'icon': '📖'},
+    'deepspace': {'label': 'فضاء أعمق',        'accent': Color(0xFF7A5FDD), 'grad1': Color(0xFF060412), 'icon': '🌠'},
+    'fireice':   {'label': 'نار وثلج',         'accent': Color(0xFFFF5E35), 'grad1': Color(0xFF0C0810), 'icon': '🔥'},
   };
 
   Color _tAccentFor(String? t) =>
@@ -59,22 +81,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ألوان تدرج إطار الصورة الشخصية — فريد لكل ثيم
   static List<Color> _ringColors(String? theme) {
     switch (theme) {
-      case 'sakura':   return [Color(0xFFE891B2), Color(0xFFFFD6EC), Color(0xFFE26BA0)];
-      case 'ocean':    return [Color(0xFF5BAFD6), Color(0xFF38D9C8), Color(0xFF2C7EA8)];
-      case 'sunset':   return [Color(0xFFE8945B), Color(0xFFFFD166), Color(0xFFE06030)];
-      case 'galaxy':   return [Color(0xFFAA7DE8), Color(0xFFD4A8FF), Color(0xFF6A3FB0)];
-      case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
-      case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
-      case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
-      default:         return [Color(0xFFC4A87A), Color(0xFFE8D5A0), Color(0xFF8A6A3A)];
+      case 'sakura':    return [Color(0xFFE891B2), Color(0xFFFFD6EC), Color(0xFFE26BA0)];
+      case 'ocean':     return [Color(0xFF5BAFD6), Color(0xFF38D9C8), Color(0xFF2C7EA8)];
+      case 'sunset':    return [Color(0xFFE8945B), Color(0xFFFFD166), Color(0xFFE06030)];
+      case 'galaxy':    return [Color(0xFFAA7DE8), Color(0xFFD4A8FF), Color(0xFF6A3FB0)];
+      case 'desert':    return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
+      case 'midnight':  return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
+      case 'forest':    return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
+      case 'aurora':    return [Color(0xFF00D4B8), Color(0xFF80FFEE), Color(0xFF008B7A)];
+      case 'ruby':      return [Color(0xFFE03C3C), Color(0xFFFF9090), Color(0xFF901010)];
+      case 'diamond':   return [Color(0xFFA8CBF0), Color(0xFFDCEEFF), Color(0xFF5A90CC)];
+      case 'oldbooks':  return [Color(0xFFCC9A5A), Color(0xFFFFCF8A), Color(0xFF8A6030)];
+      case 'deepspace': return [Color(0xFF7A5FDD), Color(0xFFB8A0FF), Color(0xFF3A1A9A)];
+      case 'fireice':   return [Color(0xFFFF5E35), Color(0xFFFFAA60), Color(0xFFCC3010)];
+      default:          return [Color(0xFFC4A87A), Color(0xFFE8D5A0), Color(0xFF8A6A3A)];
     }
   }
 
   static double _ringGlow(String? theme) {
     switch (theme) {
-      case 'galaxy': return 0.55;
-      case 'sunset': case 'desert': return 0.45;
-      case 'sakura': return 0.42;
+      case 'galaxy':    case 'deepspace': return 0.55;
+      case 'sunset':    case 'desert':
+      case 'ruby':      case 'fireice':   return 0.48;
+      case 'aurora':    case 'diamond':   return 0.45;
+      case 'sakura':    return 0.42;
       default: return 0.35;
     }
   }
@@ -452,11 +482,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final followingCount  = userData?['followingCount']  ?? 0;
           final profileTheme      = userData?['profileTheme']      as String?;
           final profileVisibility = (userData?['profileVisibility'] as String?) ?? 'public';
+          final profileEffect     = (userData?['profileEffect']     as String?) ?? 'none';
           final tAccent = _tAccentFor(profileTheme);
           final tGrad   = _tGradFor(profileTheme);
-          // مزامنة لون التيم مع state حتى تستخدمه الـ dialogs والـ methods أيضاً
-          if (_tAccent != tAccent || _tGrad != tGrad) {
-            Future.microtask(() { if (mounted) setState(() { _tAccent = tAccent; _tGrad = tGrad; }); });
+          // مزامنة لون التيم والتأثير مع state حتى تستخدمه الـ dialogs والـ methods أيضاً
+          if (_tAccent != tAccent || _tGrad != tGrad || _profileEffect != profileEffect) {
+            Future.microtask(() { if (mounted) setState(() { _tAccent = tAccent; _tGrad = tGrad; _profileEffect = profileEffect; }); });
           }
 
           return CustomScrollView(
@@ -496,6 +527,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
+                      if (profileEffect != 'none')
+                        Positioned.fill(
+                          child: ProfileEffectOverlay(
+                            key: ValueKey('$profileEffect-${tAccent.toARGB32()}'),
+                            effect: profileEffect,
+                            color: tAccent,
+                          ),
+                        ),
                       // زر معاينة ملفك كما يراه الآخرون
                       Positioned(
                         top: 8, left: 8,
@@ -855,6 +894,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent, _showWeeklyChallenge),
                           _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent, _showNotificationSettings),
                           _gridAction(Icons.palette_outlined,      'المظهر',      tAccent, () => _showThemePicker(userData)),
+                          _gridAction(Icons.auto_awesome_outlined, 'التأثير',     tAccent, () => _showEffectPicker(userData)),
                           _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
                           _gridAction(Icons.security_rounded,      'الأمان',      _textSecondary, _showSecuritySessions),
                           _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
@@ -1400,6 +1440,205 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? Icon(Icons.check_circle_rounded, color: _tAccent, size: 18)
           : Icon(Icons.circle_outlined, color: _border, size: 18),
       onTap: () => setS(() => onSelect(value)),
+    );
+  }
+
+  void _showEffectPicker(Map<String, dynamic>? userData) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final originalEffect = (userData?['profileEffect'] as String?) ?? 'none';
+    String selected = originalEffect;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final accent = _tAccent;
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.65,
+            maxChildSize: 0.90,
+            builder: (_, sc) => Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 36, height: 4,
+                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 12),
+                Text('تأثير الملف الشخصي',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
+                const SizedBox(height: 4),
+                Text('يظهر التأثير في خلفية صفحتك الشخصية',
+                    style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+                const SizedBox(height: 12),
+                // ── معاينة حية ──────────────────────────────────────────
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  height: 80,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [_tGrad.withValues(alpha: 0.9), accent.withValues(alpha: 0.3), _surface],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: accent, width: 1.5),
+                    boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 12)],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Stack(
+                      children: [
+                        if (selected != 'none')
+                          Positioned.fill(
+                            child: ProfileEffectOverlay(
+                              key: ValueKey(selected),
+                              effect: selected,
+                              color: accent,
+                            ),
+                          ),
+                        Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: Text(
+                              '${_profileEffectsData[selected]?['icon'] ?? ''}  ${_profileEffectsData[selected]?['label'] ?? ''}',
+                              key: ValueKey(selected),
+                              style: GoogleFonts.cairo(color: accent, fontSize: 13, fontWeight: FontWeight.w700,
+                                  shadows: [Shadow(color: _bg, blurRadius: 8)]),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Divider(color: _border),
+                Expanded(
+                  child: GridView.builder(
+                    controller: sc,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 0.75,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                    ),
+                    itemCount: _profileEffectsData.length,
+                    itemBuilder: (_, i) {
+                      final key = _profileEffectsData.keys.elementAt(i);
+                      final e   = _profileEffectsData[key]!;
+                      final isSel = selected == key;
+                      final isAnim = e['animated'] as bool;
+                      return GestureDetector(
+                        onTap: () => setS(() => selected = key),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          child: Column(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: isSel ? 60 : 52,
+                                height: isSel ? 60 : 52,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSel ? accent.withValues(alpha: 0.2) : _surfaceHigh,
+                                  border: Border.all(
+                                    color: isSel ? accent : _border,
+                                    width: isSel ? 2.5 : 1,
+                                  ),
+                                  boxShadow: isSel
+                                      ? [BoxShadow(color: accent.withValues(alpha: 0.45), blurRadius: 10)]
+                                      : [],
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Text(e['icon'] as String, style: const TextStyle(fontSize: 22)),
+                                    if (isAnim)
+                                      Positioned(bottom: 4, right: 4,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: accent.withValues(alpha: 0.8),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text('حي', style: GoogleFonts.cairo(fontSize: 7, color: Colors.white, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                e['label'] as String,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 10,
+                                  color: isSel ? accent : _textSecondary,
+                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.normal,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(ctx).viewInsets.bottom + 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _textSecondary,
+                            side: BorderSide(color: _border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('إلغاء', style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: accent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 0,
+                          ),
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .update({'profileEffect': selected});
+                          },
+                          child: Text('حفظ التأثير', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -2352,4 +2591,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
