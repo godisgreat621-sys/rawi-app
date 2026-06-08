@@ -158,12 +158,12 @@ class _AuthScreenState extends State<AuthScreen>
                             letterSpacing: 1,
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 14),
                         Text(
-                          'بداية كل رواية؛ إشراقة عالم جديد',
+                          'بداية كل رواية؛ إشراق عالم جديد',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
-                            color: _accent,
+                            color: _textSecondary,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 0.3,
                           ),
@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen>
                             border: Border.all(color: _accent.withValues(alpha: 0.25)),
                           ),
                           child: Text(
-                            'روايات عربية أصيلة من كتّاب المجتمع — لا ذكاء اصطناعي ولا منقول.',
+                            'روايات عربية أصيلة — كتّاب مجتمع راوي.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.cairo(
                               fontSize: 12,
