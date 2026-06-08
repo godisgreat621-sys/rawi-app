@@ -1206,7 +1206,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
               return CircleAvatar(
                 radius: isReply ? 14 : 18,
                 backgroundColor: _accent.withValues(alpha: 0.15),
-                backgroundImage: const AssetImage('logo.png'),
+                child: ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter)),
               );
             }),
           ),

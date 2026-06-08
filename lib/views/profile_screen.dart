@@ -473,7 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fit: StackFit.expand,
                     children: [
                       // خلفية: صورة خفيفة (0.28) + overlay لوني بالتيم — بدون ضبابية
-                      if (profilePic != null)
+                      if (profilePic != null && profilePic.isNotEmpty)
                         Opacity(
                           opacity: 0.28,
                           child: CachedNetworkImage(
@@ -562,9 +562,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       radius: 36,
                                       backgroundColor: _surface,
                                       backgroundImage: (profilePic != null && profilePic.isNotEmpty)
-                                          ? NetworkImage(profilePic) as ImageProvider
-                                          : const AssetImage('logo.png'),
-                                      child: null,
+                                          ? NetworkImage(profilePic)
+                                          : null,
+                                      child: (profilePic == null || profilePic.isEmpty)
+                                          ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                                          : null,
                                     ),
                                   ),
                                 );
@@ -1155,8 +1157,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 return ListTile(
                                   leading: CircleAvatar(
                                     backgroundImage: (uData['profilePicture'] != null && (uData['profilePicture'] as String).isNotEmpty)
-                                        ? NetworkImage(uData['profilePicture']) as ImageProvider
-                                        : const AssetImage('logo.png'),
+                                        ? NetworkImage(uData['profilePicture'])
+                                        : null,
+                                    child: (uData['profilePicture'] == null || (uData['profilePicture'] as String).isEmpty)
+                                        ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                                        : null,
                                   ),
                                   title: Text(
                                     uData['displayName'] ?? 'مستخدم',
@@ -1242,9 +1247,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 44,
                 backgroundColor: _surfaceHigh,
                 backgroundImage: (profilePic != null && profilePic.isNotEmpty)
-                    ? NetworkImage(profilePic) as ImageProvider
-                    : const AssetImage('logo.png'),
-                child: null,
+                    ? NetworkImage(profilePic)
+                    : null,
+                child: (profilePic == null || profilePic.isEmpty)
+                    ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                    : null,
               ),
               const SizedBox(height: 14),
               Text(name,
@@ -1457,9 +1464,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           radius: 26,
                           backgroundColor: _bg,
                           backgroundImage: (profilePicUrl != null && profilePicUrl.isNotEmpty)
-                              ? NetworkImage(profilePicUrl) as ImageProvider
-                              : const AssetImage('logo.png'),
-                          child: null,
+                              ? NetworkImage(profilePicUrl)
+                              : null,
+                          child: (profilePicUrl == null || profilePicUrl.isEmpty)
+                              ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                              : null,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1900,10 +1909,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               leading: CircleAvatar(
                                 radius: 20,
                                 backgroundImage: (pic != null && pic.isNotEmpty)
-                                    ? NetworkImage(pic) as ImageProvider
-                                    : const AssetImage('logo.png'),
+                                    ? NetworkImage(pic)
+                                    : null,
                                 backgroundColor: _surfaceHigh,
-                                child: null,
+                                child: (pic == null || pic.isEmpty)
+                                    ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                                    : null,
                               ),
                               title: Row(children: [
                                 if (i < 3) Text('${medals[i]} ', style: const TextStyle(fontSize: 16)),

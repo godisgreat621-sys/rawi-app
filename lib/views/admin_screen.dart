@@ -239,9 +239,11 @@ class _AdminScreenState extends State<AdminScreen>
                 builder: (_) => AuthorScreen(authorId: uid, authorName: data['displayName'] ?? ''))),
             child: CircleAvatar(radius: 18, backgroundColor: _accent.withValues(alpha: 0.15),
               backgroundImage: (data['profilePicture'] != null && (data['profilePicture'] as String).isNotEmpty)
-                  ? NetworkImage(data['profilePicture']) as ImageProvider
-                  : const AssetImage('logo.png'),
-              child: null),
+                  ? NetworkImage(data['profilePicture'])
+                  : null,
+              child: (data['profilePicture'] == null || (data['profilePicture'] as String).isEmpty)
+                  ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                  : null),
           ),
           const SizedBox(width: 10),
           Expanded(child: GestureDetector(

@@ -301,9 +301,11 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                   radius: 18,
                   backgroundColor: _surfaceHigh,
                   backgroundImage: ((r['profilePicture'] as String?) != null && (r['profilePicture'] as String).isNotEmpty)
-                      ? NetworkImage(r['profilePicture']) as ImageProvider
-                      : const AssetImage('logo.png'),
-                  child: null,
+                      ? NetworkImage(r['profilePicture'])
+                      : null,
+                  child: ((r['profilePicture'] as String?) == null || (r['profilePicture'] as String).isEmpty)
+                      ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                      : null,
                 ),
                 title: Text(r['displayName'] ?? '',
                     style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),

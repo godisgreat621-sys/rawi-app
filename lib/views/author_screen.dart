@@ -344,9 +344,11 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                     radius: 38,
                                     backgroundColor: _surface,
                                     backgroundImage: (profilePic != null && profilePic.isNotEmpty)
-                                        ? NetworkImage(profilePic) as ImageProvider
-                                        : const AssetImage('logo.png'),
-                                    child: null,
+                                        ? NetworkImage(profilePic)
+                                        : null,
+                                    child: (profilePic == null || profilePic.isEmpty)
+                                        ? ClipOval(child: Image.asset('logo.png', fit: BoxFit.cover, alignment: Alignment.topCenter))
+                                        : null,
                                   ),
                                 ),
                               );
