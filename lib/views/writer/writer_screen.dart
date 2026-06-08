@@ -42,7 +42,8 @@ class _WriterScreenState extends State<WriterScreen> {
           children: [
             // ── Header ────────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              height: kToolbarHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: _bg,
                 border: Border(bottom: BorderSide(color: _border)),
