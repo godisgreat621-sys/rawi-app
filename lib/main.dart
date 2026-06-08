@@ -44,7 +44,7 @@ class RawiApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF121212),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFD700),
+          seedColor: const Color(0xFFC4A87A),
           brightness: Brightness.dark,
         ),
         textTheme: GoogleFonts.cairoTextTheme(ThemeData.dark().textTheme)

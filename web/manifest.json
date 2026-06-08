@@ -4,7 +4,7 @@
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0D0F14",
-    "theme_color": "#8BAF7C",
+    "theme_color": "#C4A87A",
     "description": "منصة القصص العربية — اقرأ وشارك الروايات من تأليف كتّاب المجتمع",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,

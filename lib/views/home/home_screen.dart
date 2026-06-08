@@ -18,8 +18,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _accent       = Color(0xFF8BAF7C);
-  static const _accentDim    = Color(0xFF4A6741);
+  static const _accent       = Color(0xFFC4A87A);
+  static const _accentDim    = Color(0xFF3A2810);
   static const _gold         = Color(0xFFD4A843);
   Color _bg            = const Color(0xFF0D0F14);
   Color _surface       = const Color(0xFF161920);
@@ -1309,3 +1309,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

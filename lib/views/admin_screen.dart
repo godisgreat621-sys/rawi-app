@@ -17,7 +17,7 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen>
     with SingleTickerProviderStateMixin {
-  static const _accent = Color(0xFF8BAF7C);
+  static const _accent = Color(0xFFC4A87A);
   static const _gold   = Color(0xFFD4A843);
   Color _bg            = const Color(0xFF0D0F14);
   Color _surface       = const Color(0xFF161920);
@@ -1479,3 +1479,4 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 }
+
