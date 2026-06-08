@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -12,6 +12,11 @@ class AuthViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
   User? get currentUser => _auth.currentUser;
+
+  AuthViewModel() {
+    // يرصد أي تغيير في حالة المصادقة (popup / redirect / email) ويُحدّث الواجهة تلقائياً
+    _auth.authStateChanges().listen((_) => notifyListeners());
+  }
 
   // ── معرّف الجهاز (يمنع إنشاء أكثر من حساب) ─────────────────────────────
   Future<String> _getDeviceId() async {
@@ -41,7 +46,6 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<String?> signUp(String email, String password, {String? displayName}) async {
     _setLoading(true);
-    // فحص تكرار الجهاز
     final deviceConflict = await _checkDeviceConflict();
     if (deviceConflict != null) { _setLoading(false); return deviceConflict; }
 
@@ -56,10 +60,7 @@ class AuthViewModel extends ChangeNotifier {
       }
       final uid = result.user?.uid;
       if (uid == null) { _setLoading(false); return 'فشل إنشاء الحساب'; }
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set({
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'email': email,
         'displayName': displayName ?? '',
         'role': 'user',
@@ -93,24 +94,48 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    if (!kIsWeb) await GoogleSignIn(clientId: _webClientId).signOut();
+    if (!kIsWeb) {
+      try { await GoogleSignIn().signOut(); } catch (_) {}
+    }
     await _auth.signOut();
     notifyListeners();
   }
 
-  // ── تسجيل دخول بحساب Google (#41) ──────────────────────────────────────────
-  static const _webClientId = '181320126312-svfo1lv1qfb5peqqr3sjsb5v4eo8o6o0.apps.googleusercontent.com';
+  // ── تسجيل دخول بـ Google ────────────────────────────────────────────────────
+  static const _webClientId =
+      '181320126312-svfo1lv1qfb5peqqr3sjsb5v4eo8o6o0.apps.googleusercontent.com';
 
   Future<String?> signInWithGoogle() async {
     _setLoading(true);
     try {
       if (kIsWeb) {
-        // الويب: redirect (popup محجوبة على متصفحات الجوال)
-        await _auth.signInWithRedirect(GoogleAuthProvider());
-        return null; // الصفحة ستُغادر — النتيجة تُعالج في checkRedirectResult
+        final provider = GoogleAuthProvider();
+        provider.setCustomParameters({'prompt': 'select_account'});
+
+        try {
+          // Popup: نتيجة فورية، لا اعتماد على IndexedDB أو cross-origin redirect
+          final result = await _auth.signInWithPopup(provider);
+          final user = result.user;
+          if (user != null) await _createUserIfNeeded(user);
+          _setLoading(false);
+          return null;
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'popup-closed-by-user' ||
+              e.code == 'cancelled-popup-request') {
+            _setLoading(false);
+            return 'تم إلغاء تسجيل الدخول';
+          }
+          if (e.code == 'popup-blocked') {
+            // احتياطي: redirect إذا منع المتصفح الـ popup (وضع PWA standalone)
+            await _auth.signInWithRedirect(provider);
+            _setLoading(false);
+            return null;
+          }
+          rethrow;
+        }
       }
 
-      // الجوال: google_sign_in
+      // جوال (تطبيق نيتف): google_sign_in المدمج
       final googleUser = await GoogleSignIn(
         clientId: _webClientId,
         scopes: ['email', 'profile'],
@@ -122,11 +147,10 @@ class AuthViewModel extends ChangeNotifier {
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
-        idToken:     googleAuth.idToken,
+        idToken: googleAuth.idToken,
       );
       final result = await _auth.signInWithCredential(credential);
       final user = result.user;
-
       if (user == null) { _setLoading(false); return 'فشل تسجيل الدخول'; }
       await _createUserIfNeeded(user);
       _setLoading(false);
@@ -140,7 +164,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // يُستدعى عند تحميل التطبيق لمعالجة نتيجة الـ redirect من Google
+  // يُستدعى عند تحميل التطبيق — يعالج نتيجة redirect الاحتياطي
   Future<void> checkRedirectResult() async {
     if (!kIsWeb) return;
     try {
@@ -149,7 +173,9 @@ class AuthViewModel extends ChangeNotifier {
       if (user == null) return;
       await _createUserIfNeeded(user);
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('checkRedirectResult: $e');
+    }
   }
 
   Future<void> _createUserIfNeeded(User user) async {
@@ -158,18 +184,18 @@ class AuthViewModel extends ChangeNotifier {
     if (!snap.exists) {
       final deviceId = await _getDeviceId();
       await ref.set({
-        'email':        user.email ?? '',
-        'displayName':  user.displayName ?? '',
-        'profilePicture': user.photoURL ?? '',
-        'role':         'user',
-        'isActive':     true,
-        'points':       0,
-        'ratingsGiven': 0,
-        'followersCount': 0,
-        'followingCount': 0,
+        'email':                     user.email ?? '',
+        'displayName':               user.displayName ?? '',
+        'profilePicture':            user.photoURL ?? '',
+        'role':                      'user',
+        'isActive':                  true,
+        'points':                    0,
+        'ratingsGiven':              0,
+        'followersCount':            0,
+        'followingCount':            0,
         'lastChapterRatingsReceived': 0,
-        'deviceId':     deviceId,
-        'createdAt':    FieldValue.serverTimestamp(),
+        'deviceId':                  deviceId,
+        'createdAt':                 FieldValue.serverTimestamp(),
       });
     }
   }
@@ -217,11 +243,21 @@ class AuthViewModel extends ChangeNotifier {
       case 'invalid-email':
         return 'صيغة البريد الإلكتروني غير صحيحة.';
       case 'user-not-found':
-        return 'لا يوجد حساب بهذا البريد الإلكتروني.';
       case 'wrong-password':
-        return 'كلمة المرور غير صحيحة.';
+      case 'invalid-credential': // Firebase v9+ يجمعهما في كود واحد
+        return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+      case 'too-many-requests':
+        return 'محاولات كثيرة، يرجى الانتظار قليلاً ثم المحاولة.';
+      case 'user-disabled':
+        return 'هذا الحساب موقوف، يرجى التواصل مع الدعم.';
+      case 'unauthorized-domain':
+        return 'الموقع غير مرخص لتسجيل الدخول بـ Google — راسل الدعم.';
+      case 'operation-not-allowed':
+        return 'تسجيل الدخول بـ Google غير مفعّل حالياً.';
+      case 'popup-blocked':
+        return 'المتصفح يمنع النوافذ المنبثقة — جرّب فتح الموقع من متصفح آخر.';
       default:
-        return 'حدث خطأ، يرجى المحاولة مرة أخرى.';
+        return 'حدث خطأ (${e.code})، يرجى المحاولة مرة أخرى.';
     }
   }
 }
