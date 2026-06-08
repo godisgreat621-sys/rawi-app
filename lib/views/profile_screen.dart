@@ -555,11 +555,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     child: CircleAvatar(
                                       radius: 36,
                                       backgroundColor: _surface,
-                                      backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
-                                      child: profilePic == null
-                                          ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                                              style: GoogleFonts.cairo(fontSize: 24, fontWeight: FontWeight.w700, color: tAccent))
-                                          : null,
+                                      backgroundImage: (profilePic != null && profilePic.isNotEmpty)
+                                          ? NetworkImage(profilePic) as ImageProvider
+                                          : const AssetImage('logo.png'),
+                                      child: null,
                                     ),
                                   ),
                                 );
@@ -1149,10 +1148,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         as Map<String, dynamic>;
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    backgroundImage:
-                                        uData['profilePicture'] != null
-                                        ? NetworkImage(uData['profilePicture'])
-                                        : null,
+                                    backgroundImage: (uData['profilePicture'] != null && (uData['profilePicture'] as String).isNotEmpty)
+                                        ? NetworkImage(uData['profilePicture']) as ImageProvider
+                                        : const AssetImage('logo.png'),
                                   ),
                                   title: Text(
                                     uData['displayName'] ?? 'مستخدم',
@@ -1237,11 +1235,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircleAvatar(
                 radius: 44,
                 backgroundColor: _surfaceHigh,
-                backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
-                child: profilePic == null
-                    ? Text(name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                        style: GoogleFonts.cairo(fontSize: 32, color: accent))
-                    : null,
+                backgroundImage: (profilePic != null && profilePic.isNotEmpty)
+                    ? NetworkImage(profilePic) as ImageProvider
+                    : const AssetImage('logo.png'),
+                child: null,
               ),
               const SizedBox(height: 14),
               Text(name,
@@ -1413,7 +1410,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final grad   = _tGradFor(selected);
           final displayName = userData?['displayName'] as String? ?? '';
           final profilePicUrl = userData?['profilePicture'] as String?;
-          final initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'أ';
           return DraggableScrollableSheet(
             expand: false,
             initialChildSize: 0.75,
@@ -1454,10 +1450,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: CircleAvatar(
                           radius: 26,
                           backgroundColor: _bg,
-                          backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
-                          child: profilePicUrl == null
-                              ? Text(initials, style: GoogleFonts.cairo(fontSize: 22, fontWeight: FontWeight.bold, color: accent))
-                              : null,
+                          backgroundImage: (profilePicUrl != null && profilePicUrl.isNotEmpty)
+                              ? NetworkImage(profilePicUrl) as ImageProvider
+                              : const AssetImage('logo.png'),
+                          child: null,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1897,10 +1893,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                               leading: CircleAvatar(
                                 radius: 20,
-                                backgroundImage: pic != null ? NetworkImage(pic) : null,
+                                backgroundImage: (pic != null && pic.isNotEmpty)
+                                    ? NetworkImage(pic) as ImageProvider
+                                    : const AssetImage('logo.png'),
                                 backgroundColor: _surfaceHigh,
-                                child: pic == null ? Text(n.isNotEmpty ? n[0] : '؟',
-                                    style: GoogleFonts.cairo(color: _tAccent, fontWeight: FontWeight.w700)) : null,
+                                child: null,
                               ),
                               title: Row(children: [
                                 if (i < 3) Text('${medals[i]} ', style: const TextStyle(fontSize: 16)),

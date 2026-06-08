@@ -300,13 +300,10 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 leading: CircleAvatar(
                   radius: 18,
                   backgroundColor: _surfaceHigh,
-                  backgroundImage: (r['profilePicture'] as String?) != null
-                      ? NetworkImage(r['profilePicture'])
-                      : null,
-                  child: (r['profilePicture'] as String?) == null
-                      ? Text((r['displayName'] ?? '?')[0],
-                          style: GoogleFonts.cairo(color: _accent))
-                      : null,
+                  backgroundImage: ((r['profilePicture'] as String?) != null && (r['profilePicture'] as String).isNotEmpty)
+                      ? NetworkImage(r['profilePicture']) as ImageProvider
+                      : const AssetImage('logo.png'),
+                  child: null,
                 ),
                 title: Text(r['displayName'] ?? '',
                     style: GoogleFonts.cairo(fontSize: 13, color: _textPrimary)),

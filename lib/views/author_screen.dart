@@ -343,13 +343,10 @@ class _AuthorScreenState extends State<AuthorScreen> {
                                   child: CircleAvatar(
                                     radius: 38,
                                     backgroundColor: _surface,
-                                    backgroundImage: profilePic != null ? NetworkImage(profilePic) : null,
-                                    child: profilePic == null
-                                        ? Text(
-                                            displayName.isNotEmpty ? displayName[0].toUpperCase() : '؟',
-                                            style: GoogleFonts.cairo(fontSize: 28, fontWeight: FontWeight.w700, color: tAccent),
-                                          )
-                                        : null,
+                                    backgroundImage: (profilePic != null && profilePic.isNotEmpty)
+                                        ? NetworkImage(profilePic) as ImageProvider
+                                        : const AssetImage('logo.png'),
+                                    child: null,
                                   ),
                                 ),
                               );
