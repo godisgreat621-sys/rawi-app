@@ -1206,13 +1206,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
               return CircleAvatar(
                 radius: isReply ? 14 : 18,
                 backgroundColor: _accent.withValues(alpha: 0.15),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '؟',
-                  style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w700,
-                      color: _accent,
-                      fontSize: isReply ? 11 : 13),
-                ),
+                backgroundImage: const AssetImage('logo.png'),
               );
             }),
           ),

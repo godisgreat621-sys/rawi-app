@@ -208,18 +208,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (newName.isEmpty) return;
                 final user = FirebaseAuth.instance.currentUser;
                 if (user == null) return;
-                // تحديث الاسم + تسجيل وقت التغيير
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .update({
-                      'displayName': newName,
-                      'nameLastChangedAt': FieldValue.serverTimestamp(),
-                    });
-                await user.updateDisplayName(newName);
-                if (mounted) {
-                  Navigator.pop(ctx);
-                  _showSnack('تم تحديث اسمك ✅', Colors.green);
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .update({
+                        'displayName': newName,
+                        'nameLastChangedAt': FieldValue.serverTimestamp(),
+                      });
+                  await user.updateDisplayName(newName);
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    _showSnack('تم تحديث اسمك ✅', Colors.green);
+                  }
+                } catch (_) {
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    _showSnack('حدث خطأ أثناء تحديث الاسم، حاول مجدداً.', Colors.redAccent);
+                  }
                 }
               },
               child: Text(

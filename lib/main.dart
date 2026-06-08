@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'package:my_first_app/view_models/auth_view_model.dart';
@@ -82,8 +83,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final authViewModel = Provider.of<AuthViewModel>(context);
-    if (authViewModel.currentUser != null) return const MainNavigationScreen();
-    return const AuthScreen();
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(backgroundColor: Color(0xFF0D0F14));
+        }
+        if (snapshot.hasData) return const MainNavigationScreen();
+        return const AuthScreen();
+      },
+    );
   }
 }

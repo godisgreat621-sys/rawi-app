@@ -63,6 +63,7 @@ class AuthViewModel extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'email': email,
         'displayName': displayName ?? '',
+        'profilePicture': '',
         'role': 'user',
         'isActive': true,
         'points': 0,
