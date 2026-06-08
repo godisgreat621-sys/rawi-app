@@ -50,13 +50,17 @@ class _WriterScreenState extends State<WriterScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'مؤلفاتي',
-                    style: GoogleFonts.cairo(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: _textPrimary,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit_note_rounded, color: _accent, size: 20),
+                      const SizedBox(width: 6),
+                      Text('اكتب',
+                          style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: _textPrimary)),
+                    ],
                   ),
                   GestureDetector(
                     onTap: () => Navigator.push(

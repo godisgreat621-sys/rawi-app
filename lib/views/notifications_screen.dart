@@ -163,11 +163,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             pinned: true,
             backgroundColor: _bg,
             elevation: 0,
-            title: Text('الإشعارات',
-                style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    color: _textPrimary)),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.notifications_rounded, color: _accent, size: 20),
+                const SizedBox(width: 6),
+                Text('الإشعارات',
+                    style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        color: _textPrimary)),
+              ],
+            ),
             actions: [
               if (user != null)
                 IconButton(
