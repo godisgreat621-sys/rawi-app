@@ -303,15 +303,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset('logo.png', width: 28, height: 28),
-                      const SizedBox(width: 8),
+                      Icon(Icons.auto_stories_rounded, color: _accent, size: 20),
+                      const SizedBox(width: 6),
                       Text(
-                        'راوي',
+                        'المكتبة',
                         style: GoogleFonts.cairo(
                           fontWeight: FontWeight.w700,
-                          fontSize: 22,
+                          fontSize: 18,
                           color: _textPrimary,
-                          letterSpacing: 1,
                         ),
                       ),
                     ],
