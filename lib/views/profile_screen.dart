@@ -44,8 +44,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── بيانات التأثيرات المتاحة ──────────────────────────────────────────────
   static const Map<String, Map<String, dynamic>> _profileEffectsData = {
     'none':      {'label': 'بدون تأثير', 'icon': '✦',    'animated': false},
-    'sparkles':  {'label': 'بريق',       'icon': '✨',    'animated': false},
-    'bokeh':     {'label': 'بوكيه',      'icon': '🔮',    'animated': false},
+    'sparkles':  {'label': 'بريق',       'icon': '✨',    'animated': true},
+    'bokeh':     {'label': 'بوكيه',      'icon': '🔮',    'animated': true},
     'particles': {'label': 'جسيمات',     'icon': '🌟',    'animated': true},
     'petals':    {'label': 'بتلات',      'icon': '🌸',    'animated': true},
     'fireflies': {'label': 'يراعات',     'icon': '💫',    'animated': true},
@@ -884,22 +884,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 5,
-                        crossAxisSpacing: 7,
-                        mainAxisSpacing: 7,
-                        childAspectRatio: 0.82,
+                        crossAxisCount: 4,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 0.88,
                         children: [
-                          _gridAction(Icons.history_rounded,       'النقاط',      tAccent, _showPointsHistory),
-                          _gridAction(Icons.leaderboard_rounded,   'المتصدرون',   tAccent, _showLeaderboard),
-                          _gridAction(Icons.emoji_events_outlined, 'التحدي',      tAccent, _showWeeklyChallenge),
-                          _gridAction(Icons.notifications_outlined,'الإشعارات',   tAccent, _showNotificationSettings),
-                          _gridAction(Icons.palette_outlined,      'المظهر',      tAccent, () => _showThemePicker(userData)),
-                          _gridAction(Icons.auto_awesome_outlined, 'التأثير',     tAccent, () => _showEffectPicker(userData)),
-                          _gridAction(Icons.privacy_tip_outlined,  'الخصوصية',   _textSecondary, () => _showPrivacySettings(userData)),
-                          _gridAction(Icons.security_rounded,      'الأمان',      _textSecondary, _showSecuritySessions),
-                          _gridAction(Icons.help_outline_rounded,  'الدعم',       _textSecondary, _showSupportDialog),
-                          _gridAction(Icons.info_outline_rounded,  'عن راوي',    _textSecondary, _showAboutPlatformDialog),
-                          _gridAction(Icons.policy_outlined,       'سياستنا',    _textSecondary, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
+                          // الصف الأول — الكاتب والتفاعل
+                          _gridAction(Icons.bar_chart_rounded,      'إحصائيات',    tAccent, _showWriterStats),
+                          _gridAction(Icons.history_rounded,        'النقاط',      tAccent, _showPointsHistory),
+                          _gridAction(Icons.leaderboard_rounded,    'المتصدرون',   tAccent, _showLeaderboard),
+                          _gridAction(Icons.emoji_events_outlined,  'التحدي',      tAccent, _showWeeklyChallenge),
+                          // الصف الثاني — التخصيص والإعدادات الشخصية
+                          _gridAction(Icons.palette_outlined,       'المظهر',      tAccent, () => _showThemePicker(userData)),
+                          _gridAction(Icons.auto_awesome_outlined,  'التأثير',     tAccent, () => _showEffectPicker(userData)),
+                          _gridAction(Icons.notifications_outlined, 'الإشعارات',   tAccent, _showNotificationSettings),
+                          _gridAction(Icons.privacy_tip_outlined,   'الخصوصية',    tAccent, () => _showPrivacySettings(userData)),
+                          // الصف الثالث — الحساب والمعلومات
+                          _gridAction(Icons.security_rounded,       'الأمان',      _textSecondary, _showSecuritySessions),
+                          _gridAction(Icons.help_outline_rounded,   'الدعم',       _textSecondary, _showSupportDialog),
+                          _gridAction(Icons.info_outline_rounded,   'عن راوي',     _textSecondary, _showAboutPlatformDialog),
+                          _gridAction(Icons.policy_outlined,        'سياستنا',     _textSecondary, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyScreen()))),
                         ],
                       ),
 
@@ -1440,6 +1444,259 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? Icon(Icons.check_circle_rounded, color: _tAccent, size: 18)
           : Icon(Icons.circle_outlined, color: _border, size: 18),
       onTap: () => setS(() => onSelect(value)),
+    );
+  }
+
+  // ── إحصائيات الكاتب ──────────────────────────────────────────────────────
+  void _showWriterStats() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.82,
+        maxChildSize: 0.95,
+        builder: (_, sc) => FutureBuilder<QuerySnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('novels')
+              .where('authorId', isEqualTo: user.uid)
+              .get(),
+          builder: (_, snap) {
+            final loading = snap.connectionState != ConnectionState.done;
+            final docs    = snap.data?.docs ?? [];
+
+            // ── تجميع الأرقام ──────────────────────────────────────────
+            int totalReads    = 0;
+            int totalLikes    = 0;
+            int totalChapters = 0;
+            int totalComments = 0;
+            int completedCount = 0;
+            double ratingSum  = 0;
+            int    ratingCount = 0;
+            String bestTitle  = '';
+            int    bestReads  = 0;
+            double bestRating = 0;
+            String bestRatingTitle = '';
+
+            for (final doc in docs) {
+              final d = doc.data() as Map<String, dynamic>;
+              final reads    = (d['readers']       ?? 0) as int;
+              final likes    = (d['likes']          ?? 0) as int;
+              final chapters = (d['chaptersCount']  ?? 0) as int;
+              final comments = (d['commentsCount']  ?? 0) as int;
+              final rating   = ((d['rating']        ?? 0.0) as num).toDouble();
+              final status   = (d['status']         ?? 'active') as String;
+              totalReads    += reads;
+              totalLikes    += likes;
+              totalChapters += chapters;
+              totalComments += comments;
+              if (rating > 0) { ratingSum += rating; ratingCount++; }
+              if (status == 'completed') completedCount++;
+              if (reads > bestReads) { bestReads = reads; bestTitle = d['title'] ?? ''; }
+              if (rating > bestRating) { bestRating = rating; bestRatingTitle = d['title'] ?? ''; }
+            }
+
+            final avgRating   = ratingCount > 0 ? ratingSum / ratingCount : 0.0;
+            final activeCount = docs.length - completedCount;
+
+            String fmt(int n) => n >= 1000000
+                ? '${(n / 1000000).toStringAsFixed(1)}م'
+                : n >= 1000 ? '${(n / 1000).toStringAsFixed(1)}ك' : '$n';
+
+            Widget statCard(IconData icon, String val, String label, {Color? iconColor}) {
+              final ic = iconColor ?? _tAccent;
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _border),
+                ),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(icon, color: ic, size: 20),
+                  const SizedBox(height: 6),
+                  Text(val,  style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w800, color: _textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(label, style: GoogleFonts.cairo(fontSize: 10, color: _textSecondary), textAlign: TextAlign.center),
+                ]),
+              );
+            }
+
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 36, height: 4,
+                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 14),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.bar_chart_rounded, color: _tAccent, size: 18),
+                  const SizedBox(width: 6),
+                  Text('إحصائياتك الكتابية',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary)),
+                ]),
+                const SizedBox(height: 4),
+                Text('مجموع بيانات جميع رواياتك المنشورة',
+                    style: GoogleFonts.cairo(fontSize: 11, color: _textSecondary)),
+                const SizedBox(height: 12),
+                Divider(color: _border, height: 1),
+                Expanded(
+                  child: loading
+                      ? Center(child: CircularProgressIndicator(color: _tAccent, strokeWidth: 2))
+                      : docs.isEmpty
+                          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(Icons.menu_book_rounded, color: _textSecondary, size: 48),
+                              const SizedBox(height: 12),
+                              Text('لم تنشر أي رواية بعد',
+                                  style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14)),
+                            ]))
+                          : ListView(
+                              controller: sc,
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                              children: [
+                                // ── الأرقام الرئيسية ────────────────────
+                                GridView.count(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  crossAxisCount: 4,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 0.82,
+                                  children: [
+                                    statCard(Icons.menu_book_rounded,        '${docs.length}',       'رواية'),
+                                    statCard(Icons.list_alt_rounded,         fmt(totalChapters),    'فصل'),
+                                    statCard(Icons.remove_red_eye_outlined,  fmt(totalReads),       'قراءة'),
+                                    statCard(Icons.favorite_rounded,         fmt(totalLikes),       'إعجاب',   iconColor: const Color(0xFFE03C3C)),
+                                    statCard(Icons.chat_bubble_outline,      fmt(totalComments),    'تعليق',   iconColor: const Color(0xFF5BAFD6)),
+                                    statCard(Icons.star_rounded,             avgRating > 0 ? avgRating.toStringAsFixed(1) : '—', 'تقييم', iconColor: const Color(0xFFD4A843)),
+                                    statCard(Icons.check_circle_outline,     '$completedCount',      'مكتملة',  iconColor: const Color(0xFF5BBF7C)),
+                                    statCard(Icons.edit_note_rounded,        '$activeCount',         'جارية',   iconColor: const Color(0xFFAA7DE8)),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // ── أفضل رواية بالقراءات ────────────────
+                                if (bestTitle.isNotEmpty) ...[
+                                  Text('أكثر رواياتك قراءةً',
+                                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w700, color: _textSecondary)),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: _bg,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: _tAccent.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Row(children: [
+                                      Container(
+                                        width: 36, height: 36,
+                                        decoration: BoxDecoration(
+                                          color: _tAccent.withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(Icons.emoji_events_rounded, color: _tAccent, size: 20),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(bestTitle,
+                                              style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: _textPrimary),
+                                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          Text('${fmt(bestReads)} قراءة',
+                                              style: GoogleFonts.cairo(fontSize: 11, color: _tAccent, fontWeight: FontWeight.w600)),
+                                        ]),
+                                      ),
+                                    ]),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+
+                                // ── أعلى تقييماً ─────────────────────────
+                                if (bestRatingTitle.isNotEmpty && bestRating > 0) ...[
+                                  Text('أعلى رواياتك تقييماً',
+                                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w700, color: _textSecondary)),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: _bg,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: const Color(0xFFD4A843).withValues(alpha: 0.4)),
+                                    ),
+                                    child: Row(children: [
+                                      Container(
+                                        width: 36, height: 36,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD4A843).withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.star_rounded, color: Color(0xFFD4A843), size: 20),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(bestRatingTitle,
+                                              style: GoogleFonts.cairo(fontSize: 13, fontWeight: FontWeight.w700, color: _textPrimary),
+                                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          Text('تقييم ${bestRating.toStringAsFixed(1)} / 5.0',
+                                              style: GoogleFonts.cairo(fontSize: 11, color: const Color(0xFFD4A843), fontWeight: FontWeight.w600)),
+                                        ]),
+                                      ),
+                                    ]),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+
+                                // ── شريط حالة الروايات ───────────────────
+                                if (docs.length > 1) ...[
+                                  Text('حالة الروايات',
+                                      style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w700, color: _textSecondary)),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: _bg,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: _border),
+                                    ),
+                                    child: Column(children: [
+                                      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                                        Text('جارية  $activeCount',    style: GoogleFonts.cairo(fontSize: 11, color: const Color(0xFFAA7DE8))),
+                                        Text('مكتملة  $completedCount', style: GoogleFonts.cairo(fontSize: 11, color: const Color(0xFF5BBF7C))),
+                                      ]),
+                                      const SizedBox(height: 8),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Row(children: [
+                                          if (activeCount > 0)
+                                            Flexible(
+                                              flex: activeCount,
+                                              child: Container(height: 8, color: const Color(0xFFAA7DE8)),
+                                            ),
+                                          if (completedCount > 0)
+                                            Flexible(
+                                              flex: completedCount,
+                                              child: Container(height: 8, color: const Color(0xFF5BBF7C)),
+                                            ),
+                                        ]),
+                                      ),
+                                    ]),
+                                  ),
+                                ],
+                              ],
+                            ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 

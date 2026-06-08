@@ -14,7 +14,7 @@ class _ProfileEffectOverlayState extends State<ProfileEffectOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
 
-  static const _animated = {'particles', 'petals', 'fireflies', 'rain', 'snow', 'waves', 'ink'};
+  static const _animated = {'sparkles', 'bokeh', 'particles', 'petals', 'fireflies', 'rain', 'snow', 'waves', 'ink'};
 
   @override
   void initState() {
@@ -95,20 +95,23 @@ class ProfileEffectPainter extends CustomPainter {
   void _sparkles(Canvas canvas, Size size) {
     final p = Paint()..style = PaintingStyle.fill;
     for (int i = 0; i < 18; i++) {
-      p.color = color.withValues(alpha: 0.35 + (_sz[i] / 4.5) * 0.25);
-      _drawStar(canvas, p, Offset(_px[i] * size.width, _py[i] * size.height), _sz[i] + 1);
+      final pulse = (math.sin(t * math.pi * 2 * _sp[i] + _ph[i]) + 1) / 2;
+      final scale = 0.5 + pulse * 0.7;
+      p.color = color.withValues(alpha: (0.12 + pulse * 0.52).clamp(0.0, 1.0));
+      _drawStar(canvas, p, Offset(_px[i] * size.width, _py[i] * size.height), (_sz[i] + 1) * scale);
     }
   }
 
   void _bokeh(Canvas canvas, Size size) {
     for (int i = 0; i < 12; i++) {
+      final pulse = (math.sin(t * math.pi * 2 * _sp[i] * 0.4 + _ph[i]) + 1) / 2;
       final c = Offset(_px[i] * size.width, _py[i] * size.height);
-      final r = 6.0 + _sz[i] * 4;
-      canvas.drawCircle(c, r, Paint()..color = color.withValues(alpha: 0.06));
+      final r = (6.0 + _sz[i] * 4) * (0.65 + pulse * 0.45);
+      canvas.drawCircle(c, r, Paint()..color = color.withValues(alpha: 0.03 + pulse * 0.08));
       canvas.drawCircle(c, r, Paint()
-        ..color = color.withValues(alpha: 0.18)
+        ..color = color.withValues(alpha: 0.07 + pulse * 0.18)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7);
+        ..strokeWidth = 0.6 + pulse * 0.5);
     }
   }
 
@@ -201,24 +204,25 @@ class ProfileEffectPainter extends CustomPainter {
   }
 
   void _ink(Canvas canvas, Size size) {
-    for (int i = 0; i < 8; i++) {
-      final phase = ((t + _ph[i] / (math.pi * 2)) % 1.0);
-      final fade  = math.sin(phase * math.pi).clamp(0.0, 1.0);
-      final x     = _px[i] * size.width;
-      final y     = _py[i] * size.height;
-      final ext   = phase;
-      final path  = Path()
-        ..moveTo(x, y)
-        ..cubicTo(
-          x + math.cos(_ang[i])       * 20 * ext, y + math.sin(_ang[i])       * 15 * ext,
-          x + math.cos(_ang[i] + 0.5) * 36 * ext, y + math.sin(_ang[i] + 0.5) * 20 * ext,
-          x + math.cos(_ang[i] + 1.0) * 50 * ext, y + math.sin(_ang[i] + 1.0) * 28 * ext,
-        );
-      canvas.drawPath(path, Paint()
-        ..color = color.withValues(alpha: (fade * 0.38).clamp(0.0, 1.0))
+    // قطرات حبر تتسع كدوائر ماء ثم تتلاشى
+    for (int i = 0; i < 12; i++) {
+      final phase  = ((t * _sp[i] * 0.6 + _ph[i] / (math.pi * 2)) % 1.0);
+      final fade   = (1.0 - phase).clamp(0.0, 1.0);
+      final maxR   = 6.0 + _sz[i] * 6;
+      final r      = phase * maxR;
+      final cx     = _px[i] * size.width;
+      final cy     = _py[i] * size.height;
+      // الحلقة الخارجية المتسعة
+      canvas.drawCircle(Offset(cx, cy), r, Paint()
+        ..color = color.withValues(alpha: (fade * 0.28).clamp(0.0, 1.0))
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8 + _sz[i] * 0.28
-        ..strokeCap = StrokeCap.round);
+        ..strokeWidth = 1.0 + fade * 1.8);
+      // نقطة صغيرة في المركز تظهر عند البداية فقط
+      if (phase < 0.25) {
+        final coreFade = (1 - phase / 0.25).clamp(0.0, 1.0);
+        canvas.drawCircle(Offset(cx, cy), 2.5 * coreFade, Paint()
+          ..color = color.withValues(alpha: (coreFade * 0.55).clamp(0.0, 1.0)));
+      }
     }
   }
 
