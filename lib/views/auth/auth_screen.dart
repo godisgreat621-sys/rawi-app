@@ -136,12 +136,19 @@ class _AuthScreenState extends State<AuthScreen>
                     // ── الشعار ──────────────────────────────────────────────
                     Column(
                       children: [
+                        // نعرض الجزء العلوي من الصورة فقط (الهلال) ونقطع المنطقة الداكنة السفلية
                         SizedBox(
-                          width: 110,
-                          height: 110,
-                          child: Image.asset('logo.png'),
+                          height: 76,
+                          child: ClipRect(
+                            child: OverflowBox(
+                              maxHeight: 110,
+                              maxWidth: 110,
+                              alignment: Alignment.topCenter,
+                              child: Image.asset('logo.png', width: 110, height: 110),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 2),
                         Text(
                           'راوي',
                           style: GoogleFonts.cairo(
@@ -151,32 +158,31 @@ class _AuthScreenState extends State<AuthScreen>
                             letterSpacing: 1,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 5),
                         Text(
-                          _isLoginMode
-                              ? 'أهلاً بعودتك'
-                              : 'ابدأ رحلتك في عالم الكتابة',
+                          'بداية كل رواية؛ إشراقة عالم جديد',
                           style: GoogleFonts.cairo(
-                            fontSize: 13,
-                            color: _textSecondary,
+                            fontSize: 12,
+                            color: _accent,
                             fontWeight: FontWeight.w400,
+                            letterSpacing: 0.3,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: _accentDim,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: _accent.withValues(alpha: 0.25)),
                           ),
                           child: Text(
-                            'راوي منصة حصرية لكتابة وقراءة الروايات العربية — كل ما تقرأه فيها من إبداع أعضائها فقط، لا ذكاء اصطناعي ولا منقول.',
+                            'روايات عربية أصيلة من كتّاب المجتمع — لا ذكاء اصطناعي ولا منقول.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.cairo(
                               fontSize: 12,
                               color: _accent,
-                              height: 1.7,
+                              height: 1.6,
                             ),
                           ),
                         ),
@@ -338,22 +344,7 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
                     ),
 
-                    const SizedBox(height: 20),
-
-                    // ── تبديل النص السفلي ────────────────────────────────
-                    GestureDetector(
-                      onTap: _switchMode,
-                      child: Text(
-                        _isLoginMode
-                            ? 'ليس لديك حساب؟  إنشاء حساب جديد'
-                            : 'لديك حساب بالفعل؟  تسجيل الدخول',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.cairo(
-                          fontSize: 13,
-                          color: _textSecondary,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
