@@ -85,7 +85,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
 
   // التيمات المتاحة لصفحة الكاتب
   static const Map<String, Map<String, dynamic>> profileThemes = {
-    'default':  {'label': 'راوي الليل',   'accent': Color(0xFFC4A87A), 'grad1': Color(0xFF1A2E1A), 'icon': '🌿'},
+    'default':  {'label': 'راوي الليل',   'accent': Color(0xFFC4A87A), 'grad1': Color(0xFF1E1610), 'icon': '🌙'},
     'sakura':   {'label': 'ساكورا',        'accent': Color(0xFFE891B2), 'grad1': Color(0xFF2D1A22), 'icon': '🌸'},
     'ocean':    {'label': 'المحيط',        'accent': Color(0xFF5BAFD6), 'grad1': Color(0xFF0E1E2E), 'icon': '🌊'},
     'sunset':   {'label': 'الغروب',        'accent': Color(0xFFE8945B), 'grad1': Color(0xFF2A1A0E), 'icon': '🌅'},
@@ -98,7 +98,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
   Color _themeAccent(String? theme) =>
       (profileThemes[theme ?? 'default']?['accent'] as Color?) ?? const Color(0xFFC4A87A);
   Color _themeGrad(String? theme) =>
-      (profileThemes[theme ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1A2E1A);
+      (profileThemes[theme ?? 'default']?['grad1'] as Color?) ?? const Color(0xFF1E1610);
 
   static List<Color> _ringColors(String? theme) {
     switch (theme) {
@@ -109,7 +109,7 @@ class _AuthorScreenState extends State<AuthorScreen> {
       case 'desert':   return [Color(0xFFD4A843), Color(0xFFFFE082), Color(0xFFAD7E1A)];
       case 'midnight': return [Color(0xFF4A90D9), Color(0xFF7AB8F5), Color(0xFF1A4A80)];
       case 'forest':   return [Color(0xFF5BBF7C), Color(0xFF9BE8AA), Color(0xFF2A7A45)];
-      default:         return [Color(0xFFC4A87A), Color(0xFFBEE0A8), Color(0xFF4A7A35)];
+      default:         return [Color(0xFFC4A87A), Color(0xFFE8D5A0), Color(0xFF8A6A3A)];
     }
   }
 
