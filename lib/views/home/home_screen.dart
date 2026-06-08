@@ -352,53 +352,54 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // ── بانر إعلانات الأدمن ──────────────────────────────────────────
-          if (!_bannerDismissed)
-            SliverToBoxAdapter(
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('system_settings')
-                    .doc('banner')
-                    .snapshots(),
-                builder: (context, snap) {
-                  if (!snap.hasData || !snap.data!.exists) return const SizedBox();
-                  final d = snap.data!.data() as Map<String, dynamic>?;
-                  final active = d?['active'] == true;
-                  final text = (d?['text'] as String?) ?? '';
-                  if (!active || text.isEmpty) return const SizedBox();
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _gold.withValues(alpha: 0.15),
-                      border: Border(
-                        bottom: BorderSide(color: _gold.withValues(alpha: 0.4), width: 1),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.campaign_rounded, color: _gold, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: GoogleFonts.cairo(
-                              color: _textPrimary,
-                              fontSize: 13,
-                              height: 1.5,
-                            ),
+          SliverToBoxAdapter(
+            child: _bannerDismissed
+                ? const SizedBox.shrink()
+                : StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('system_settings')
+                        .doc('banner')
+                        .snapshots(),
+                    builder: (context, snap) {
+                      if (!snap.hasData || !snap.data!.exists) return const SizedBox.shrink();
+                      final d = snap.data!.data() as Map<String, dynamic>?;
+                      final active = d?['active'] == true;
+                      final text = (d?['text'] as String?) ?? '';
+                      if (!active || text.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _gold.withValues(alpha: 0.15),
+                          border: Border(
+                            bottom: BorderSide(color: _gold.withValues(alpha: 0.4), width: 1),
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => setState(() => _bannerDismissed = true),
-                          child: Icon(Icons.close_rounded, color: _textSecondary, size: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.campaign_rounded, color: _gold, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                text,
+                                style: GoogleFonts.cairo(
+                                  color: _textPrimary,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => setState(() => _bannerDismissed = true),
+                              child: Icon(Icons.close_rounded, color: _textSecondary, size: 16),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+                      );
+                    },
+                  ),
+          ),
 
           // ── متابعة القراءة الذكية ──────────────────────────────────────────
           if (FirebaseAuth.instance.currentUser != null)

@@ -52,7 +52,6 @@ class RawiApp extends StatelessWidget {
             .apply(fontSizeFactor: kBaseFontFactor),
         iconTheme: const IconThemeData(size: kIconMedium),
         inputDecorationTheme: const InputDecorationTheme(
-          hintFadeDuration: Duration.zero,
           floatingLabelBehavior: FloatingLabelBehavior.never,
         ),
       ),
