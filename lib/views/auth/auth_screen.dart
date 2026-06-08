@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen>
                             border: Border.all(color: _accent.withValues(alpha: 0.25)),
                           ),
                           child: Text(
-                            'روايات عربية أصيلة — كتّاب مجتمع راوي.',
+                            'روايات عربية أصيلة من كتّاب مجتمع راوي',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.cairo(
                               fontSize: 12,
