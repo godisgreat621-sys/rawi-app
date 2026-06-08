@@ -93,66 +93,42 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await GoogleSignIn(clientId: _webClientId).signOut();
+    if (!kIsWeb) await GoogleSignIn(clientId: _webClientId).signOut();
     await _auth.signOut();
     notifyListeners();
   }
 
   // ── تسجيل دخول بحساب Google (#41) ──────────────────────────────────────────
-  // ← ضع Web Client ID هنا بعد تفعيل Google في Firebase Console
   static const _webClientId = '181320126312-svfo1lv1qfb5peqqr3sjsb5v4eo8o6o0.apps.googleusercontent.com';
 
   Future<String?> signInWithGoogle() async {
     _setLoading(true);
     try {
-      User? user;
-
       if (kIsWeb) {
-        // الويب: نافذة popup من Firebase مباشرة
-        final provider = GoogleAuthProvider();
-        final result = await _auth.signInWithPopup(provider);
-        user = result.user;
-      } else {
-        // الجوال: google_sign_in
-        final googleUser = await GoogleSignIn(
-          clientId: _webClientId,
-          scopes: ['email', 'profile'],
-        ).signIn();
-        if (googleUser == null) {
-          _setLoading(false);
-          return 'تم إلغاء تسجيل الدخول';
-        }
-        final googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken:     googleAuth.idToken,
-        );
-        final result = await _auth.signInWithCredential(credential);
-        user = result.user;
+        // الويب: redirect (popup محجوبة على متصفحات الجوال)
+        await _auth.signInWithRedirect(GoogleAuthProvider());
+        return null; // الصفحة ستُغادر — النتيجة تُعالج في checkRedirectResult
       }
+
+      // الجوال: google_sign_in
+      final googleUser = await GoogleSignIn(
+        clientId: _webClientId,
+        scopes: ['email', 'profile'],
+      ).signIn();
+      if (googleUser == null) {
+        _setLoading(false);
+        return 'تم إلغاء تسجيل الدخول';
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken:     googleAuth.idToken,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      final user = result.user;
 
       if (user == null) { _setLoading(false); return 'فشل تسجيل الدخول'; }
-
-      // إنشاء وثيقة المستخدم إن لم تكن موجودة
-      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
-      final snap = await ref.get();
-      if (!snap.exists) {
-        final deviceId = await _getDeviceId();
-        await ref.set({
-          'email':        user.email ?? '',
-          'displayName':  user.displayName ?? '',
-          'profilePicture': user.photoURL ?? '',
-          'role':         'user',
-          'isActive':     true,
-          'points':       0,
-          'ratingsGiven': 0,
-          'followersCount': 0,
-          'followingCount': 0,
-          'lastChapterRatingsReceived': 0,
-          'deviceId':     deviceId,
-          'createdAt':    FieldValue.serverTimestamp(),
-        });
-      }
+      await _createUserIfNeeded(user);
       _setLoading(false);
       return null;
     } on FirebaseAuthException catch (e) {
@@ -161,6 +137,40 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _setLoading(false);
       return 'حدث خطأ: $e';
+    }
+  }
+
+  // يُستدعى عند تحميل التطبيق لمعالجة نتيجة الـ redirect من Google
+  Future<void> checkRedirectResult() async {
+    if (!kIsWeb) return;
+    try {
+      final result = await _auth.getRedirectResult();
+      final user = result.user;
+      if (user == null) return;
+      await _createUserIfNeeded(user);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _createUserIfNeeded(User user) async {
+    final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final snap = await ref.get();
+    if (!snap.exists) {
+      final deviceId = await _getDeviceId();
+      await ref.set({
+        'email':        user.email ?? '',
+        'displayName':  user.displayName ?? '',
+        'profilePicture': user.photoURL ?? '',
+        'role':         'user',
+        'isActive':     true,
+        'points':       0,
+        'ratingsGiven': 0,
+        'followersCount': 0,
+        'followingCount': 0,
+        'lastChapterRatingsReceived': 0,
+        'deviceId':     deviceId,
+        'createdAt':    FieldValue.serverTimestamp(),
+      });
     }
   }
 

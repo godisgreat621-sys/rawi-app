@@ -64,16 +64,26 @@ class RawiApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AuthViewModel>(context, listen: false).checkRedirectResult();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
-
-    if (authViewModel.currentUser != null) {
-      return const MainNavigationScreen();
-    }
+    if (authViewModel.currentUser != null) return const MainNavigationScreen();
     return const AuthScreen();
   }
 }
