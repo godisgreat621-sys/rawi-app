@@ -278,7 +278,7 @@ class _AdminScreenState extends State<AdminScreen>
               'isRead': false,
               'message': newRole == 'admin'
                   ? 'مرحباً! تمت ترقيتك إلى مشرف في منصة راوي 🎉'
-                  : 'تمت إعادة حسابك إلى مستخدم عادي من قِبل الإدارة.',
+                  : 'تمت إعادة حسابك إلى عضو من قِبل الإدارة.',
               'createdAt': FieldValue.serverTimestamp(),
             });
             await _log('toggle_role', extra: {'targetUid': uid});

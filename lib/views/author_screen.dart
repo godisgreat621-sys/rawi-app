@@ -73,8 +73,8 @@ class _AuthorScreenState extends State<AuthorScreen> {
     if (points >= 2000) return 'عميد الرواة';
     if (points >= 1000) return 'أديب متألق';
     if (points >= 500)  return 'حكواتي متمكن';
-    if (points >= 100)  return 'كاتب واعد';
-    return 'راوي ناشئ';
+    if (points >= 100)  return 'كاتب نشيط';
+    return 'راوي';
   }
 
   Color _getRankColor(int points) {

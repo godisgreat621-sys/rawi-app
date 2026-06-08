@@ -497,7 +497,7 @@ class NovelsProvider with ChangeNotifier {
       final snap = await _db.collection('users').doc(uid).get();
       final pts  = (snap.data()?['points'] as num?)?.toInt() ?? 0;
       const badgeMap = {
-        50:   'مبتدئ',
+        50:   'عاشق الحرف',
         100:  'قارئ نشيط',
         250:  'محب للأدب',
         500:  'راوي محترف',
