@@ -32,9 +32,20 @@
   <link rel="manifest" href="manifest.json">
 
   <meta name="google-signin-client_id" content="181320126312-svfo1lv1qfb5peqqr3sjsb5v4eo8o6o0.apps.googleusercontent.com">
+
+  <style>
+    /* Hide native browser placeholder — Flutter renders its own hint text */
+    input::placeholder,
+    textarea::placeholder {
+      opacity: 0 !important;
+    }
+  </style>
 </head>
 
 <body>
+  <script>
+    window.flutterConfiguration = { renderer: "html" };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 
