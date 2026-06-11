@@ -1341,6 +1341,7 @@ class _AdminScreenState extends State<AdminScreen>
     style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
     decoration: InputDecoration(
       hintText: hint, hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+      floatingLabelBehavior: FloatingLabelBehavior.never,
       prefixIcon: Icon(Icons.search_rounded, color: _textSecondary, size: 20),
       filled: true, fillColor: _surface, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
@@ -1352,6 +1353,7 @@ class _AdminScreenState extends State<AdminScreen>
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
     hintText: hint, hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
+    floatingLabelBehavior: FloatingLabelBehavior.never,
     filled: true, fillColor: _surfaceHigh, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: _border)),
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: _border)),

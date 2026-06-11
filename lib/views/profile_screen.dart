@@ -385,8 +385,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       style: GoogleFonts.cairo(color: _textPrimary, fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
-        alignLabelWithHint: maxLines > 1,
         hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+        floatingLabelBehavior: FloatingLabelBehavior.never,
         filled: true,
         fillColor: _surfaceHigh,
         contentPadding: const EdgeInsets.symmetric(

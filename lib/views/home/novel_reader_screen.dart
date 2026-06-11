@@ -742,9 +742,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                     hintText: 'شاركنا رأيك...',
                     hintStyle: GoogleFonts.cairo(
                         color: _textSecondary, fontSize: 13),
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
                     filled: true,
                     fillColor: _surfaceHigh,
-                    alignLabelWithHint: true,
                     contentPadding: const EdgeInsets.all(12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1113,6 +1113,7 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                                 : 'اكتب تعليقك...',
                             hintStyle: GoogleFonts.cairo(
                                 color: _textSecondary, fontSize: 13),
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
                             filled: true,
                             fillColor: _surfaceHigh,
                             contentPadding:
@@ -1468,9 +1469,9 @@ class _NovelReaderScreenState extends State<NovelReaderScreen> {
                     hintText: 'تفاصيل إضافية (اختياري)',
                     hintStyle: GoogleFonts.cairo(
                         color: _textSecondary, fontSize: 13),
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
                     filled:    true,
                     fillColor: _surfaceHigh,
-                    alignLabelWithHint: true,
                     contentPadding: const EdgeInsets.all(10),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),

@@ -287,6 +287,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
                 decoration: InputDecoration(
                   hintText: 'ابحث باسم المستخدم...',
                   hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
+                  floatingLabelBehavior: FloatingLabelBehavior.never,
                   prefixIcon: const Icon(Icons.search, color: _textSecondary, size: 18),
                   filled: true, fillColor: _surfaceHigh,
                   border: OutlineInputBorder(
@@ -373,7 +374,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
               filled: true,
               fillColor: _surfaceHigh,
-              alignLabelWithHint: true,
+              floatingLabelBehavior: FloatingLabelBehavior.never,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
             ),
           ),
@@ -441,7 +442,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               hintText: 'اختر جملة مميزة من روايتك لتظهر للقراء...',
               hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 12),
               filled: true, fillColor: _surfaceHigh,
-              alignLabelWithHint: true,
+              floatingLabelBehavior: FloatingLabelBehavior.never,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
             ),
           ),
@@ -714,7 +715,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
         hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
         filled: true,
         fillColor: _surfaceHigh,
-        alignLabelWithHint: true,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
@@ -1803,7 +1804,7 @@ class _NovelDetailScreenState extends State<NovelDetailScreen> {
               hintText: 'تفاصيل إضافية (اختياري)',
               hintStyle: GoogleFonts.cairo(fontSize: 12, color: _textSecondary),
               filled: true, fillColor: _surfaceHigh,
-              alignLabelWithHint: true,
+              floatingLabelBehavior: FloatingLabelBehavior.never,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _border)),
               focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _accent)),

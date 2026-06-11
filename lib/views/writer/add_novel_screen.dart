@@ -458,7 +458,7 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
         hintText: hint,
         hintStyle: GoogleFonts.cairo(color: Colors.grey),
         border: InputBorder.none,
-        alignLabelWithHint: true,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
       ),
     );
   }

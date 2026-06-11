@@ -406,6 +406,7 @@ class _AuthScreenState extends State<AuthScreen>
       decoration: InputDecoration(
         hintText: label,
         hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 13),
+        floatingLabelBehavior: FloatingLabelBehavior.never,
         prefixIcon: Icon(icon, color: _textSecondary, size: 20),
         suffixIcon: suffixIcon,
         filled: true,

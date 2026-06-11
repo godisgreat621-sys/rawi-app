@@ -276,11 +276,10 @@ class _HomeScreenState extends State<HomeScreen> {
         slivers: [
           // ── AppBar ──────────────────────────────────────────────────────
           SliverAppBar(
-            floating: true,
+            floating: false,
             pinned:   true,
             backgroundColor: _bg,
             elevation: 0,
-            expandedHeight: 56,
             title: _isSearching
                 ? TextField(
                     controller: _searchController,
@@ -291,6 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: InputDecoration(
                       hintText: 'ابحث عن رواية أو كاتب...',
                       hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+                      floatingLabelBehavior: FloatingLabelBehavior.never,
                       border: InputBorder.none,
                     ),
                     onChanged: (v) {
