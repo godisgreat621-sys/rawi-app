@@ -302,9 +302,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_, v, _) => v.text.isEmpty
                             ? IgnorePointer(
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerEnd,
+                                  alignment: Alignment.centerRight,
                                   child: Text(
                                     'ابحث عن رواية أو كاتب...',
+                                    textDirection: TextDirection.rtl,
                                     style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
                                   ),
                                 ),

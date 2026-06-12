@@ -465,10 +465,11 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
                     padding: EdgeInsets.only(top: multiline ? 8.0 : 0.0),
                     child: Align(
                       alignment: multiline
-                          ? AlignmentDirectional.topEnd
-                          : AlignmentDirectional.centerEnd,
+                          ? Alignment.topRight
+                          : Alignment.centerRight,
                       child: Text(
                         hint,
+                        textDirection: TextDirection.rtl,
                         style: GoogleFonts.cairo(color: Colors.grey, fontSize: fontSize),
                       ),
                     ),
