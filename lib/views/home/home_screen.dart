@@ -281,24 +281,37 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: _bg,
             elevation: 0,
             title: _isSearching
-                ? TextField(
-                    controller: _searchController,
-                    autofocus: true,
-                    textDirection: TextDirection.rtl,
-                    autocorrect: false,
-                    style: GoogleFonts.cairo(color: _textPrimary, fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: 'ابحث عن رواية أو كاتب...',
-                      hintStyle: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
-                      floatingLabelBehavior: FloatingLabelBehavior.never,
-                      border: InputBorder.none,
-                    ),
-                    onChanged: (v) {
-                      _searchDebounce?.cancel();
-                      _searchDebounce = Timer(const Duration(milliseconds: 400), () {
-                        if (mounted) setState(() => _searchQuery = v.trim().toLowerCase());
-                      });
-                    },
+                ? Stack(
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        textDirection: TextDirection.rtl,
+                        autocorrect: false,
+                        style: GoogleFonts.cairo(color: _textPrimary, fontSize: 15),
+                        decoration: const InputDecoration(border: InputBorder.none),
+                        onChanged: (v) {
+                          _searchDebounce?.cancel();
+                          _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+                            if (mounted) setState(() => _searchQuery = v.trim().toLowerCase());
+                          });
+                        },
+                      ),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _searchController,
+                        builder: (_, v, _) => v.text.isEmpty
+                            ? IgnorePointer(
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: Text(
+                                    'ابحث عن رواية أو كاتب...',
+                                    style: GoogleFonts.cairo(color: _textSecondary, fontSize: 14),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,

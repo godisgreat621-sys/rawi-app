@@ -34,9 +34,17 @@
   <meta name="google-signin-client_id" content="181320126312-svfo1lv1qfb5peqqr3sjsb5v4eo8o6o0.apps.googleusercontent.com">
 
   <style>
-    /* Hide native browser placeholder — Flutter renders its own hint text */
+    /* Flutter Web mounts a native <input>/<textarea> over each field on focus to
+       capture typing. The browser draws that element's placeholder in its own
+       default font, overlapping Flutter's own (Cairo) hint. Hide it everywhere —
+       high-specificity selectors so Flutter's injected styles can't win on order. */
     input::placeholder,
-    textarea::placeholder {
+    textarea::placeholder,
+    flt-text-editing-host input::placeholder,
+    flt-text-editing-host textarea::placeholder,
+    flutter-view input::placeholder,
+    flutter-view textarea::placeholder {
+      color: transparent !important;
       opacity: 0 !important;
     }
   </style>
@@ -44,7 +52,39 @@
 
 <body>
   <script>
-    window.flutterConfiguration = { renderer: "html" };
+    // Belt-and-suspenders: also strip the placeholder attribute outright, in case
+    // the native input is mounted inside a shadow root the head <style> can't reach.
+    (function () {
+      function clearIn(root) {
+        if (!root || !root.querySelectorAll) return;
+        root.querySelectorAll('input[placeholder], textarea[placeholder]')
+          .forEach(function (el) { if (el.getAttribute('placeholder')) el.setAttribute('placeholder', ''); });
+        root.querySelectorAll('*').forEach(function (el) {
+          if (el.shadowRoot) clearIn(el.shadowRoot);
+        });
+      }
+      var scheduled = false;
+      function run() {
+        scheduled = false;
+        clearIn(document);
+      }
+      function schedule() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(run);
+      }
+      function start() {
+        run();
+        new MutationObserver(schedule).observe(document.documentElement, {
+          childList: true, subtree: true, attributes: true, attributeFilter: ['placeholder'],
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+      } else {
+        start();
+      }
+    })();
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>

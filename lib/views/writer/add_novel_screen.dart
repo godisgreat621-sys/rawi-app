@@ -440,26 +440,43 @@ class _AddNovelScreenState extends State<AddNovelScreen> {
     bool bold = false,
     double lineHeight = 1.6,
   }) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      keyboardType: maxLines == null
-          ? TextInputType.multiline
-          : TextInputType.text,
-      textDirection: TextDirection.rtl,
-      textAlignVertical: TextAlignVertical.top,
-      autocorrect: false,
-      style: GoogleFonts.cairo(
-        fontSize: fontSize,
-        fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-        height: lineHeight,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.cairo(color: Colors.grey),
-        border: InputBorder.none,
-        floatingLabelBehavior: FloatingLabelBehavior.never,
-      ),
+    final bool multiline = maxLines != 1;
+    return Stack(
+      children: [
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: multiline ? TextInputType.multiline : TextInputType.text,
+          textDirection: TextDirection.rtl,
+          textAlignVertical: TextAlignVertical.top,
+          autocorrect: false,
+          style: GoogleFonts.cairo(
+            fontSize: fontSize,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            height: lineHeight,
+          ),
+          decoration: const InputDecoration(border: InputBorder.none),
+        ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (_, v, _) => v.text.isEmpty
+              ? IgnorePointer(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: multiline ? 8.0 : 0.0),
+                    child: Align(
+                      alignment: multiline
+                          ? AlignmentDirectional.topEnd
+                          : AlignmentDirectional.centerEnd,
+                      child: Text(
+                        hint,
+                        style: GoogleFonts.cairo(color: Colors.grey, fontSize: fontSize),
+                      ),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 
